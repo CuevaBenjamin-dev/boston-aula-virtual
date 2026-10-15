@@ -56,6 +56,8 @@ La carga k6 abarca frontend, healthchecks y lecturas ERP sin sesión académica;
 - `estudiante.demo` abrió el curso como resumen semanal, llegó a la tarea en `/tareas/{id}`, consultó instrucciones y PDF, presentó una respuesta y observó el cambio de `PENDIENTE` a `PRESENTADO`. Mis notas abrió `/notas/{id}` con nota, escala, comentario y versión de entrega.
 - Pendiente de prueba de interrupción real: cerrar el navegador durante una carga multipart. La ruta de error y el estado `FALTA_COMPLETAR` están implementados, pero esta prueba manual aún no se ejecutó.
 
+![Detalle docente de una tarea publicada con material reemplazado y entrega recibida](tarea-publicada-v9.png)
+
 - ERP detenido: cursos ya sincronizados respondieron 200 y pagos respondieron 503, sin inventar saldos. La primera implementación había devuelto 500; se corrigió y se repitió la prueba. Al reiniciar ERP, el sincronizador volvió a registrar `ultimo_exito` y limpió `ultimo_error`.
 - Coordinación sin ámbito recibió 403 al abrir un curso; al asignar sección A solo vio A en reportes y docentes, y B continuó denegado.
 - Docente ajeno a curso B, alumno retirado y estudiante no matriculado recibieron 403 al intentar acceso directo a recursos de ese curso.
