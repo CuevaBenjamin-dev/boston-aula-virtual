@@ -30,4 +30,6 @@ import org.springframework.web.server.ResponseStatusException;
   @PostMapping public String crear(@RequestBody String datos,Authentication a,@RegisteredOAuth2AuthorizedClient("boston") OAuth2AuthorizedClient client) throws Exception { usuario.administrador(a);return llamar("/cuentas","POST",datos,client); }
   @PutMapping("/{id}/estado") public void estado(@PathVariable UUID id,@RequestBody String datos,Authentication a,@RegisteredOAuth2AuthorizedClient("boston") OAuth2AuthorizedClient client) throws Exception { usuario.administrador(a);llamar("/cuentas/"+id+"/estado","PUT",datos,client); }
   @PostMapping("/{id}/recuperacion") public String recuperacion(@PathVariable UUID id,Authentication a,@RegisteredOAuth2AuthorizedClient("boston") OAuth2AuthorizedClient client) throws Exception { usuario.administrador(a);return llamar("/cuentas/"+id+"/recuperacion","POST","{}",client); }
+  String directorio(Authentication a,OAuth2AuthorizedClient client) throws Exception { usuario.oidc(a);return llamar("/directorio","GET","",client); }
+  @PostMapping("/mi-clave") public void cambiarMiClave(@RequestBody String datos,Authentication a,@RegisteredOAuth2AuthorizedClient("boston") OAuth2AuthorizedClient client) throws Exception { usuario.oidc(a);llamar("/mi-clave","POST",datos,client); }
 }

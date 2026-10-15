@@ -49,7 +49,7 @@ Los diez casos operan en Docker local. «Cuenta académica» designa la única c
 - Flujo: docente elige curso, grado y sección de sus asignaciones ERP, programa tema, horario y Zoom; puede editar, cancelar con confirmación o continuar con otro enlace en la misma clase. Estudiante ve el estado y enlace vigente de su matrícula.
 - Reglas: solo se aceptan enlaces HTTPS de Zoom. Cada bloque se conserva; V8 registra instantáneas de la clase. Programación, cambio de horario y cancelación crean avisos internos persistentes para matriculados activos. Los filtros y página se conservan al volver del detalle. No se conecta a Zoom API.
 - Excepciones: docente no asignado o estudiante no matriculado, 403; módulo desactivado, 409; clase cancelada no se edita ni recibe enlaces nuevos.
-- Resultado esperado: clase y avisos persisten, el último bloque es el enlace vigente y el historial sigue disponible tras cancelar.
+- Resultado esperado: clase y avisos persisten, el último bloque es el enlace vigente. El historial queda para auditoría interna y no se muestra en el detalle de clase.
 
 ## CU-08 · Referencias YouTube por partes
 
@@ -71,3 +71,20 @@ Los diez casos operan en Docker local. «Cuenta académica» designa la única c
 - Reglas: importe positivo, no exceder saldo, referencia única, anulaciones con motivo e historial; pagos en línea están explícitamente deshabilitados. Solo el ERP calcula deuda y estado.
 - Excepciones: duplicado, 409; importe inválido, 400; ERP inaccesible, 503, sin inventar saldos ni confirmaciones.
 - Resultado esperado: obligaciones, vencimientos, pagos y saldo se actualizan tras cada operación autorizada.
+
+## CU-11 · Consultar tareas y notas desde el resumen
+
+- Estudiante abre un curso y ve las tareas publicadas en la semana actual que siguen pendientes y dentro de plazo. Las presentadas o vencidas se consultan desde Mis tareas, no desde el resumen.
+- Al abrir una tarea se entra en Mis tareas. Al volver, se aplican filtros de curso y título y se destaca brevemente la tarea visitada. Mis tareas y Mis notas permiten buscar, elegir curso y acotar fechas; Mis tareas también filtra por estado.
+- El historial de pagos permite filtrar por referencia, estado y fechas sin modificar las obligaciones ni los saldos del ERP.
+
+## CU-12 · Cuenta personal
+
+- Cada rol consulta su usuario y perfil, y la información académica disponible para su vínculo. El estudiante ve sus datos y matrícula activa; el docente ve su estado y cursos asignados; coordinación ve las secciones asignadas.
+- Cada persona puede subir su foto JPG o PNG de hasta 2 MB y cambiar su contraseña indicando la anterior. El cambio revoca las autorizaciones vigentes y requiere iniciar sesión nuevamente.
+
+## CU-13 · Bandeja de mensajes
+
+- Todos los roles pueden enviar un mensaje a una o varias cuentas activas, consultar Recibidos y Enviados, leer y responder. Solo el emisor y los destinatarios pueden abrir el contenido.
+- El docente puede seleccionar un curso asignado para enviar el mismo mensaje a todos los estudiantes con inscripción activa. Puede combinarlo con destinatarios concretos sin duplicar entregas.
+- Una pestaña separada muestra las notificaciones de cambios de clases. El estudiante ve las de sus cursos; el docente, coordinación y administración ven las correspondientes a su ámbito. Cada persona marca sus propias notificaciones como leídas.

@@ -10,6 +10,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 
 @RestController @RequestMapping("/api/identidad") public class CuentasController {
@@ -18,6 +21,21 @@ import org.springframework.web.bind.annotation.*;
   public record Nueva(String usuario,String claveInicial,String tipo,UUID referenciaErp,boolean developer) {}
   public record Suspension(boolean activo) {}
   public record CambioClave(String token,String nuevaClave) {}
+  public record CambioPropio(String claveActual,String nuevaClave) {}
+  @GetMapping("/directorio") public List<Map<String,Object>> directorio() {
+    return db.queryForList("SELECT id,usuario,tipo,referencia_erp FROM cuentas WHERE activo=TRUE ORDER BY usuario");
+  }
+  @PostMapping("/mi-clave") @Transactional public void cambiarMiClave(@RequestBody CambioPropio d,@AuthenticationPrincipal Jwt actor) {
+    if(actor==null||actor.getClaimAsString("cuenta_id")==null) throw new AccessDeniedException("Cuenta requerida");
+    if(d.claveActual()==null||d.nuevaClave()==null||d.nuevaClave().length()<12) throw new IllegalArgumentException("Contraseña inválida; usa al menos 12 caracteres");
+    UUID id=UUID.fromString(actor.getClaimAsString("cuenta_id"));
+    var actual=db.queryForMap("SELECT clave_hash,activo FROM cuentas WHERE id=? FOR UPDATE",id);
+    if(!Boolean.TRUE.equals(actual.get("activo"))) throw new AccessDeniedException("Cuenta suspendida");
+    if(!encoder.matches(d.claveActual(),(String)actual.get("clave_hash"))) throw new IllegalArgumentException("Contraseña actual incorrecta");
+    db.update("UPDATE cuentas SET clave_hash=?,intentos_fallidos=0,bloqueado_hasta=NULL,sesion_version=sesion_version+1 WHERE id=?",encoder.encode(d.nuevaClave()),id);
+    db.update("DELETE FROM oauth2_authorization WHERE principal_name=(SELECT usuario FROM cuentas WHERE id=?)",id);
+    auditar(id,"CLAVE_CAMBIADA");
+  }
   @GetMapping("/cuentas") public List<Map<String,Object>> listar() { return db.queryForList("SELECT id,usuario,tipo,referencia_erp,activo,developer,tesoreria,creado_en FROM cuentas ORDER BY creado_en DESC LIMIT 200"); }
   @GetMapping("/estado/{id}") public Map<String,Object> activo(@PathVariable UUID id) {
     var encontrados=db.query("SELECT activo,sesion_version FROM cuentas WHERE id=?",(rs,n)->Map.<String,Object>of("activo",rs.getBoolean("activo"),"sesionVersion",rs.getInt("sesion_version")),id);

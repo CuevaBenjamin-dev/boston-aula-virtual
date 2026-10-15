@@ -93,6 +93,28 @@ import org.springframework.transaction.annotation.Transactional;
       WHERE o.id=? ORDER BY nombre
       """,curso);
   }
+  public Map<String,Object> perfil(String tipo,UUID id,Jwt actor) {
+    Object scope=actor.getClaim("scope");
+    boolean lectura=(scope instanceof String s && java.util.Arrays.asList(s.split(" ")).contains("erp.read")) || (scope instanceof java.util.Collection<?> lista && lista.contains("erp.read"));
+    if(!lectura) throw new AccessDeniedException("Lectura ERP requerida");
+    if("ESTUDIANTE".equals(tipo)) return db.queryForMap("""
+      SELECT concat_ws(' ',p.nombres,p.apellidos) AS nombre,e.codigo,e.estado,
+             g.nombre AS grado,s.nombre AS seccion,periodo.nombre AS periodo
+      FROM estudiantes e JOIN personas p ON p.id=e.persona_id
+      LEFT JOIN matriculas m ON m.estudiante_id=e.id AND m.estado='ACTIVA'
+      LEFT JOIN secciones s ON s.id=m.seccion_id LEFT JOIN grados g ON g.id=s.grado_id
+      LEFT JOIN periodos_academicos periodo ON periodo.id=s.periodo_id
+      WHERE e.id=?
+      """,id);
+    if("DOCENTE".equals(tipo)) return db.queryForMap("""
+      SELECT concat_ws(' ',p.nombres,p.apellidos) AS nombre,d.estado,
+             count(DISTINCT ad.oferta_id) FILTER (WHERE ad.estado='ACTIVA') AS cursos
+      FROM docentes d JOIN personas p ON p.id=d.persona_id
+      LEFT JOIN asignaciones_docentes ad ON ad.docente_id=d.id
+      WHERE d.id=? GROUP BY d.id,p.nombres,p.apellidos
+      """,id);
+    throw new IllegalArgumentException("Tipo de perfil inválido");
+  }
   public Map<String,Object> catalogo(Jwt actor) {
     admin(actor);
     return Map.of("periodos",db.queryForList("SELECT id,nombre FROM periodos_academicos ORDER BY nombre"),

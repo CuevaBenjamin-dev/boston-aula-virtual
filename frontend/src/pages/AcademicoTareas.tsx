@@ -16,6 +16,7 @@ function estadoTarea(t:Tarea,perfil:Perfil){
   if(perfil.tipo!=='ESTUDIANTE')return t.estado==='FALTA_COMPLETAR'?'FALTA COMPLETAR':t.estado==='PUBLICADA'?'PUBLICADO':t.estado;
   if(t.presentada)return 'PRESENTADO';
   const restante=new Date(t.fecha_limite).getTime()-Date.now();
+  if(restante<=0||t.estado==='CERRADA')return 'VENCIDA';
   return restante>0&&restante<10*60*60*1000?'URGENTE':'PENDIENTE';
 }
 function semanaActual(s:string){
@@ -39,16 +40,36 @@ export function Cursos({perfil,pagina}:{perfil:Perfil;pagina:string}){
 
 type Fila={id:string;curso:Curso;tarea?:Tarea;nota?:Nota};
 function VistaGlobal({cursos,pagina,perfil}:{cursos:Curso[];pagina:string;perfil:Perfil}){
-  const [params]=useSearchParams();const cursoFiltro=params.get('curso');
+  const [params,setParams]=useSearchParams();
+  const cambiar=(clave:string,valor:string)=>{const siguiente=new URLSearchParams(params);if(valor)siguiente.set(clave,valor);else siguiente.delete(clave);siguiente.delete('resaltar');setParams(siguiente)};
   const ids=cursos.map(c=>c.id).join(',');
   const {data:filas=[],isLoading,error}=useQuery<Fila[]>({queryKey:['vista-global',pagina,ids,perfil.tipo],queryFn:async()=>{
     if(pagina==='notas'&&perfil.tipo==='ESTUDIANTE')return (await Promise.all(cursos.map(async curso=>(await api<Nota[]>(`/cursos/${curso.id}/notas`)).map(n=>({id:n.id,curso,nota:n}))))).flat().sort((a,b)=>new Date(b.nota!.actualizado_en).getTime()-new Date(a.nota!.actualizado_en).getTime());
     return (await Promise.all(cursos.map(async curso=>(await api<Tarea[]>(`/cursos/${curso.id}/tareas`)).map(t=>({id:t.id,curso,tarea:t}))))).flat().sort((a,b)=>new Date(b.tarea!.creado_en).getTime()-new Date(a.tarea!.creado_en).getTime());
   }});
-  const visibles=cursoFiltro?filas.filter(f=>f.curso.id===cursoFiltro):filas;
+  const visibles=filas.filter(f=>{
+    const texto=(params.get('q')||'').toLocaleLowerCase('es');
+    const valorFecha=f.nota?.actualizado_en||f.tarea?.fecha_limite||'';
+    const dia=new Date(valorFecha).toLocaleDateString('sv-SE');
+    return (!params.get('curso')||f.curso.id===params.get('curso'))
+      &&(!texto||`${f.nota?.titulo||f.tarea?.titulo} ${f.curso.asignatura} ${f.nota?.comentario||''}`.toLocaleLowerCase('es').includes(texto))
+      &&(pagina!=='tareas'||!params.get('estado')||estadoTarea(f.tarea!,perfil)===params.get('estado'))
+      &&(!params.get('desde')||dia>=params.get('desde')!)
+      &&(!params.get('hasta')||dia<=params.get('hasta')!);
+  });
+  useEffect(()=>{const id=params.get('resaltar');if(id&&visibles.some(f=>f.id===id))requestAnimationFrame(()=>document.getElementById(`tarea-${id}`)?.scrollIntoView({behavior:'smooth',block:'center'}))},[params,visibles.length]);
   const titulo=pagina==='tareas'?(perfil.tipo==='ESTUDIANTE'?'Mis tareas':'Tareas y entregas'):(perfil.tipo==='ESTUDIANTE'?'Mis notas':'Calificaciones');
   const descripcion=pagina==='notas'&&perfil.tipo==='DOCENTE'?'Selecciona una tarea para revisar entregas y calificar.':'Consulta la información de tus cursos.';
-  return <><div className="page-head"><div><span className="eyebrow">AULA VIRTUAL</span><h1>{titulo}</h1><p>{descripcion}</p></div></div>{isLoading?<p className="muted">Cargando…</p>:error?<div className="alert">No fue posible consultar {titulo.toLowerCase()}. {String(error)}</div>:!visibles.length?<div className="empty">Todavía no hay información para mostrar.</div>:<div className="list">{visibles.map(f=>f.nota?<Link className="list-row" key={f.id} to={`/notas/${f.id}`}><div><strong>{f.nota.titulo}</strong><span>{f.curso.asignatura} · {f.curso.grado} {f.curso.seccion} · Calificada {fecha(f.nota.actualizado_en)}</span><p>{f.nota.comentario||'Sin comentario del docente'}</p></div><strong>{f.nota.valor}/{f.nota.escala_maxima}</strong><span>Ver nota →</span></Link>:<Link className="list-row" key={f.id} to={`/tareas/${f.id}`}><div><strong>{f.tarea!.titulo}</strong><span>{f.curso.asignatura} · {f.curso.grado} {f.curso.seccion} · Entrega hasta {fecha(f.tarea!.fecha_limite)}</span></div>{perfil.tipo==='DOCENTE'&&<strong>{f.tarea!.entregados}/{f.tarea!.total_estudiantes}</strong>}{pagina==='tareas'&&<EtiquetaTarea t={f.tarea!} perfil={perfil}/>}<span>{pagina==='notas'?'Revisar →':'Ver tarea →'}</span></Link>)}</div>}</>;
+  return <><div className="page-head"><div><span className="eyebrow">AULA VIRTUAL</span><h1>{titulo}</h1><p>{descripcion}</p></div></div>
+    <div className="panel form filters"><div className="filter-grid">
+      <label>Buscar<input value={params.get('q')||''} onChange={e=>cambiar('q',e.target.value)} placeholder={pagina==='notas'?'Actividad o comentario':'Tarea o curso'}/></label>
+      <label>Curso<select value={params.get('curso')||''} onChange={e=>cambiar('curso',e.target.value)}><option value="">Todos los cursos</option>{cursos.map(c=><option key={c.id} value={c.id}>{c.asignatura} · {c.grado} {c.seccion}</option>)}</select></label>
+      {pagina==='tareas'&&<label>Estado<select value={params.get('estado')||''} onChange={e=>cambiar('estado',e.target.value)}><option value="">Todos</option>{(perfil.tipo==='ESTUDIANTE'?['PENDIENTE','URGENTE','PRESENTADO','VENCIDA']:['PUBLICADO','FALTA COMPLETAR','CERRADA']).map(e=><option key={e}>{e}</option>)}</select></label>}
+      <label>Desde<input type="date" value={params.get('desde')||''} onChange={e=>cambiar('desde',e.target.value)}/></label>
+      <label>Hasta<input type="date" value={params.get('hasta')||''} onChange={e=>cambiar('hasta',e.target.value)}/></label>
+    </div></div>
+    {isLoading?<p className="muted">Cargando…</p>:error?<div className="alert">No fue posible consultar {titulo.toLowerCase()}. {String(error)}</div>:!visibles.length?<div className="empty">No hay resultados para estos filtros.</div>:<div className="list">{visibles.map(f=>f.nota?<Link className="list-row" key={f.id} to={`/notas/${f.id}`}><div><strong>{f.nota.titulo}</strong><span>{f.curso.asignatura} · {f.curso.grado} {f.curso.seccion} · Calificada {fecha(f.nota.actualizado_en)}</span><p>{f.nota.comentario||'Sin comentario del docente'}</p></div><strong>{f.nota.valor}/{f.nota.escala_maxima}</strong><span>Ver nota →</span></Link>:<Link id={`tarea-${f.id}`} className={'list-row'+(params.get('resaltar')===f.id?' task-return':'')} key={f.id} to={`/tareas/${f.id}?return=${encodeURIComponent('/tareas?'+new URLSearchParams({...Object.fromEntries(params),resaltar:f.id}).toString())}`}><div><strong>{f.tarea!.titulo}</strong><span>{f.curso.asignatura} · {f.curso.grado} {f.curso.seccion} · Entrega hasta {fecha(f.tarea!.fecha_limite)}</span></div>{perfil.tipo==='DOCENTE'&&<strong>{f.tarea!.entregados}/{f.tarea!.total_estudiantes}</strong>}{pagina==='tareas'&&<EtiquetaTarea t={f.tarea!} perfil={perfil}/>}<span>{pagina==='notas'?'Revisar →':'Ver tarea →'}</span></Link>)}</div>}
+  </>;
 }
 
 function CrearTarea({curso}:{curso:string}){
@@ -69,10 +90,10 @@ export function CursoPage({perfil,modulos}:{perfil:Perfil;modulos?:{clasesYGraba
   const {data:tareas=[]}=useQuery<Tarea[]>({queryKey:['tareas',cursoId],queryFn:()=>api(`/cursos/${cursoId}/tareas`),enabled:!!cursoId,refetchInterval:60000});
   const {data:clases=[]}=useQuery<Clase[]>({queryKey:['clases',cursoId],queryFn:()=>api(`/cursos/${cursoId}/clases`),enabled:!!cursoId&&modulos?.clasesYGrabaciones!==false,refetchInterval:30000});
   const {data:notas=[]}=useQuery<Nota[]>({queryKey:['notas',cursoId],queryFn:()=>api(`/cursos/${cursoId}/notas`),enabled:!!cursoId&&['ESTUDIANTE','DOCENTE'].includes(perfil.tipo)});
-  const resumenTareas=perfil.tipo==='ESTUDIANTE'?tareas.filter(t=>semanaActual(t.publicado_en||t.creado_en)):tareas.slice(0,5);
+  const resumenTareas=perfil.tipo==='ESTUDIANTE'?tareas.filter(t=>semanaActual(t.publicado_en||t.creado_en)&&!t.presentada&&t.estado==='PUBLICADA'&&new Date(t.fecha_limite).getTime()>Date.now()):tareas.slice(0,5);
   const resumenClases=[...clases].sort((a,b)=>Math.abs(new Date(a.inicio).getTime()-Date.now())-Math.abs(new Date(b.inicio).getTime()-Date.now())).slice(0,3);
   return <><div className="page-head"><div><Link className="back" to="/cursos">← Mis cursos</Link><span className="eyebrow">{curso?.grado} · Sección {curso?.seccion}</span><h1>{curso?.asignatura||'Curso'}</h1><p>Resumen de tareas, clases y {perfil.tipo==='ESTUDIANTE'?'notas':'entregas'} del curso.</p></div></div>
-    <section className="section"><div className="section-head"><h2>{perfil.tipo==='ESTUDIANTE'?'Tareas de esta semana':'Tareas'}</h2>{perfil.tipo==='DOCENTE'&&cursoId&&<CrearTarea curso={cursoId}/>}</div>{!resumenTareas.length?<div className="empty">{perfil.tipo==='ESTUDIANTE'?'No hay tareas publicadas esta semana.':'Todavía no hay tareas.'}</div>:<div className="list">{resumenTareas.map(t=><Link className="list-row" to={'/tareas/'+t.id} key={t.id}><div><strong>{t.titulo}</strong><span>Entrega hasta {fecha(t.fecha_limite)}</span></div>{perfil.tipo==='DOCENTE'&&<strong>{t.entregados}/{t.total_estudiantes}</strong>}<EtiquetaTarea t={t} perfil={perfil}/><span>Ver tarea →</span></Link>)}</div>}<Link className="text-link section-more" to={`/tareas?curso=${cursoId}`}>Ver todas las tareas →</Link></section>
+    <section className="section"><div className="section-head"><h2>{perfil.tipo==='ESTUDIANTE'?'Tareas pendientes de esta semana':'Tareas'}</h2>{perfil.tipo==='DOCENTE'&&cursoId&&<CrearTarea curso={cursoId}/>}</div>{!resumenTareas.length?<div className="empty">{perfil.tipo==='ESTUDIANTE'?'No hay tareas pendientes esta semana.':'Todavía no hay tareas.'}</div>:<div className="list">{resumenTareas.map(t=>{const regreso=`/tareas?curso=${cursoId}&q=${encodeURIComponent(t.titulo)}&resaltar=${t.id}`;return <Link className="list-row" to={`/tareas/${t.id}?return=${encodeURIComponent(regreso)}`} key={t.id}><div><strong>{t.titulo}</strong><span>Entrega hasta {fecha(t.fecha_limite)}</span></div>{perfil.tipo==='DOCENTE'&&<strong>{t.entregados}/{t.total_estudiantes}</strong>}<EtiquetaTarea t={t} perfil={perfil}/><span>Ver tarea →</span></Link>})}</div>}<Link className="text-link section-more" to={`/tareas?curso=${cursoId}`}>Ver todas las tareas →</Link></section>
     {modulos?.clasesYGrabaciones!==false&&<section className="section"><div className="section-head"><h2>Clases virtuales</h2>{perfil.tipo==='DOCENTE'&&<Link className="button secondary" to={`/clases?asignatura=${encodeURIComponent(curso?.asignatura||'')}&grado=${encodeURIComponent(curso?.grado||'')}&seccion=${encodeURIComponent(curso?.seccion||'')}`}>Programar clase</Link>}</div>{!resumenClases.length?<div className="empty">No hay clases programadas.</div>:<div className="list">{resumenClases.map(c=><Link className="list-row" key={c.id} to={`/clases/${c.id}?return=${encodeURIComponent('/cursos/'+cursoId)}`}><div><strong>{c.tema}</strong><span>{fecha(c.inicio)}</span></div><span className={'badge '+c.estado.toLowerCase()}>{c.estado==='CANCELADA'?'CANCELADA':'PROGRAMADA'}</span><span>Ver clase →</span></Link>)}</div>}<Link className="text-link section-more" to="/clases">Ver todas las clases →</Link></section>}
     {perfil.tipo==='ESTUDIANTE'&&<section className="section"><h2>Mis notas recientes</h2>{!notas.length?<div className="empty">Aún no tienes notas registradas.</div>:<div className="list">{notas.slice(0,3).map(n=><Link className="list-row" key={n.id} to={`/notas/${n.id}`}><div><strong>{n.titulo}</strong><span>{n.comentario||'Sin comentario del docente'}</span></div><strong>{n.valor}/{n.escala_maxima}</strong><span>Ver nota →</span></Link>)}</div>}<Link className="text-link section-more" to={`/notas?curso=${cursoId}`}>Ver todas mis notas →</Link></section>}
     {perfil.tipo==='DOCENTE'&&<section className="section"><h2>Calificaciones</h2><div className="panel">{notas.length} calificaciones registradas en este curso.</div><Link className="text-link section-more" to={`/notas?curso=${cursoId}`}>Revisar actividades y calificar →</Link></section>}
@@ -109,7 +130,7 @@ function Calificar({tarea,estudiante}:{tarea:string;estudiante:string}){
 }
 
 export function TareaPage({perfil}:{perfil:Perfil}){
-  const {tareaId}=useParams(),qc=useQueryClient();
+  const {tareaId}=useParams(),[params]=useSearchParams(),qc=useQueryClient();
   const {data:tarea,isLoading,error}=useQuery<Tarea>({queryKey:['tarea',tareaId],queryFn:()=>api(`/tareas/${tareaId}`),enabled:!!tareaId});
   const {data:entregas=[]}=useQuery<Entrega[]>({queryKey:['entregas',tareaId],queryFn:()=>api(`/tareas/${tareaId}/entregas`),enabled:!!tareaId&&perfil.tipo!=='COORDINACION'});
   const {data:notas=[]}=useQuery<Nota[]>({queryKey:['notas',tarea?.curso_id],queryFn:()=>api(`/cursos/${tarea?.curso_id}/notas`),enabled:perfil.tipo==='ESTUDIANTE'&&!!tarea?.curso_id});
@@ -119,7 +140,9 @@ export function TareaPage({perfil}:{perfil:Perfil}){
   if(isLoading)return <p className="muted">Cargando tarea…</p>;
   if(error||!tarea)return <div className="alert">No fue posible abrir la tarea. {String(error)}</div>;
   const presentada=entregas.length>0,plazoVencido=new Date(tarea.fecha_limite).getTime()<Date.now(),calificada=notas.some(n=>n.tarea_id===tareaId);
-  return <><div className="page-head"><div><Link className="back" to="/tareas">← {perfil.tipo==='ESTUDIANTE'?'Mis tareas':'Tareas y entregas'}</Link><span className="eyebrow">ACTIVIDAD DEL AULA</span><h1>{tarea.titulo}</h1><p>Fecha y hora límite: {fecha(tarea.fecha_limite)}</p></div>{perfil.tipo==='DOCENTE'&&tarea.estado==='FALTA_COMPLETAR'&&<button className="button primary" disabled={publicar.isPending} onClick={()=>publicar.mutate()}>Publicar tarea</button>}{perfil.tipo==='DOCENTE'&&tarea.estado==='CERRADA'&&<button className="button secondary" disabled={publicar.isPending} onClick={()=>publicar.mutate()}>Reabrir tarea</button>}</div>
+  const pedido=params.get('return');
+  const regreso=pedido?.startsWith('/tareas?')&&!pedido.startsWith('//')?pedido:`/tareas?curso=${tarea.curso_id}&q=${encodeURIComponent(tarea.titulo)}&resaltar=${tarea.id}`;
+  return <><div className="page-head"><div><Link className="back" to={regreso}>← {perfil.tipo==='ESTUDIANTE'?'Mis tareas':'Tareas y entregas'}</Link><span className="eyebrow">ACTIVIDAD DEL AULA</span><h1>{tarea.titulo}</h1><p>Fecha y hora límite: {fecha(tarea.fecha_limite)}</p></div>{perfil.tipo==='DOCENTE'&&tarea.estado==='FALTA_COMPLETAR'&&<button className="button primary" disabled={publicar.isPending} onClick={()=>publicar.mutate()}>Publicar tarea</button>}{perfil.tipo==='DOCENTE'&&tarea.estado==='CERRADA'&&<button className="button secondary" disabled={publicar.isPending} onClick={()=>publicar.mutate()}>Reabrir tarea</button>}</div>
     {publicar.error&&<div className="alert">{String(publicar.error)}</div>}
     <div className="panel"><h2>Instrucciones</h2><p className="prewrap">{tarea.instrucciones}</p><ArchivosDe padre="tareas" id={tarea.id}/>{perfil.tipo==='DOCENTE'&&<div className="task-actions"><EtiquetaTarea t={tarea} perfil={perfil}/><EditarTarea tarea={tarea}/></div>}</div>
     {perfil.tipo==='ESTUDIANTE'&&tarea.estado==='PUBLICADA'&&<section className="section"><h2>Mi entrega</h2>{presentada?<div className="panel">Tu tarea está presentada. Consulta el registro más abajo.</div>:plazoVencido?<div className="panel">El plazo de entrega terminó.</div>:<form className="panel form" onSubmit={e=>{e.preventDefault();entregar.mutate()}}><label>Respuesta (opcional si adjuntas un archivo)<textarea rows={5} value={respuesta} onChange={e=>setRespuesta(e.target.value)} required={!archivo}/></label><label>Archivo opcional (PDF, PNG, JPG o DOCX, máximo 100 MB)<input type="file" accept={archivoPermitido} onChange={e=>setArchivo(e.target.files?.[0]||null)}/></label>{progreso>0&&<progress value={progreso} max="100"/>}{entregar.error&&<p className="error">{String(entregar.error)} {pendiente&&'La respuesta quedó guardada; puedes completar el archivo en el historial.'}</p>}<button className="button primary" disabled={entregar.isPending}>Presentar tarea</button></form>}</section>}

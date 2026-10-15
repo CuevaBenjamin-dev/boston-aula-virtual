@@ -5,7 +5,7 @@ export type Clase = {id:string;curso_id:string;tema:string;inicio:string;fin:str
 export type Entrega = {id:string;tarea_id:string;estudiante_erp_id:string;estudiante?:string;version:number;respuesta:string;estado:string;entregado_en:string};
 export type Nota = {id:string;tarea_id:string;estudiante_erp_id:string;valor:number;comentario:string;version:number;titulo:string;entrega_version:number;ultima_entrega_version:number;escala_maxima:number;fecha_limite:string;actualizado_en:string};
 export type Grabacion = {id:string;clase_id:string;curso_id:string;orden:number;youtube_id:string;url:string;estado:'PUBLICADA'|'OCULTA';tema:string;inicio:string;fin:string;estado_clase:string;asignatura:string;grado:string;seccion:string;periodo:string;docente:string;creado_en:string;actualizado_en:string};
-export type NotificacionClase = {id:string;clase_id:string;tipo:'PROGRAMADA'|'REPROGRAMADA'|'CANCELADA';mensaje:string;creada_en:string;leida_en:string|null;tema:string;inicio:string;asignatura:string;grado:string;seccion:string};
+export type NotificacionClase = {id:string;clase_id:string;tipo:'PROGRAMADA'|'REPROGRAMADA'|'CANCELADA'|'CREADA'|'EDITADA';mensaje:string;creada_en:string;leida_en:string|null;tema:string;inicio:string;asignatura:string;grado:string;seccion:string};
 export type Archivo = {id:string;nombre:string;tamano:number;tipo:string};
 
 function csrf(){const match=document.cookie.match(/(?:^|; )XSRF-TOKEN=([^;]+)/);return match?decodeURIComponent(match[1]):''}

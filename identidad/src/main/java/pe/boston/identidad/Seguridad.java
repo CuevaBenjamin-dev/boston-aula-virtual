@@ -89,6 +89,7 @@ public class Seguridad {
     http.csrf(c -> c.ignoringRequestMatchers("/api/identidad/**"))
       .authorizeHttpRequests(a -> a.requestMatchers("/actuator/health", "/error", "/login", "/restablecer", "/.well-known/**", "/api/identidad/restablecer").permitAll()
       .requestMatchers("/api/identidad/estado/**").hasAuthority("SCOPE_erp.read")
+      .requestMatchers("/api/identidad/directorio", "/api/identidad/mi-clave").authenticated()
       .requestMatchers("/api/identidad/**").hasRole("ADMINISTRADOR")
       .anyRequest().authenticated())
       .oauth2ResourceServer(o -> o.jwt(j -> j.jwtAuthenticationConverter(jwtConverter)))

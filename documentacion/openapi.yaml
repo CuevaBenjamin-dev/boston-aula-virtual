@@ -762,6 +762,30 @@ paths:
           description: Recurso fuera del ámbito autorizado
         '409':
           description: Conflicto de versión o estado
+  '/api/aula/cuentas/mi-clave':
+    post:
+      operationId: CuentasRemotasController_5
+      summary: 'cambiarMiClave - CuentasRemotasController'
+      security:
+        - sesionBff: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
   '/api/aula/cuentas/{id}/estado':
     put:
       operationId: CuentasRemotasController_3
@@ -1226,6 +1250,109 @@ paths:
           description: Recurso fuera del ámbito autorizado
         '409':
           description: Conflicto de versión o estado
+  '/api/aula/mensajes':
+    get:
+      operationId: MensajesController_2
+      summary: 'listar - MensajesController'
+      security:
+        - sesionBff: []
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+    post:
+      operationId: MensajesController_4
+      summary: 'enviar - MensajesController'
+      security:
+        - sesionBff: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/mensajes/directorio':
+    get:
+      operationId: MensajesController_1
+      summary: 'directorio - MensajesController'
+      security:
+        - sesionBff: []
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/mensajes/{id}':
+    get:
+      operationId: MensajesController_3
+      summary: 'detalle - MensajesController'
+      security:
+        - sesionBff: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/mensajes/{id}/leer':
+    post:
+      operationId: MensajesController_5
+      summary: 'leer - MensajesController'
+      security:
+        - sesionBff: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
   '/api/aula/modulos':
     get:
       operationId: OperacionesController_1
@@ -1334,6 +1461,56 @@ paths:
     get:
       operationId: OperacionesController_12
       summary: 'pagos - OperacionesController'
+      security:
+        - sesionBff: []
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/perfil':
+    get:
+      operationId: PerfilController_1
+      summary: 'ver - PerfilController'
+      security:
+        - sesionBff: []
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+    post:
+      operationId: PerfilController_3
+      summary: 'subirFoto - PerfilController'
+      security:
+        - sesionBff: []
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/perfil/foto':
+    get:
+      operationId: PerfilController_2
+      summary: 'operacion 2 - PerfilController'
       security:
         - sesionBff: []
       responses:
@@ -1735,7 +1912,7 @@ paths:
           description: Conflicto de versión o estado
   '/api/erp/apoderados':
     post:
-      operationId: InstitucionalController_14
+      operationId: InstitucionalController_15
       summary: 'apoderado - InstitucionalController'
       servers:
         - url: http://api-erp:8080
@@ -1805,7 +1982,7 @@ paths:
           description: Conflicto de versión o estado
   '/api/erp/docentes':
     post:
-      operationId: InstitucionalController_13
+      operationId: InstitucionalController_14
       summary: 'docente - InstitucionalController'
       servers:
         - url: http://api-erp:8080
@@ -1876,7 +2053,7 @@ paths:
           description: Conflicto de versión o estado
   '/api/erp/estudiantes/{id}/apoderados':
     get:
-      operationId: InstitucionalController_16
+      operationId: InstitucionalController_17
       summary: 'apoderados - InstitucionalController'
       servers:
         - url: http://api-erp:8080
@@ -1900,7 +2077,7 @@ paths:
         '409':
           description: Conflicto de versión o estado
     post:
-      operationId: InstitucionalController_15
+      operationId: InstitucionalController_16
       summary: 'vincular - InstitucionalController'
       servers:
         - url: http://api-erp:8080
@@ -2021,7 +2198,7 @@ paths:
           description: Conflicto de versión o estado
   '/api/erp/eventos':
     get:
-      operationId: InstitucionalController_17
+      operationId: InstitucionalController_18
       summary: 'eventos - InstitucionalController'
       servers:
         - url: http://api-erp:8080
@@ -2084,7 +2261,7 @@ paths:
         '409':
           description: Conflicto de versión o estado
     post:
-      operationId: InstitucionalController_12
+      operationId: InstitucionalController_13
       summary: 'oferta - InstitucionalController'
       servers:
         - url: http://api-erp:8080
@@ -2140,9 +2317,39 @@ paths:
           description: Recurso fuera del ámbito autorizado
         '409':
           description: Conflicto de versión o estado
+  '/api/erp/perfiles/{tipo}/{id}':
+    get:
+      operationId: InstitucionalController_11
+      summary: 'perfil - InstitucionalController'
+      servers:
+        - url: http://api-erp:8080
+      security:
+        - portador: []
+      parameters:
+        - name: tipo
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
   '/api/erp/secciones':
     post:
-      operationId: InstitucionalController_11
+      operationId: InstitucionalController_12
       summary: 'seccion - InstitucionalController'
       servers:
         - url: http://api-erp:8080
@@ -2303,7 +2510,7 @@ paths:
           description: Conflicto de versión o estado
   '/api/identidad/cuentas':
     get:
-      operationId: CuentasController_1
+      operationId: CuentasController_3
       summary: 'listar - CuentasController'
       servers:
         - url: http://localhost:9000
@@ -2321,7 +2528,7 @@ paths:
         '409':
           description: Conflicto de versión o estado
     post:
-      operationId: CuentasController_3
+      operationId: CuentasController_5
       summary: 'crear - CuentasController'
       servers:
         - url: http://localhost:9000
@@ -2347,7 +2554,7 @@ paths:
           description: Conflicto de versión o estado
   '/api/identidad/cuentas/{id}/estado':
     put:
-      operationId: CuentasController_4
+      operationId: CuentasController_6
       summary: 'estado - CuentasController'
       servers:
         - url: http://localhost:9000
@@ -2379,7 +2586,7 @@ paths:
           description: Conflicto de versión o estado
   '/api/identidad/cuentas/{id}/recuperacion':
     post:
-      operationId: CuentasController_5
+      operationId: CuentasController_7
       summary: 'recuperacion - CuentasController'
       servers:
         - url: http://localhost:9000
@@ -2402,9 +2609,28 @@ paths:
           description: Recurso fuera del ámbito autorizado
         '409':
           description: Conflicto de versión o estado
+  '/api/identidad/directorio':
+    get:
+      operationId: CuentasController_1
+      summary: 'directorio - CuentasController'
+      servers:
+        - url: http://localhost:9000
+      security:
+        - portador: []
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
   '/api/identidad/estado/{id}':
     get:
-      operationId: CuentasController_2
+      operationId: CuentasController_4
       summary: 'activo - CuentasController'
       servers:
         - url: http://localhost:9000
@@ -2427,9 +2653,35 @@ paths:
           description: Recurso fuera del ámbito autorizado
         '409':
           description: Conflicto de versión o estado
+  '/api/identidad/mi-clave':
+    post:
+      operationId: CuentasController_2
+      summary: 'cambiarMiClave - CuentasController'
+      servers:
+        - url: http://localhost:9000
+      security:
+        - portador: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
   '/api/identidad/restablecer':
     post:
-      operationId: CuentasController_6
+      operationId: CuentasController_8
       summary: 'restablecer - CuentasController'
       servers:
         - url: http://localhost:9000

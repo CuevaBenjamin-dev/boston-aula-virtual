@@ -69,6 +69,15 @@ La carga k6 abarca frontend, healthchecks y lecturas ERP sin sesión académica;
 - La cuenta administrativa temporal `tecnico.demo` usada para pruebas de permisos y recuperación quedó suspendida; su sesión obtuvo 401. No forma parte de las cuatro cuentas base del fixture.
 - Reinicio local: Docker Desktop detuvo los servicios y `docker compose up -d --build` los recuperó con volúmenes persistidos; tareas, notas, MP4 y saldos seguían disponibles.
 
+## Revisión local de bandeja y cuenta (15 de octubre de 2026)
+
+- Compilaron frontend, Identidad, ERP y Aula. Pasaron las pruebas Maven de los tres servicios, incluida la comprobación de contraseña actual y revocación de autorizaciones.
+- Se aplicó Flyway V10. El docente envió un mensaje al aula de Matemática A; apareció en Enviados y en Recibidos del estudiante. La lectura redujo el contador y Responder preseleccionó al docente.
+- Se comprobaron la bandeja y los avisos en las vistas de docente, coordinación y administración. Coordinación vio avisos solo de su sección asignada.
+- En el curso del estudiante se mostraron tareas pendientes, y una presentada quedó fuera del resumen. Al volver de una tarea, Mis tareas conservó filtros de curso y búsqueda y aplicó el resaltado azul.
+- Mis notas y el historial de pagos mostraron filtros; una búsqueda por referencia redujo la tabla de pagos. El detalle de clase no mostró Historial de la clase.
+- Mi cuenta mostró datos académicos del estudiante y las secciones de coordinación. Se subió una imagen PNG de prueba y se comprobó la actualización visual; la imagen de prueba se retiró después. El cambio real de contraseña queda para prueba manual del titular, para conservar las claves demo.
+
 ## Repetición
 
 Para instalación limpia, copie `.env.example` a `.env`, cambie claves y ejecute `docker compose up -d --build`. La API ERP inserta datos institucionales ficticios; Aula prepara tarea y clase de demostración una vez tras la primera sincronización, cuando `DATOS_DEMO=true`. No crea MP4 nuevos. Use las cuentas descritas en `README.md`. `docker compose down` mantiene los datos; `docker compose down -v` los elimina deliberadamente.

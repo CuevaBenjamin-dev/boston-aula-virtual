@@ -25,7 +25,7 @@ public class DatosDemo {
     if(db.queryForObject("SELECT count(*) FROM preparacion_demo WHERE clave='academico_v1'",Integer.class)>0) return;
     if(db.queryForObject("SELECT count(*) FROM cursos WHERE id=?",Integer.class,CURSO)==0) return;
     db.update("INSERT INTO tareas(id,curso_id,titulo,instrucciones,fecha_limite,acepta_tarde,permite_reentrega,estado,escala_maxima,creado_por) VALUES (?,?,?,?,'2026-11-10 18:00:00-05',TRUE,TRUE,'PUBLICADA',20,?) ON CONFLICT (id) DO NOTHING",
-      TAREA,CURSO,"Actividad de demostración","Resuelve los ejercicios de la clase. Puedes entregar y reentregar un archivo PDF o imagen.",DOCENTE);
+      TAREA,CURSO,"Actividad de demostración","Resuelve los ejercicios de la clase. Puedes adjuntar un archivo PDF o imagen.",DOCENTE);
     db.update("INSERT INTO clases_academicas(id,curso_id,tema,inicio,fin,creado_por) VALUES (?,?,?,'2026-10-20 09:00:00-05','2026-10-20 10:30:00-05',?) ON CONFLICT (id) DO NOTHING",
       CLASE,CURSO,"Clase de demostración",DOCENTE);
     db.update("INSERT INTO bloques_zoom(id,clase_id,numero,enlace,actualizado_por) VALUES (?,?,1,?,?) ON CONFLICT (id) DO NOTHING",

@@ -23,7 +23,13 @@ Las rutas bajo `/api/aula` requieren sesión BFF y CSRF para cambios. Las rutas 
 | `PUT /api/aula/clases/{id}` y `POST /api/aula/clases/{id}/cancelar` | Edición y cancelación por docente asignado |
 | `GET /api/aula/clases/{id}/historial` | Cambios de tema, horario y estado |
 | `GET/POST /api/aula/clases/{id}/enlaces` | Bloques Zoom; último enlace vigente |
-| `GET /api/aula/notificaciones` y `POST /api/aula/notificaciones/{id}/leer` | Avisos del estudiante matriculado |
+| `GET /api/aula/notificaciones` y `POST /api/aula/notificaciones/{id}/leer` | Avisos del ámbito de cada rol y lectura individual |
+| `GET /api/aula/mensajes/directorio` | Cuentas activas disponibles para enviar mensajes, sin vínculo ERP expuesto |
+| `GET/POST /api/aula/mensajes` | Recibidos, enviados y envío directo o masivo a un curso docente |
+| `GET /api/aula/mensajes/{id}` y `POST /api/aula/mensajes/{id}/leer` | Detalle autorizado y lectura del destinatario |
+| `GET /api/aula/perfil`, `GET/POST /api/aula/perfil/foto` | Información del usuario y foto personal |
+| `POST /api/aula/cuentas/mi-clave` | Cambio de contraseña propia con contraseña actual |
+| `GET /api/erp/perfiles/{tipo}/{id}` | Datos institucionales; solo servicio Aula con `erp.read` |
 | `GET/POST /api/aula/grabaciones` | Listar referencias autorizadas o registrar parte YouTube |
 | `GET /api/aula/grabaciones/clase/{id}` | Partes de una clase; solo publicadas para estudiante |
 | `PUT /api/aula/grabaciones/{id}` y `PUT /api/aula/grabaciones/{id}/estado` | Editar enlace o publicar/ocultar |

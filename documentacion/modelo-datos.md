@@ -43,6 +43,9 @@ IDs principales: UUID. Fechas operativas: `TIMESTAMPTZ`. Importes: `NUMERIC(12,2
 | Aula `clases_academicas`, `bloques_zoom` | Tema, horario, estado, docente ERP, enlace y número de bloque | Cancelar conserva clase y bloques; último bloque es enlace vigente. |
 | Aula `historial_clases` | Clase, acción, tema, horario, estado y fecha | Cada creación, edición o cancelación conserva una instantánea; V8 registra el estado conocido de las clases anteriores. |
 | Aula `notificaciones_clase` | Clase, estudiante ERP, tipo, mensaje, creación, lectura | Avisos persistentes por estudiante matriculado; cada uno se marca leído por separado. |
+| Aula `notificaciones_vistas` | Cuenta y evento de clase | Lectura independiente de avisos para docente, coordinación y administración. |
+| Aula `mensajes`, `mensajes_destinatarios` | Emisor, asunto, cuerpo, curso opcional, destinatarios y lectura | Cada destinatario tiene su copia de lectura; solo emisor y destinatario consultan el mensaje. |
+| Aula `perfiles_aula` | Cuenta, foto, tipo MIME y fecha | La foto de cada cuenta se guarda en el Aula; las contraseñas permanecen en Identidad. |
 | Aula `grabaciones_youtube` | Clase, orden, ID y URL canónica, estado | Orden único por clase; solo partes publicadas son visibles al estudiante. |
 | Aula `grabaciones` históricas | Orden MP4, clave S3, estado | Se conservan sin migración destructiva y no se mezclan con referencias de YouTube. |
 | Aula `configuraciones_modulos`, `estado_sincronizacion`, `eventos_procesados`, `registros_auditoria` | Flags, secuencia ERP, actor/acción | La desactivación no borra datos; evento aplicado una sola vez. |
