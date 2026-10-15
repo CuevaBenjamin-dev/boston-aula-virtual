@@ -1,6 +1,6 @@
 # Contratos API local
 
-Las rutas bajo `/api/aula` requieren sesión BFF y CSRF para cambios. Las rutas ERP requieren JWT de Identidad. Los cuerpos y errores de API son JSON. Estado HTTP 403 significa falta de permiso o propiedad. El inventario completo de 94 operaciones se genera desde controladores en [openapi.yaml](openapi.yaml) con `python scripts/generar-openapi.py`; este documento detalla las operaciones principales y sus reglas.
+Las rutas bajo `/api/aula` requieren sesión BFF y CSRF para cambios. Las rutas ERP requieren JWT de Identidad. Los cuerpos y errores de API son JSON. Estado HTTP 403 significa falta de permiso o propiedad. El inventario de rutas se genera desde controladores en [openapi.yaml](openapi.yaml) con `python scripts/generar-openapi.py`; este documento detalla las operaciones principales y sus reglas.
 
 | Método y ruta | Función |
 |---|---|
@@ -16,15 +16,18 @@ Las rutas bajo `/api/aula` requieren sesión BFF y CSRF para cambios. Las rutas 
 | `POST /api/aula/entregas/{id}/archivos` | Iniciar adjunto privado multipart |
 | `GET /api/aula/archivos/{id}/partes/{n}` | URL de subida directa al almacenamiento |
 | `POST /api/aula/archivos/{id}/completar` | Verificar firma y tamaño del documento |
-| `GET/POST /api/aula/cursos/{id}/clases` | Clases académicas |
-| `POST /api/aula/clases/{id}/enlaces` | Nuevo bloque Zoom |
-| `POST /api/aula/grabaciones` | Iniciar multipart |
-| `GET /api/aula/grabaciones/{id}/partes/{n}` | URL temporal de parte |
-| `POST /api/aula/grabaciones/{id}/completar` | Completar y verificar tamaño/cabecera MP4 |
-| `GET /api/aula/grabaciones/{id}/url` | URL temporal autorizada |
-| `GET /api/aula/grabaciones/{id}/descargar` | Redirección autorizada a descarga temporal |
-| `GET /api/aula/grabaciones/eliminacion/vista-previa?periodo=2026` | Archivos publicados y bytes a eliminar |
-| `POST /api/aula/grabaciones/eliminacion` | Borrado por lote con `periodo` y `cantidadConfirmada` |
+| `GET/POST /api/aula/cursos/{id}/clases` | Clases del curso autorizado; programación por docente asignado |
+| `GET /api/aula/clases` y `GET /api/aula/clases/{id}` | Listado global autorizado y detalle |
+| `PUT /api/aula/clases/{id}` y `POST /api/aula/clases/{id}/cancelar` | Edición y cancelación por docente asignado |
+| `GET /api/aula/clases/{id}/historial` | Cambios de tema, horario y estado |
+| `GET/POST /api/aula/clases/{id}/enlaces` | Bloques Zoom; último enlace vigente |
+| `GET /api/aula/notificaciones` y `POST /api/aula/notificaciones/{id}/leer` | Avisos del estudiante matriculado |
+| `GET/POST /api/aula/grabaciones` | Listar referencias autorizadas o registrar parte YouTube |
+| `GET /api/aula/grabaciones/clase/{id}` | Partes de una clase; solo publicadas para estudiante |
+| `PUT /api/aula/grabaciones/{id}` y `PUT /api/aula/grabaciones/{id}/estado` | Editar enlace o publicar/ocultar |
+| `GET /api/aula/grabaciones/administracion` | Referencias YouTube para administrador |
+| `GET /api/aula/grabaciones/eliminacion/vista-previa?periodo=2026` | Inventario técnico de MP4 históricos; Developer |
+| `POST /api/aula/grabaciones/eliminacion` | Borrado técnico histórico por lote; Developer |
 | `GET /api/aula/pagos` | Tesorería actual del ERP |
 | `GET /api/erp/eventos?despues=n` | Eventos versionados para Aula |
 | `POST /api/erp/matriculas` | Matrícula administrativa |

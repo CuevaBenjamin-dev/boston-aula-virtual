@@ -2,6 +2,8 @@
 
 Revisión realizada sobre flujos, permisos y datos de las tres APIs y la SPA el 15 de octubre de 2026. Esta lista distingue correcciones ya aplicadas de límites que conviene revisar con Boston antes de usar datos reales.
 
+Las filas sobre carga, reproducción y borrado de MP4 documentan la implementación anterior y su inventario histórico. Desde V7, las grabaciones nuevas son referencias YouTube; V8 conserva el historial de clases desde su aplicación.
+
 ## Hallazgos corregidos durante la revisión
 
 | Área | Hallazgo | Corrección y evidencia |
@@ -28,12 +30,12 @@ Revisión realizada sobre flujos, permisos y datos de las tres APIs y la SPA el 
 | Media | Una carga multipart iniciada y abandonada puede dejar partes temporales en S3. | Añadir limpieza de cargas inconclusas por antigüedad, con registro y sin afectar publicaciones. |
 | Media | El flujo de entrega guarda primero el texto y luego el archivo; si falla la carga, queda una respuesta sin adjunto y el usuario debe reintentar. | Se informa en UI y se conserva el identificador para reintento. Evaluar estado explícito «pendiente de archivo» y cierre transaccional de la entrega. |
 | Media | Listados de tareas, entregas y pagos no tienen paginación completa; cuentas se limita a 200 y auditoría a 50. | Incorporar cursores/páginas y mediciones con volumen representativo antes de crecer. |
-| Media | Las vistas globales de Grabaciones y la validación de sesión consultan varias APIs por curso/clase y por petición respectivamente. | Medir con cursos y usuarios representativos; incorporar agregación o caché breve sin relajar la revocación cuando el volumen lo requiera. |
+| Media | La vista global de Grabaciones consulta una lista autorizada al Aula y una consulta de nombres al ERP; la validación de sesión sigue consultando Identidad. | Medir con cursos y usuarios representativos; incorporar paginación o caché breve sin relajar la revocación cuando el volumen lo requiera. |
 | Media | La carga de archivos académicos inspecciona firma básica y tamaño, pero no analiza malware ni contenido activo de documentos. | Definir política de inspección para datos reales; mantener el bucket privado y permitir tipos cerrados. |
 | Media | La UI muestra UUID ERP del estudiante en revisión y de docentes en supervisión. | Resolver nombres mínimos desde una proyección autorizada del ERP, respetando privacidad de menores. |
-| Media | La eliminación por periodo incluye grabaciones publicadas; las cargas multipart inconclusas quedan para limpieza separada. | Documentar procedimiento de limpieza y conservación; el borrado informa el resultado por lote. |
-| Baja | El reproductor HTML5 depende del MP4/códec original de Zoom. | Verificar en dispositivos objetivo; no hay HLS ni transcodificación V1. |
-| Baja | No hay notificaciones por nueva tarea, nota o cambio de enlace. | Confirmar si son necesarias para operación escolar; la información se consulta al entrar y el enlace de clase se refresca periódicamente. |
+| Media | El inventario y borrado técnico por periodo de MP4 históricos continúa disponible para Developer. | Definir procedimiento de migración/conservación; ocultar una referencia YouTube no borra el video externo. |
+| Baja | El Aula no comprueba disponibilidad ni privacidad del video en YouTube. | Definir responsable y frecuencia de revisión externa de enlaces publicados. |
+| Baja | Los avisos internos cubren programación, cambio de horario y cancelación; no cubren nueva tarea, nota o cambio exclusivo de enlace Zoom. | Confirmar qué avisos adicionales necesita la operación escolar. |
 
 ## Límites deliberados de V1
 

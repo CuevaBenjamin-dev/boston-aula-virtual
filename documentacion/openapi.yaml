@@ -555,9 +555,101 @@ paths:
           description: Recurso fuera del ámbito autorizado
         '409':
           description: Conflicto de versión o estado
-  '/api/aula/clases/{clase}/enlaces':
+  '/api/aula/clases':
+    get:
+      operationId: OperacionesController_4
+      summary: 'todasClases - OperacionesController'
+      security:
+        - sesionBff: []
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/clases/{clase}':
     get:
       operationId: OperacionesController_6
+      summary: 'claseDetalle - OperacionesController'
+      security:
+        - sesionBff: []
+      parameters:
+        - name: clase
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+    put:
+      operationId: OperacionesController_7
+      summary: 'editarClase - OperacionesController'
+      security:
+        - sesionBff: []
+      parameters:
+        - name: clase
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/clases/{clase}/cancelar':
+    post:
+      operationId: OperacionesController_8
+      summary: 'cancelarClase - OperacionesController'
+      security:
+        - sesionBff: []
+      parameters:
+        - name: clase
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/clases/{clase}/enlaces':
+    get:
+      operationId: OperacionesController_10
       summary: 'enlaces - OperacionesController'
       security:
         - sesionBff: []
@@ -579,7 +671,7 @@ paths:
         '409':
           description: Conflicto de versión o estado
     post:
-      operationId: OperacionesController_5
+      operationId: OperacionesController_9
       summary: 'enlace - OperacionesController'
       security:
         - sesionBff: []
@@ -596,6 +688,29 @@ paths:
             schema:
               type: object
               additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/clases/{clase}/historial':
+    get:
+      operationId: OperacionesController_11
+      summary: 'historialClase - OperacionesController'
+      security:
+        - sesionBff: []
+      parameters:
+        - name: clase
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
         '200':
           description: Operación completada
@@ -741,7 +856,7 @@ paths:
         '409':
           description: Conflicto de versión o estado
     post:
-      operationId: OperacionesController_4
+      operationId: OperacionesController_5
       summary: 'clase - OperacionesController'
       security:
         - sesionBff: []
@@ -897,9 +1012,25 @@ paths:
         '409':
           description: Conflicto de versión o estado
   '/api/aula/grabaciones':
-    post:
+    get:
       operationId: GrabacionesController_1
-      summary: 'iniciar - GrabacionesController'
+      summary: 'listar - GrabacionesController'
+      security:
+        - sesionBff: []
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+    post:
+      operationId: GrabacionesController_2
+      summary: 'registrar - GrabacionesController'
       security:
         - sesionBff: []
       requestBody:
@@ -920,10 +1051,27 @@ paths:
           description: Recurso fuera del ámbito autorizado
         '409':
           description: Conflicto de versión o estado
-  '/api/aula/grabaciones/clase/{clase}':
+  '/api/aula/grabaciones/administracion':
     get:
       operationId: GrabacionesController_4
-      summary: 'listar - GrabacionesController'
+      summary: 'administracion - GrabacionesController'
+      security:
+        - sesionBff: []
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/grabaciones/clase/{clase}':
+    get:
+      operationId: GrabacionesController_3
+      summary: 'clase - GrabacionesController'
       security:
         - sesionBff: []
       parameters:
@@ -945,7 +1093,7 @@ paths:
           description: Conflicto de versión o estado
   '/api/aula/grabaciones/eliminacion':
     post:
-      operationId: GrabacionesController_9
+      operationId: GrabacionesController_8
       summary: 'eliminar - GrabacionesController'
       security:
         - sesionBff: []
@@ -969,7 +1117,7 @@ paths:
           description: Conflicto de versión o estado
   '/api/aula/grabaciones/eliminacion/vista-previa':
     get:
-      operationId: GrabacionesController_8
+      operationId: GrabacionesController_7
       summary: 'vista - GrabacionesController'
       security:
         - sesionBff: []
@@ -984,33 +1132,10 @@ paths:
           description: Recurso fuera del ámbito autorizado
         '409':
           description: Conflicto de versión o estado
-  '/api/aula/grabaciones/{id}/abrir':
-    get:
-      operationId: GrabacionesController_6
-      summary: 'abrir - GrabacionesController'
-      security:
-        - sesionBff: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Operación completada
-        '400':
-          description: Datos o transición inválidos
-        '401':
-          description: Sesión o token ausente
-        '403':
-          description: Recurso fuera del ámbito autorizado
-        '409':
-          description: Conflicto de versión o estado
-  '/api/aula/grabaciones/{id}/completar':
-    post:
-      operationId: GrabacionesController_3
-      summary: 'completar - GrabacionesController'
+  '/api/aula/grabaciones/{id}':
+    put:
+      operationId: GrabacionesController_5
+      summary: 'editar - GrabacionesController'
       security:
         - sesionBff: []
       parameters:
@@ -1037,10 +1162,10 @@ paths:
           description: Recurso fuera del ámbito autorizado
         '409':
           description: Conflicto de versión o estado
-  '/api/aula/grabaciones/{id}/descargar':
-    get:
-      operationId: GrabacionesController_7
-      summary: 'descargar - GrabacionesController'
+  '/api/aula/grabaciones/{id}/estado':
+    put:
+      operationId: GrabacionesController_6
+      summary: 'estado - GrabacionesController'
       security:
         - sesionBff: []
       parameters:
@@ -1049,57 +1174,13 @@ paths:
           required: true
           schema:
             type: string
-      responses:
-        '200':
-          description: Operación completada
-        '400':
-          description: Datos o transición inválidos
-        '401':
-          description: Sesión o token ausente
-        '403':
-          description: Recurso fuera del ámbito autorizado
-        '409':
-          description: Conflicto de versión o estado
-  '/api/aula/grabaciones/{id}/partes/{numero}':
-    get:
-      operationId: GrabacionesController_2
-      summary: 'parte - GrabacionesController'
-      security:
-        - sesionBff: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: numero
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Operación completada
-        '400':
-          description: Datos o transición inválidos
-        '401':
-          description: Sesión o token ausente
-        '403':
-          description: Recurso fuera del ámbito autorizado
-        '409':
-          description: Conflicto de versión o estado
-  '/api/aula/grabaciones/{id}/url':
-    get:
-      operationId: GrabacionesController_5
-      summary: 'url - GrabacionesController'
-      security:
-        - sesionBff: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
       responses:
         '200':
           description: Operación completada
@@ -1113,7 +1194,7 @@ paths:
           description: Conflicto de versión o estado
   '/api/aula/integraciones':
     get:
-      operationId: OperacionesController_8
+      operationId: OperacionesController_13
       summary: 'integraciones - OperacionesController'
       security:
         - sesionBff: []
@@ -1130,7 +1211,7 @@ paths:
           description: Conflicto de versión o estado
   '/api/aula/integraciones/reintentar':
     post:
-      operationId: OperacionesController_9
+      operationId: OperacionesController_14
       summary: 'reintentar - OperacionesController'
       security:
         - sesionBff: []
@@ -1186,9 +1267,49 @@ paths:
           description: Recurso fuera del ámbito autorizado
         '409':
           description: Conflicto de versión o estado
+  '/api/aula/notificaciones':
+    get:
+      operationId: NotificacionesController_1
+      summary: 'listar - NotificacionesController'
+      security:
+        - sesionBff: []
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/notificaciones/{id}/leer':
+    post:
+      operationId: NotificacionesController_2
+      summary: 'leer - NotificacionesController'
+      security:
+        - sesionBff: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
   '/api/aula/pagos':
     get:
-      operationId: OperacionesController_7
+      operationId: OperacionesController_12
       summary: 'pagos - OperacionesController'
       security:
         - sesionBff: []
@@ -1591,7 +1712,7 @@ paths:
           description: Conflicto de versión o estado
   '/api/erp/apoderados':
     post:
-      operationId: InstitucionalController_12
+      operationId: InstitucionalController_13
       summary: 'apoderado - InstitucionalController'
       servers:
         - url: http://api-erp:8080
@@ -1636,7 +1757,7 @@ paths:
           description: Conflicto de versión o estado
   '/api/erp/docentes':
     post:
-      operationId: InstitucionalController_11
+      operationId: InstitucionalController_12
       summary: 'docente - InstitucionalController'
       servers:
         - url: http://api-erp:8080
@@ -1649,6 +1770,25 @@ paths:
             schema:
               type: object
               additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/erp/docentes/resumen':
+    get:
+      operationId: InstitucionalController_9
+      summary: 'docentesResumen - InstitucionalController'
+      servers:
+        - url: http://api-erp:8080
+      security:
+        - portador: []
       responses:
         '200':
           description: Operación completada
@@ -1688,7 +1828,7 @@ paths:
           description: Conflicto de versión o estado
   '/api/erp/estudiantes/{id}/apoderados':
     get:
-      operationId: InstitucionalController_14
+      operationId: InstitucionalController_15
       summary: 'apoderados - InstitucionalController'
       servers:
         - url: http://api-erp:8080
@@ -1712,7 +1852,7 @@ paths:
         '409':
           description: Conflicto de versión o estado
     post:
-      operationId: InstitucionalController_13
+      operationId: InstitucionalController_14
       summary: 'vincular - InstitucionalController'
       servers:
         - url: http://api-erp:8080
@@ -1833,7 +1973,7 @@ paths:
           description: Conflicto de versión o estado
   '/api/erp/eventos':
     get:
-      operationId: InstitucionalController_15
+      operationId: InstitucionalController_16
       summary: 'eventos - InstitucionalController'
       servers:
         - url: http://api-erp:8080
@@ -1896,7 +2036,7 @@ paths:
         '409':
           description: Conflicto de versión o estado
     post:
-      operationId: InstitucionalController_10
+      operationId: InstitucionalController_11
       summary: 'oferta - InstitucionalController'
       servers:
         - url: http://api-erp:8080
@@ -1954,7 +2094,7 @@ paths:
           description: Conflicto de versión o estado
   '/api/erp/secciones':
     post:
-      operationId: InstitucionalController_9
+      operationId: InstitucionalController_10
       summary: 'seccion - InstitucionalController'
       servers:
         - url: http://api-erp:8080

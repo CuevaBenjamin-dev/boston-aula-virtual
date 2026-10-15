@@ -1,5 +1,23 @@
 # Verificación local · 14–15 de octubre de 2026
 
+Las comprobaciones CU-08, CU-09 y de fixture MP4 que siguen corresponden a la versión anterior de grabaciones. Se conservan como registro histórico de esa ejecución; la arquitectura actual registra enlaces YouTube y ya no ofrece subida, reproducción ni descarga de MP4 de clases.
+
+## Ajustes de clases y YouTube · 15 de octubre de 2026
+
+| Comprobación actual | Resultado |
+|---|---|
+| `mvn -q -Dtest=YoutubeUrlTest test` en Aula; `npm run build` en frontend; compilación ERP y reconstrucción de las tres imágenes afectadas | Aprobados. Flyway aplicó V7 y V8 sin borrar registros históricos. |
+| Docente: creación con asignación ERP, edición de tema y horario, actualización Zoom en la misma clase, historial y cancelación | Verificado en la interfaz local. La clase cancelada conserva sus dos enlaces Zoom y sus instantáneas disponibles desde V8. |
+| Grabaciones: dos partes, una oculta y otra publicada; URL corta normalizada, enlace externo con `target="_blank"` y `rel="noopener noreferrer"` | Verificado. No hay reproductor integrado ni descarga de grabación. Al terminar se ocultó también la parte publicada de prueba. |
+| Estudiante: clases y grabaciones de su matrícula, solo parte publicada, avisos de programación/reprogramación/cancelación, lectura y contador | Verificado en la interfaz local. La notificación se marcó leída y el contador desapareció. |
+| Búsqueda y regreso al listado con `q`, estado y página | Verificado: el enlace de vuelta conservó la URL filtrada. |
+| Administrador: consultar y ocultar referencia YouTube; Developer sin activar | Verificado en la interfaz local. |
+| Coordinación: menú de Grabaciones, clases y referencias de su ámbito sin controles de edición | Verificado en la interfaz local tras reconstruir solo el frontend. |
+| Material de tarea en SeaweedFS | Se abrió la URL S3 temporal del PDF existente desde la vista del estudiante. Tareas y entregas siguen visibles. |
+| Docker local | `api-erp`, `api-aula`, frontend, Identidad, PostgreSQL, proxy y SeaweedFS activos; APIs saludables. |
+
+Las pruebas de esta sección usaron una clase ficticia que quedó cancelada y dos referencias YouTube ocultas; el historial se conserva para revisión manual. La migración V8 solo puede recuperar el estado conocido de las clases anteriores a su aplicación.
+
 Entorno: Windows, Docker Desktop, PostgreSQL 18.6, Spring Boot 4.1.1, React 19, SeaweedFS 4.06 y Caddy. Las verificaciones API autenticadas se realizaron con sesiones reales de estudiante, docente y administrador en navegadores aislados. Los registros persisten en los volúmenes Docker.
 
 ## Comandos ejecutados
@@ -43,4 +61,4 @@ La carga k6 abarca frontend, healthchecks y lecturas ERP sin sesión académica;
 
 ## Repetición
 
-Para instalación limpia, copie `.env.example` a `.env`, cambie claves y ejecute `docker compose up -d --build`. La API ERP inserta datos institucionales ficticios; Aula prepara tarea, clase y MP4 de demostración una vez tras la primera sincronización, cuando `DATOS_DEMO=true`. Use las cuentas descritas en `README.md`. `docker compose down` mantiene los datos; `docker compose down -v` los elimina deliberadamente.
+Para instalación limpia, copie `.env.example` a `.env`, cambie claves y ejecute `docker compose up -d --build`. La API ERP inserta datos institucionales ficticios; Aula prepara tarea y clase de demostración una vez tras la primera sincronización, cuando `DATOS_DEMO=true`. No crea MP4 nuevos. Use las cuentas descritas en `README.md`. `docker compose down` mantiene los datos; `docker compose down -v` los elimina deliberadamente.

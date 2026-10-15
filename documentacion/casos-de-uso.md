@@ -44,24 +44,24 @@ Los diez casos operan en Docker local. «Cuenta académica» designa la única c
 - Excepciones: otro docente, 403; versión obsoleta, 409; estudiante sin entrega o nota fuera de escala, 400.
 - Resultado esperado: ambas vistas consultan la misma nota e historial persistente.
 
-## CU-07 · Continuación de Zoom
+## CU-07 · Programar, modificar, cancelar y continuar clase Zoom
 
-- Flujo: docente crea clase con horario y enlace manual; tras terminar un bloque, publica otro enlace en la misma clase. Alumno actualiza la vista y abre el enlace vigente.
-- Reglas: el enlace se valida y cada cambio queda en `bloques_zoom`; la interfaz consulta el curso cada 30 segundos. No se conecta a Zoom API.
-- Excepciones: otro docente, 403; módulo desactivado, 409.
-- Resultado esperado: una clase conserva varios bloques y muestra el último enlace.
+- Flujo: docente elige curso, grado y sección de sus asignaciones ERP, programa tema, horario y Zoom; puede editar, cancelar con confirmación o continuar con otro enlace en la misma clase. Estudiante ve el estado y enlace vigente de su matrícula.
+- Reglas: solo se aceptan enlaces HTTPS de Zoom. Cada bloque se conserva; V8 registra instantáneas de la clase. Programación, cambio de horario y cancelación crean avisos internos persistentes para matriculados activos. Los filtros y página se conservan al volver del detalle. No se conecta a Zoom API.
+- Excepciones: docente no asignado o estudiante no matriculado, 403; módulo desactivado, 409; clase cancelada no se edita ni recibe enlaces nuevos.
+- Resultado esperado: clase y avisos persisten, el último bloque es el enlace vigente y el historial sigue disponible tras cancelar.
 
-## CU-08 · Grabación en partes
+## CU-08 · Referencias YouTube por partes
 
-- Flujo: docente selecciona uno o varios MP4 y orden inicial; navegador solicita subida multipart, envía partes directamente a S3 local y completa. Aula verifica tamaño y cabecera MP4 antes de publicar. Estudiante autorizado reproduce por URL de cinco minutos, descarga y solicita rangos HTTP.
-- Reglas: máximo 5 GB por archivo; orden único entre grabaciones activas; URL temporal emitida solo tras verificar curso. No se unen partes ni se adapta la calidad.
-- Excepciones: subida fallida se reintenta por parte; MP4 falso o incompleto se elimina; estudiante sin matrícula y docente ajeno reciben 403.
-- Resultado esperado: las partes aparecen en orden y los MP4 no pasan por Spring Boot.
+- Flujo: el docente sube el MP4 a YouTube fuera del Aula y registra una o varias URL en una clase académica existente. Puede editar la URL y publicar u ocultar cada parte. El estudiante abre las partes publicadas en YouTube desde el listado global o el detalle.
+- Reglas: orden único por clase; frontend y backend validan URL oficial y normalizan ID/enlace. La disponibilidad y privacidad del video se gestionan en YouTube. No hay reproductor, descarga ni carga MP4 de clases en el Aula.
+- Excepciones: URL falsa o malformada y parte repetida se rechazan; estudiante sin matrícula y docente ajeno reciben 403.
+- Resultado esperado: solo las partes publicadas aparecen al estudiante, vinculadas a clase, curso y docente; los MP4 históricos quedan separados para revisión técnica.
 
 ## CU-09 · Configuración, supervisión y eliminación
 
-- Flujo: administración desactiva clases/grabaciones; cursos, tareas, notas y pagos permanecen. Admin con permiso `developer.acceder` activa el interruptor visual, inspecciona integraciones y ve una vista previa de grabaciones por periodo. Para eliminar, escribe `ELIMINAR {periodo}`; API verifica permiso, cantidad confirmada, procesa objetos uno por uno y audita el lote.
-- Reglas: el interruptor no concede permisos; la API controla cada ruta. El borrado conserva metadatos en estado `ELIMINADA` y permite reutilizar el orden. No existe borrado automático.
+- Flujo: administración desactiva clases/grabaciones; cursos, tareas, notas y pagos permanecen. Admin gestiona publicación y enlaces YouTube. Por separado, Developer inspecciona integraciones y el inventario histórico MP4 por periodo; cualquier eliminación técnica histórica usa cantidad confirmada y queda auditada.
+- Reglas: el interruptor no concede permisos; la API controla cada ruta. Ocultar una referencia en Aula no elimina el video de YouTube. El borrado técnico histórico conserva metadatos en estado `ELIMINADA`. No existe borrado automático.
 - Excepciones: cantidad que cambió o actor sin permiso se rechazan; el resultado del lote informa errores individuales.
 - Resultado esperado: el módulo queda bloqueado para usuarios académicos, y el borrado no afecta otro periodo ni el bucket entero.
 

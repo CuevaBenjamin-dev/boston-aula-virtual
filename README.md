@@ -14,7 +14,7 @@ Para detener sin borrar datos: `docker compose down`. Para reconstruir: `docker 
 
 ## Cuentas de prueba
 
-La clave es el valor elegido en `SEED_PASSWORD` del archivo local `.env`. No se guarda en el repositorio. Usuarios: `estudiante.demo`, `docente.demo`, `coordinacion.demo`, `admin.demo`. `admin.demo` tiene permisos Developer y tesorería asignados explícitamente para el entorno de prueba. La cuenta académica de ejemplo representa al estudiante y su apoderada. Con `DATOS_DEMO=true`, el primer inicio prepara una tarea, clase, enlace Zoom ficticio y MP4 breve después de sincronizar el curso ERP.
+La clave es el valor elegido en `SEED_PASSWORD` del archivo local `.env`. No se guarda en el repositorio. Usuarios: `estudiante.demo`, `docente.demo`, `coordinacion.demo`, `admin.demo`. `admin.demo` tiene permisos Developer y tesorería asignados explícitamente para el entorno de prueba. La cuenta académica de ejemplo representa al estudiante y su apoderada. Con `DATOS_DEMO=true`, el primer inicio prepara una tarea, clase y enlace Zoom ficticio después de sincronizar el curso ERP. Los MP4 de instalaciones anteriores permanecen como registros históricos.
 
 ## Servicios
 
@@ -27,7 +27,7 @@ La clave es el valor elegido en `SEED_PASSWORD` del archivo local `.env`. No se 
 | PostgreSQL 18 | tres bases independientes | solo red interna Docker |
 | SeaweedFS | objetos S3 de prueba | <http://localhost:8333> |
 
-La UI se comunica con el BFF usando cookie de sesión HttpOnly y token CSRF. Las credenciales OAuth permanecen en el servidor. La API ERP exige JWT firmado por Identidad. Los archivos MP4 se cargan directo a S3 mediante URL temporal.
+La UI se comunica con el BFF usando cookie de sesión HttpOnly y token CSRF. Las credenciales OAuth permanecen en el servidor. La API ERP exige JWT firmado por Identidad. Los archivos de tareas y entregas usan S3 local; las grabaciones nuevas son referencias a videos de YouTube.
 
 ## Estado de la V1
 

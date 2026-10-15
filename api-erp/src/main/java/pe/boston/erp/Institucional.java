@@ -76,6 +76,12 @@ import org.springframework.transaction.annotation.Transactional;
     return db.queryForList("SELECT id,secuencia,tipo,version,entidad_id,datos,creado_en FROM eventos_pendientes WHERE secuencia>? ORDER BY secuencia LIMIT ?",despues,Math.min(200,Math.max(1,limite)));
   }
   public List<Map<String,Object>> ofertas() { return db.queryForList("SELECT o.id,a.nombre AS asignatura,s.nombre AS seccion,g.nombre AS grado FROM ofertas_academicas o JOIN asignaturas a ON a.id=o.asignatura_id JOIN secciones s ON s.id=o.seccion_id JOIN grados g ON g.id=s.grado_id ORDER BY a.nombre"); }
+  public List<Map<String,Object>> docentesResumen(Jwt actor) {
+    Object scope=actor.getClaim("scope");
+    boolean lectura=(scope instanceof String s && java.util.Arrays.asList(s.split(" ")).contains("erp.read")) || (scope instanceof java.util.Collection<?> lista && lista.contains("erp.read"));
+    if(!"ADMINISTRADOR".equals(actor.getClaimAsString("tipo")) && !lectura) throw new AccessDeniedException("Lectura ERP requerida");
+    return db.queryForList("SELECT d.id,concat_ws(' ',p.nombres,p.apellidos) AS nombre FROM docentes d JOIN personas p ON p.id=d.persona_id");
+  }
   public Map<String,Object> catalogo(Jwt actor) {
     admin(actor);
     return Map.of("periodos",db.queryForList("SELECT id,nombre FROM periodos_academicos ORDER BY nombre"),

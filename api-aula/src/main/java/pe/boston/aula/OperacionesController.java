@@ -20,9 +20,14 @@ import org.springframework.web.bind.annotation.*;
     db.update("INSERT INTO registros_auditoria(id,actor,accion,detalle) VALUES (?,?,?,?)",UUID.randomUUID(),usuario.oidc(a).getSubject(),"MODULO_CAMBIADO",String.valueOf(datos.habilitado()));
   }
   @GetMapping("/cursos/{curso}/clases") public List<Map<String,Object>> clases(@PathVariable UUID curso,Authentication a) { return clases.listar(curso,a); }
+  @GetMapping("/clases") public List<Map<String,Object>> todasClases(Authentication a) { return clases.listarTodas(a); }
   @PostMapping("/cursos/{curso}/clases") public Map<String,UUID> clase(@PathVariable UUID curso,@RequestBody NuevaClase datos,Authentication a) { return Map.of("id",clases.crear(curso,datos.tema(),datos.inicio(),datos.fin(),datos.enlace(),a)); }
+  @GetMapping("/clases/{clase}") public Map<String,Object> claseDetalle(@PathVariable UUID clase,Authentication a) { return clases.detalle(clase,a); }
+  @PutMapping("/clases/{clase}") public void editarClase(@PathVariable UUID clase,@RequestBody NuevaClase datos,Authentication a) { clases.editar(clase,datos.tema(),datos.inicio(),datos.fin(),datos.enlace(),a); }
+  @PostMapping("/clases/{clase}/cancelar") public void cancelarClase(@PathVariable UUID clase,Authentication a) { clases.cancelar(clase,a); }
   @PostMapping("/clases/{clase}/enlaces") public void enlace(@PathVariable UUID clase,@RequestBody Enlace datos,Authentication a) { clases.actualizar(clase,datos.enlace(),a); }
   @GetMapping("/clases/{clase}/enlaces") public List<Map<String,Object>> enlaces(@PathVariable UUID clase,Authentication a) { return clases.historial(clase,a); }
+  @GetMapping("/clases/{clase}/historial") public List<Map<String,Object>> historialClase(@PathVariable UUID clase,Authentication a) { return clases.historialClase(clase,a); }
   @GetMapping("/pagos") public Object pagos(Authentication a) {
     usuario.estudiante(a);
     try { return new com.fasterxml.jackson.databind.ObjectMapper().convertValue(erp.get("/api/erp/tesoreria/estudiantes/"+usuario.referencia(a)),Object.class); }

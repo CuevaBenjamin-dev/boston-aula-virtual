@@ -17,10 +17,13 @@ erDiagram
   TAREAS ||--o{ ENTREGAS : recibe
   TAREAS ||--o{ CALIFICACIONES_TAREA : evalua
   CLASES_ACADEMICAS ||--o{ BLOQUES_ZOOM : continua
-  CLASES_ACADEMICAS ||--o{ GRABACIONES : registra
+  CLASES_ACADEMICAS ||--o{ HISTORIAL_CLASES : registra
+  CLASES_ACADEMICAS ||--o{ NOTIFICACIONES_CLASE : avisa
+  CLASES_ACADEMICAS ||--o{ GRABACIONES_YOUTUBE : referencia
+  CLASES_ACADEMICAS ||--o{ GRABACIONES : historico
 ```
 
-IDs principales: UUID. Fechas operativas: `TIMESTAMPTZ`. Importes: `NUMERIC(12,2)`. Los pagos y obligaciones tienen restricciones de positividad. Matrículas y asignaciones activas poseen índices únicos parciales. Las grabaciones guardan metadatos y clave S3, nunca MP4 en PostgreSQL. `eventos_pendientes.secuencia` ordena el outbox; `eventos_procesados` garantiza idempotencia en Aula.
+IDs principales: UUID. Fechas operativas: `TIMESTAMPTZ`. Importes: `NUMERIC(12,2)`. Los pagos y obligaciones tienen restricciones de positividad. Matrículas y asignaciones activas poseen índices únicos parciales. `grabaciones_youtube` guarda referencias externas; la tabla histórica `grabaciones` guarda metadatos y claves S3, nunca MP4 en PostgreSQL. `eventos_pendientes.secuencia` ordena el outbox; `eventos_procesados` garantiza idempotencia en Aula.
 
 ## Diccionario resumido
 
@@ -37,9 +40,13 @@ IDs principales: UUID. Fechas operativas: `TIMESTAMPTZ`. Importes: `NUMERIC(12,2
 | Aula `cursos`, `inscripciones_curso`, `docentes_curso`, `coordinaciones_seccion` | UUID ERP proyectados, indicador activo y ámbito | Acceso depende de inscripción/asignación/ámbito vigente. |
 | Aula `tareas`, `archivos_tarea`, `entregas`, `archivos_entrega` | Estado, plazo, versión, clave S3 | Borrador privado; versiones de entrega únicas por alumno y tarea. |
 | Aula `calificaciones_tarea`, `historial_calificaciones` | Valor, `version`, `entrega_version`, actor | Una nota por alumno y tarea; cada corrección conserva historia. |
-| Aula `clases_academicas`, `bloques_zoom`, `grabaciones` | Clase, número de bloque, orden MP4, clave S3, estado | Una parte activa por clase y orden; partes eliminadas retienen metadatos. |
+| Aula `clases_academicas`, `bloques_zoom` | Tema, horario, estado, docente ERP, enlace y número de bloque | Cancelar conserva clase y bloques; último bloque es enlace vigente. |
+| Aula `historial_clases` | Clase, acción, tema, horario, estado y fecha | Cada creación, edición o cancelación conserva una instantánea; V8 registra el estado conocido de las clases anteriores. |
+| Aula `notificaciones_clase` | Clase, estudiante ERP, tipo, mensaje, creación, lectura | Avisos persistentes por estudiante matriculado; cada uno se marca leído por separado. |
+| Aula `grabaciones_youtube` | Clase, orden, ID y URL canónica, estado | Orden único por clase; solo partes publicadas son visibles al estudiante. |
+| Aula `grabaciones` históricas | Orden MP4, clave S3, estado | Se conservan sin migración destructiva y no se mezclan con referencias de YouTube. |
 | Aula `configuraciones_modulos`, `estado_sincronizacion`, `eventos_procesados`, `registros_auditoria` | Flags, secuencia ERP, actor/acción | La desactivación no borra datos; evento aplicado una sola vez. |
 | Aula `eliminaciones_grabaciones`, `preparacion_demo` | Lote, resultado, marcador `academico_v1` | Borrado auditado y fixtures insertados una sola vez. |
 
-Cada servicio mantiene su propio esquema lógico dentro de una base independiente. Los UUID que cruzan servicios son referencias externas sin FK entre bases. Las migraciones V4–V6 del Aula vinculan la nota a la entrega calificada, permiten reutilizar el orden de MP4 eliminado y registran la preparación de datos demo.
+Cada servicio mantiene su propio esquema lógico dentro de una base independiente. Los UUID que cruzan servicios son referencias externas sin FK entre bases. La migración V7 del Aula añade estado de clases, avisos y referencias de YouTube sin borrar MP4 históricos. V8 crea el historial de clases y registra una instantánea del estado conocido de cada clase anterior; no puede reconstruir modificaciones anteriores a la migración. En clases anteriores, el docente ERP se reconstruye desde la asignación actualmente activa cuando existe; podría no corresponder al docente que impartió una clase histórica si hubo reasignación.
 

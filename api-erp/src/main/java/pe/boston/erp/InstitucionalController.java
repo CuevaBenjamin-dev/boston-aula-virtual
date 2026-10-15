@@ -36,6 +36,7 @@ import org.springframework.web.bind.annotation.*;
   @PutMapping("/ofertas/{id}/docente") public void docente(@PathVariable UUID id,@RequestBody Asignacion datos,@AuthenticationPrincipal Jwt actor) { servicio.asignarDocente(id,datos.docenteId(),actor); }
   @GetMapping("/ofertas") public List<Map<String,Object>> ofertas(@AuthenticationPrincipal Jwt actor) { Institucional.admin(actor); return servicio.ofertas(); }
   @GetMapping("/catalogo") public Map<String,Object> catalogo(@AuthenticationPrincipal Jwt actor) { return servicio.catalogo(actor); }
+  @GetMapping("/docentes/resumen") public List<Map<String,Object>> docentesResumen(@AuthenticationPrincipal Jwt actor) { return servicio.docentesResumen(actor); }
   @PostMapping("/secciones") @ResponseStatus(HttpStatus.CREATED) public Map<String,UUID> seccion(@Valid @RequestBody Seccion d,@AuthenticationPrincipal Jwt actor) { return Map.of("id",servicio.nuevaSeccion(d.gradoId(),d.periodoId(),d.nombre(),actor)); }
   @PostMapping("/ofertas") @ResponseStatus(HttpStatus.CREATED) public Map<String,UUID> oferta(@RequestBody Oferta d,@AuthenticationPrincipal Jwt actor) { return Map.of("id",servicio.nuevaOferta(d.seccionId(),d.asignaturaId(),actor)); }
   @PostMapping("/docentes") @ResponseStatus(HttpStatus.CREATED) public Map<String,UUID> docente(@Valid @RequestBody Docente d,@AuthenticationPrincipal Jwt actor) { return Map.of("id",servicio.nuevoDocente(d.nombres(),d.apellidos(),actor)); }
