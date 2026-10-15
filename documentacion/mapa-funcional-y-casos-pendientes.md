@@ -19,12 +19,12 @@
 | Módulo visible | Qué puede hacer hoy | Alcance que conviene conocer |
 |---|---|---|
 | Inicio | Ver tarjetas de sus cursos activos e indicador de avisos de clases pendientes. | No hay tablero general de actividad académica. |
-| Mis cursos | Entrar al curso, ver tareas, clases, materiales adjuntos a tareas y notas de actividades. | No hay una biblioteca independiente de materiales del curso. Solo ve cursos con matrícula activa. |
+| Mis cursos | Entrar al resumen del curso: tareas publicadas esta semana, clases recientes y notas recientes; abrir cada detalle en Mis tareas, Clases virtuales o Mis notas. | No hay una biblioteca independiente de materiales del curso. Solo ve cursos con matrícula activa. |
 | Clases virtuales | Buscar y filtrar sus clases, abrir Zoom vigente y reconocer clases modificadas o canceladas. | El enlace lo pega el docente; no hay integración ni control de asistencia. |
 | Grabaciones | Buscar partes publicadas de sus clases y abrir cada video en YouTube. | No hay reproducción ni descarga de videos en Aula; YouTube administra disponibilidad y privacidad. |
 | Notificaciones | Ver avisos persistentes de clase programada, reprogramada o cancelada y marcarlos leídos. | No cubren tareas, notas ni cambios del enlace Zoom sin cambio horario. |
-| Mis tareas | Ver tareas publicadas, responder, adjuntar archivo y consultar versiones de entrega. | La carga de texto y archivo ocurre en dos pasos; la reentrega con archivo después de una nota tiene una restricción contradictoria. |
-| Mis notas | Ver notas de actividades ya registradas. | La lista no muestra el comentario; este aparece en el curso. No son notas oficiales del ERP. |
+| Mis tareas | Ver todas las tareas publicadas, distinguir `PENDIENTE`, `URGENTE` y `PRESENTADO`, consultar instrucciones y material, responder con texto o archivo y revisar entregas. | El registro y el archivo se transmiten en dos pasos internos; una carga fallida puede requerir reintento. Las tareas antiguas pueden conservar reentregas. |
+| Mis notas | Ver calificación, escala, comentario y fecha en la lista, y abrir un detalle propio. | Son notas de actividades del Aula, no las notas oficiales del ERP. |
 | Mis pagos | Ver obligaciones, vencimientos, saldo e historial informado por ERP. | Solo consulta. El pago en línea está expresamente deshabilitado. |
 | Mi cuenta | Ver usuario y perfil; cerrar sesión. | No cambia datos personales ni contraseña desde esta pantalla; el restablecimiento se hace en Identidad con código. |
 
@@ -33,11 +33,11 @@
 | Módulo visible | Qué puede hacer hoy | Alcance que conviene conocer |
 |---|---|---|
 | Inicio | Ver tarjetas de sus cursos asignados. | No hay bandeja de pendientes o avisos. |
-| Mis cursos | Entrar al curso, crear borrador de tarea, adjuntar material, publicar, programar clase y ver notas. | Solo opera cursos asignados desde ERP; no crea cursos oficiales. |
+| Mis cursos | Entrar al resumen, ver recuento de entregas por tarea, publicar tarea con material desde un formulario y abrir Clases virtuales para programar. | Solo opera cursos asignados desde ERP; no crea cursos oficiales. |
 | Clases virtuales | Filtrar, programar desde asignaciones ERP, editar tema/horario/Zoom, cancelar con confirmación y continuar con otro enlace en la misma clase. | No hay control de asistencia ni integración Zoom API. |
 | Grabaciones | Seleccionar clase, registrar partes con URL YouTube, editar y publicar u ocultar referencias. | El MP4 se sube a YouTube fuera del Aula; no se valida allí su disponibilidad. |
-| Tareas y entregas | Crear y editar borradores, publicar/cerrar tareas, revisar respuestas y versiones, descargar adjuntos y calificar la última entrega. | La lista muestra identificadores del ERP en lugar de nombres de estudiantes. No hay edición de una tarea ya publicada. |
-| Calificaciones | Ver notas ya guardadas y entrar a la tarea para corregirlas. | No aparecen entregas aún sin calificar; el historial de correcciones se guarda, pero no tiene vista propia. |
+| Tareas y entregas | Publicar tareas, retomar las marcadas `FALTA COMPLETAR`, editar una tarea publicada, revisar entregas con nombre y hora, descargar adjuntos y calificar. | No hay cancelación de tareas ni avisos automáticos cuando cambia una instrucción o el plazo. |
+| Calificaciones | Ver actividades con su recuento de entregas y abrir la tarea para calificar o corregir. | El historial de correcciones se guarda, pero no tiene vista propia. |
 | Mi cuenta | Ver usuario y perfil; cerrar sesión. | La cuenta docente se vincula manualmente con su identificador ERP al crearla. |
 
 ### Coordinación académica
@@ -75,9 +75,9 @@
 | **CU-01 Acceso institucional** | Acceso, cierre, suspensión y restablecimiento probados. | **Operativo.** Falta definir cómo se verifica al titular y se le entrega el código de recuperación fuera de la prueba local. |
 | **CU-02 Asignación desde ERP** | ERP sincroniza cursos, matrículas y docentes al Aula. | **Parcial como proceso de alta.** Crear estudiante/docente en ERP no crea ni vincula automáticamente su cuenta de Identidad; administración debe hacerlo por separado. |
 | **CU-03 Cambio de sección o retiro** | La matrícula activa determina acceso; los cambios se sincronizan. | **Operativo con regla pendiente.** El historial queda guardado, pero el usuario retirado pierde acceso incluso a su trabajo anterior. Hay que definir consulta histórica y conservación. |
-| **CU-04 Crear y publicar tareas** | Borrador, adjunto, edición previa, publicación y cierre. | **Operativo con regla pendiente.** No hay corrección, prórroga, retiro o cancelación de una tarea ya publicada. |
-| **CU-05 Entrega y reentrega** | Texto, adjunto y versiones de entrega. | **Brecha confirmada.** Si ya existe una nota, el Aula acepta otra respuesta cuando se permite reentrega, pero bloquea adjuntar archivo a esa nueva versión. Además, texto y archivo se guardan en dos pasos. |
-| **CU-06 Calificación y corrección** | Nota, comentario, corrección e historial guardado. | **Parcial en pantalla.** «Calificaciones» solo lista notas existentes; no muestra entregas pendientes. El historial de correcciones no es consultable desde la interfaz. Falta decidir cuándo se publica una nota. |
+| **CU-04 Crear y publicar tareas** | Formulario único con material opcional, publicación, edición posterior y estado recuperable `FALTA COMPLETAR`. | **Operativo con regla pendiente.** Definir avisos y límites de cambios cuando ya hay entregas; no hay cancelación de tarea publicada. |
+| **CU-05 Entrega y reentrega** | Texto o adjunto y versiones históricas; las tareas nuevas aceptan una entrega puntual. | **Parcial.** Registro y archivo se guardan en dos pasos internos. Las tareas antiguas con reentrega siguen sujetas a su regla previa para adjuntar tras calificar. |
+| **CU-06 Calificación y corrección** | Nota, comentario, corrección e historial guardado; el docente ve tareas y entregas, el estudiante ve sus notas con detalle propio. | **Parcial en pantalla.** El historial de correcciones no es consultable desde la interfaz. Falta decidir cuándo se publica una nota. |
 | **CU-07 Clases Zoom** | Crear, filtrar, editar, cancelar y continuar una clase con historial y avisos internos. | **Operativo con reglas pendientes.** Definir antelación permitida para reprogramar/cancelar y quién debe recibir avisos adicionales. |
 | **CU-08 Grabación en partes** | Referencias YouTube por clase, edición, publicación, ocultamiento y acceso por matrícula. | **Operativo con regla pendiente.** Definir quién verifica disponibilidad, privacidad y vigencia del video en YouTube. |
 | **CU-09 Módulo y eliminación** | Interruptor, inventario, vista previa, confirmación y borrado auditado. | **Brecha confirmada frente al acuerdo inicial.** Las grabaciones del periodo inicial deben permanecer disponibles hasta el 31/12/2026 y eliminarse manualmente después; la API hoy permite borrarlas antes. Falta impedir ese borrado anticipado y definir la regla de otros periodos. |
@@ -91,7 +91,7 @@ Estos **no están aprobados ni implementados como flujos completos**. Los códig
 |---|---|---|
 | **P-01 Alta institucional integral** | Administración crea persona, matrícula, vínculo familiar y cuenta académica/docente en un flujo coherente. | ¿Cuándo se habilita la cuenta? ¿Quién verifica el vínculo y qué ocurre con un apoderado de varios hijos? |
 | **P-02 Materiales independientes** | Docente publica archivos o enlaces de consulta del curso sin crear una tarea. | ¿Quién puede editar/retirar material y por cuánto tiempo queda visible? |
-| **P-03 Cambios a tarea publicada** | Docente corrige instrucciones, amplía plazo o cancela una actividad. | ¿Qué cambios se permiten después de recibir entregas y cómo se informa al alumnado? |
+| **P-03 Cambios a tarea publicada** | Ya puede corregir instrucciones, material y plazo; falta cancelar o retirar la actividad. | ¿Qué cambios se permiten después de recibir entregas y cómo se informa al alumnado? |
 | **P-04 Entrega completa y recuperable** | Estudiante envía respuesta y archivos como una entrega claramente «completa»; puede reintentar cargas fallidas. | ¿Se acepta entrega solo con archivo? ¿Cuál es la hora efectiva si la carga termina después del plazo? |
 | **P-05 Bandeja de revisión y publicación de notas** | Docente ve entregas pendientes, califica y publica; estudiante ve nota y retroalimentación. | ¿La nota se publica al guardarse o tras una acción/validación? ¿Puede coordinación aprobarla? |
 | **P-06 Solicitud de revisión de nota** | Estudiante solicita revisión y docente responde con historial visible. | ¿Plazo de reclamo, responsables y posibilidad de segunda revisión? |

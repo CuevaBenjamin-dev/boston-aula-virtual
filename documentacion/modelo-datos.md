@@ -38,7 +38,7 @@ IDs principales: UUID. Fechas operativas: `TIMESTAMPTZ`. Importes: `NUMERIC(12,2
 | ERP `conceptos_cobro`, `obligaciones_pago`, `pagos`, `aplicaciones_pago` | `NUMERIC(12,2)`, vencimiento, referencia, estado | Referencia de pago única, aplicación positiva, recálculo al anular. |
 | ERP `eventos_pendientes`, `auditoria_erp` | Secuencia monotónica, JSONB versionado, actor | Outbox e historial de cambios institucionales. |
 | Aula `cursos`, `inscripciones_curso`, `docentes_curso`, `coordinaciones_seccion` | UUID ERP proyectados, indicador activo y ámbito | Acceso depende de inscripción/asignación/ámbito vigente. |
-| Aula `tareas`, `archivos_tarea`, `entregas`, `archivos_entrega` | Estado, plazo, versión, clave S3 | Borrador privado; versiones de entrega únicas por alumno y tarea. |
+| Aula `tareas`, `archivos_tarea`, `entregas`, `archivos_entrega` | Estado, plazo, publicación, versión, clave S3 | `FALTA_COMPLETAR` es privado; `PUBLICADA` es visible al estudiante. El material reemplazado conserva su objeto S3 pero queda inactivo. Versiones de entrega únicas por alumno y tarea. |
 | Aula `calificaciones_tarea`, `historial_calificaciones` | Valor, `version`, `entrega_version`, actor | Una nota por alumno y tarea; cada corrección conserva historia. |
 | Aula `clases_academicas`, `bloques_zoom` | Tema, horario, estado, docente ERP, enlace y número de bloque | Cancelar conserva clase y bloques; último bloque es enlace vigente. |
 | Aula `historial_clases` | Clase, acción, tema, horario, estado y fecha | Cada creación, edición o cancelación conserva una instantánea; V8 registra el estado conocido de las clases anteriores. |

@@ -1267,6 +1267,29 @@ paths:
           description: Recurso fuera del ámbito autorizado
         '409':
           description: Conflicto de versión o estado
+  '/api/aula/notas/{id}':
+    get:
+      operationId: CursosController_12
+      summary: 'nota - CursosController'
+      security:
+        - sesionBff: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
   '/api/aula/notificaciones':
     get:
       operationId: NotificacionesController_1
@@ -1712,7 +1735,7 @@ paths:
           description: Conflicto de versión o estado
   '/api/erp/apoderados':
     post:
-      operationId: InstitucionalController_13
+      operationId: InstitucionalController_14
       summary: 'apoderado - InstitucionalController'
       servers:
         - url: http://api-erp:8080
@@ -1755,9 +1778,34 @@ paths:
           description: Recurso fuera del ámbito autorizado
         '409':
           description: Conflicto de versión o estado
+  '/api/erp/cursos/{curso}/estudiantes/resumen':
+    get:
+      operationId: InstitucionalController_10
+      summary: 'estudiantesResumenCurso - InstitucionalController'
+      servers:
+        - url: http://api-erp:8080
+      security:
+        - portador: []
+      parameters:
+        - name: curso
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
   '/api/erp/docentes':
     post:
-      operationId: InstitucionalController_12
+      operationId: InstitucionalController_13
       summary: 'docente - InstitucionalController'
       servers:
         - url: http://api-erp:8080
@@ -1828,7 +1876,7 @@ paths:
           description: Conflicto de versión o estado
   '/api/erp/estudiantes/{id}/apoderados':
     get:
-      operationId: InstitucionalController_15
+      operationId: InstitucionalController_16
       summary: 'apoderados - InstitucionalController'
       servers:
         - url: http://api-erp:8080
@@ -1852,7 +1900,7 @@ paths:
         '409':
           description: Conflicto de versión o estado
     post:
-      operationId: InstitucionalController_14
+      operationId: InstitucionalController_15
       summary: 'vincular - InstitucionalController'
       servers:
         - url: http://api-erp:8080
@@ -1973,7 +2021,7 @@ paths:
           description: Conflicto de versión o estado
   '/api/erp/eventos':
     get:
-      operationId: InstitucionalController_16
+      operationId: InstitucionalController_17
       summary: 'eventos - InstitucionalController'
       servers:
         - url: http://api-erp:8080
@@ -2036,7 +2084,7 @@ paths:
         '409':
           description: Conflicto de versión o estado
     post:
-      operationId: InstitucionalController_11
+      operationId: InstitucionalController_12
       summary: 'oferta - InstitucionalController'
       servers:
         - url: http://api-erp:8080
@@ -2094,7 +2142,7 @@ paths:
           description: Conflicto de versión o estado
   '/api/erp/secciones':
     post:
-      operationId: InstitucionalController_10
+      operationId: InstitucionalController_11
       summary: 'seccion - InstitucionalController'
       servers:
         - url: http://api-erp:8080

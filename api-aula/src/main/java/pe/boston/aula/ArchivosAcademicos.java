@@ -9,6 +9,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service public class ArchivosAcademicos {
   private final JdbcTemplate db;
@@ -27,7 +28,7 @@ import org.springframework.stereotype.Service;
   public Map<String,Object> iniciarTarea(UUID tarea,String nombre,String tipo,long tamano,Authentication a) {
     var t=db.queryForMap("SELECT curso_id,estado FROM tareas WHERE id=?",tarea);
     usuario.docente(a,(UUID)t.get("curso_id"));
-    if(!"BORRADOR".equals(t.get("estado"))) throw new IllegalArgumentException("Adjunte materiales antes de publicar");
+    if(!List.of("FALTA_COMPLETAR","PUBLICADA","CERRADA").contains(t.get("estado"))) throw new IllegalArgumentException("Tarea no editable");
     return iniciar("archivos_tarea","tarea_id",tarea,"tareas",nombre,tipo,tamano,a);
   }
   public Map<String,Object> iniciarEntrega(UUID entrega,String nombre,String tipo,long tamano,Authentication a) {
@@ -48,10 +49,10 @@ import org.springframework.stereotype.Service;
   }
   private Map<String,Object> archivo(UUID id) {
     return db.queryForMap("""
-      SELECT 'TAREA' AS origen,a.id,a.nombre,a.clave_objeto,a.tamano,a.tipo,a.estado,a.upload_id,t.curso_id,t.estado AS estado_tarea,NULL::uuid AS estudiante_erp_id
+      SELECT 'TAREA' AS origen,a.id,a.nombre,a.clave_objeto,a.tamano,a.tipo,a.estado,a.upload_id,t.curso_id,t.estado AS estado_tarea,NULL::uuid AS estudiante_erp_id,a.activo
       FROM archivos_tarea a JOIN tareas t ON t.id=a.tarea_id WHERE a.id=?
       UNION ALL
-      SELECT 'ENTREGA',a.id,a.nombre,a.clave_objeto,a.tamano,a.tipo,a.estado,a.upload_id,t.curso_id,t.estado,e.estudiante_erp_id
+      SELECT 'ENTREGA',a.id,a.nombre,a.clave_objeto,a.tamano,a.tipo,a.estado,a.upload_id,t.curso_id,t.estado,e.estudiante_erp_id,NULL::boolean
       FROM archivos_entrega a JOIN entregas e ON e.id=a.entrega_id JOIN tareas t ON t.id=e.tarea_id WHERE a.id=?
       """,id,id);
   }
@@ -64,7 +65,8 @@ import org.springframework.stereotype.Service;
     } else {
       usuario.leerCurso(a,curso);
       if("ENTREGA".equals(f.get("origen")) && "ESTUDIANTE".equals(usuario.tipo(a)) && !usuario.referencia(a).equals(f.get("estudiante_erp_id"))) throw new AccessDeniedException("Archivo ajeno");
-      if("TAREA".equals(f.get("origen")) && "ESTUDIANTE".equals(usuario.tipo(a)) && "BORRADOR".equals(f.get("estado_tarea"))) throw new AccessDeniedException("Material no publicado");
+      if("TAREA".equals(f.get("origen")) && !Boolean.TRUE.equals(f.get("activo"))) throw new AccessDeniedException("Material reemplazado");
+      if("TAREA".equals(f.get("origen")) && "ESTUDIANTE".equals(usuario.tipo(a)) && "FALTA_COMPLETAR".equals(f.get("estado_tarea"))) throw new AccessDeniedException("Material no publicado");
       if(!"DISPONIBLE".equals(f.get("estado"))) throw new AccessDeniedException("Archivo no disponible");
     }
     return f;
@@ -75,7 +77,7 @@ import org.springframework.stereotype.Service;
     if(numero<1||numero>maxPartes) throw new IllegalArgumentException("Número de parte inválido");
     return objetos.autorizarParte((String)f.get("clave_objeto"),(String)f.get("upload_id"),numero);
   }
-  public void completar(UUID id,List<Map<String,Object>> partes,Authentication a) {
+  @Transactional(noRollbackFor=IllegalArgumentException.class) public void completar(UUID id,List<Map<String,Object>> partes,Authentication a) {
     var f=autorizado(id,a,true);
     long maxPartes=(((Number)f.get("tamano")).longValue()+8*1024*1024-1)/(8*1024*1024);
     if(partes==null||partes.size()!=maxPartes) throw new IllegalArgumentException("Cantidad de partes inválida");
@@ -95,6 +97,7 @@ import org.springframework.stereotype.Service;
       db.update("UPDATE "+tabla(f)+" SET estado='RECHAZADO',upload_id=NULL WHERE id=?",id);
       throw new IllegalArgumentException("Archivo incompleto o tipo real distinto");
     }
+    if("TAREA".equals(f.get("origen"))) db.update("UPDATE archivos_tarea SET activo=FALSE WHERE tarea_id=(SELECT tarea_id FROM archivos_tarea WHERE id=?) AND id<>?",id,id);
     db.update("UPDATE "+tabla(f)+" SET estado='DISPONIBLE',upload_id=NULL WHERE id=?",id);
     auditar(a,"ARCHIVO_PUBLICADO",id);
   }
@@ -103,8 +106,8 @@ import org.springframework.stereotype.Service;
   public URI enlace(UUID id,Authentication a) { return objetos.leer((String)autorizado(id,a,false).get("clave_objeto"),Duration.ofMinutes(5)); }
   public List<Map<String,Object>> tarea(UUID tarea,Authentication a) {
     var t=db.queryForMap("SELECT curso_id,estado FROM tareas WHERE id=?",tarea); usuario.leerCurso(a,(UUID)t.get("curso_id"));
-    if("ESTUDIANTE".equals(usuario.tipo(a))&&"BORRADOR".equals(t.get("estado"))) throw new AccessDeniedException("Tarea no publicada");
-    return db.queryForList("SELECT id,nombre,tamano,tipo,creado_en FROM archivos_tarea WHERE tarea_id=? AND estado='DISPONIBLE' ORDER BY creado_en",tarea);
+    if("ESTUDIANTE".equals(usuario.tipo(a))&&"FALTA_COMPLETAR".equals(t.get("estado"))) throw new AccessDeniedException("Tarea no publicada");
+    return db.queryForList("SELECT id,nombre,tamano,tipo,creado_en FROM archivos_tarea WHERE tarea_id=? AND estado='DISPONIBLE' AND activo ORDER BY creado_en DESC",tarea);
   }
   public List<Map<String,Object>> entrega(UUID entrega,Authentication a) {
     var e=db.queryForMap("SELECT e.estudiante_erp_id,t.curso_id FROM entregas e JOIN tareas t ON t.id=e.tarea_id WHERE e.id=?",entrega);

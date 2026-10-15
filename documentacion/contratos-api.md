@@ -6,12 +6,14 @@ Las rutas bajo `/api/aula` requieren sesión BFF y CSRF para cambios. Las rutas 
 |---|---|
 | `GET /api/sesion` | Perfil y emisión de cookie CSRF |
 | `GET /api/aula/cursos` | Cursos visibles para el usuario |
-| `GET/POST /api/aula/cursos/{id}/tareas` | Listar o crear borrador |
-| `POST /api/aula/tareas/{id}/publicar` | Publicar tarea |
-| `PUT /api/aula/tareas/{id}` | Editar borrador con `version` optimista |
+| `GET/POST /api/aula/cursos/{id}/tareas` | Listar o registrar tarea como `FALTA_COMPLETAR` durante su carga |
+| `POST /api/aula/tareas/{id}/publicar` | Publicar tarea completada o reabrir tarea cerrada |
+| `PUT /api/aula/tareas/{id}` | Editar título, instrucciones y plazo con `version` optimista, incluso tras publicar |
 | `POST/GET /api/aula/tareas/{id}/entregas` | Entregar o revisar |
 | `PUT /api/aula/tareas/{id}/calificacion` | Nota con versión optimista |
 | `GET /api/aula/cursos/{id}/notas` | Notas y versión de entrega calificada |
+| `GET /api/aula/notas/{id}` | Detalle de nota del estudiante autorizado |
+| `GET /api/erp/cursos/{id}/estudiantes/resumen` | Nombres de matriculados para Aula, solo cliente de servicio |
 | `POST /api/aula/tareas/{id}/archivos` | Iniciar material privado multipart |
 | `POST /api/aula/entregas/{id}/archivos` | Iniciar adjunto privado multipart |
 | `GET /api/aula/archivos/{id}/partes/{n}` | URL de subida directa al almacenamiento |

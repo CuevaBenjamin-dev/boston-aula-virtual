@@ -38,7 +38,7 @@ La carga k6 abarca frontend, healthchecks y lecturas ERP sin sesión académica;
 | CU-01 | Login OIDC real de cuatro perfiles; credencial incorrecta muestra error sin sesión, logout sale del BFF y de Identidad. Recuperación de clave con código temporal desde formulario: primer uso válido, segundo uso rechazado. Restablecer revocó sesión BFF previa (401) mientras otra cuenta siguió en 200. Suspensión y acceso ajeno comprobados. | Verificado |
 | CU-02 | Alta de sección, oferta, docente, estudiante y matrícula por ERP; curso B aparece en Aula tras outbox. Repetir sync no aumentó `eventos_procesados`. | Verificado |
 | CU-03 | Cambio A→B y retiro del estudiante de prueba; proyección activa pasó A=false/B=true y luego sin inscripción. | Verificado |
-| CU-04 | Borrador con material PDF, publicación, lectura autorizada y HTTP Range 206. Edición de borrador 200, versión obsoleta 409, alumno no ve borrador (403). | Verificado |
+| CU-04 | Flujo histórico anterior a V9: borrador con material PDF, publicación y lectura autorizada. Desde V9 se reemplazó por publicación desde formulario único y estado `FALTA_COMPLETAR`. | Verificado históricamente |
 | CU-05 | Entrega PDF directa a S3, historial; reentrega creó versión 2 sin reemplazar versión 1. Alumno retirado recibió 403. | Verificado |
 | CU-06 | Nota 17, corrección 18, conflicto de versión 409 y reentrega revisada a 19; historial y `entrega_version` confirmados en BD/API. | Verificado |
 | CU-07 | Clase con enlace manual y segundo bloque; actualización visible en historial. | Verificado |
@@ -47,6 +47,14 @@ La carga k6 abarca frontend, healthchecks y lecturas ERP sin sesión académica;
 | CU-10 | Pagos administrativos 100 y 350 completaron una obligación de 450; duplicado 409, importes inválidos 400. Anulación de 100 devolvió saldo 100; nueva aplicación restauró saldo cero. | Verificado |
 
 ## Resiliencia y permisos
+
+### Revisión local de tareas V9 (15 de octubre de 2026)
+
+- La migración Flyway V9 se aplicó al reiniciar `api-aula`. La compilación de ERP, Aula y frontend terminó correctamente; las pruebas `CursosYTareasTest` y `YoutubeUrlTest` pasaron.
+- En navegador, `docente.demo` creó «Prueba local de tareas simplificadas» con instrucciones, fecha y un PDF desde un único formulario. Terminó en `PUBLICADO`, con material visible en su detalle. Luego cambió las instrucciones y el plazo de una tarea ya publicada y reemplazó su PDF; quedó visible solo el archivo actualizado.
+- El resumen docente mostró `0/1` y `1/1` según las entregas. La revisión de una tarea existente mostró «Ana Demo Estudiante» y las fechas de sus dos versiones. Calificaciones mostró actividades y recuentos, sin atribuir una nota personal al docente.
+- `estudiante.demo` abrió el curso como resumen semanal, llegó a la tarea en `/tareas/{id}`, consultó instrucciones y PDF, presentó una respuesta y observó el cambio de `PENDIENTE` a `PRESENTADO`. Mis notas abrió `/notas/{id}` con nota, escala, comentario y versión de entrega.
+- Pendiente de prueba de interrupción real: cerrar el navegador durante una carga multipart. La ruta de error y el estado `FALTA_COMPLETAR` están implementados, pero esta prueba manual aún no se ejecutó.
 
 - ERP detenido: cursos ya sincronizados respondieron 200 y pagos respondieron 503, sin inventar saldos. La primera implementación había devuelto 500; se corrigió y se repitió la prueba. Al reiniciar ERP, el sincronizador volvió a registrar `ultimo_exito` y limpió `ultimo_error`.
 - Coordinación sin ámbito recibió 403 al abrir un curso; al asignar sección A solo vio A en reportes y docentes, y B continuó denegado.

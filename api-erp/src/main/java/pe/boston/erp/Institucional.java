@@ -82,6 +82,17 @@ import org.springframework.transaction.annotation.Transactional;
     if(!"ADMINISTRADOR".equals(actor.getClaimAsString("tipo")) && !lectura) throw new AccessDeniedException("Lectura ERP requerida");
     return db.queryForList("SELECT d.id,concat_ws(' ',p.nombres,p.apellidos) AS nombre FROM docentes d JOIN personas p ON p.id=d.persona_id");
   }
+  public List<Map<String,Object>> estudiantesResumenCurso(UUID curso,Jwt actor) {
+    Object scope=actor.getClaim("scope");
+    boolean lectura=(scope instanceof String s && java.util.Arrays.asList(s.split(" ")).contains("erp.read")) || (scope instanceof java.util.Collection<?> lista && lista.contains("erp.read"));
+    if(!lectura) throw new AccessDeniedException("Lectura ERP requerida");
+    return db.queryForList("""
+      SELECT DISTINCT e.id,concat_ws(' ',p.nombres,p.apellidos) AS nombre
+      FROM ofertas_academicas o JOIN matriculas m ON m.seccion_id=o.seccion_id
+      JOIN estudiantes e ON e.id=m.estudiante_id JOIN personas p ON p.id=e.persona_id
+      WHERE o.id=? ORDER BY nombre
+      """,curso);
+  }
   public Map<String,Object> catalogo(Jwt actor) {
     admin(actor);
     return Map.of("periodos",db.queryForList("SELECT id,nombre FROM periodos_academicos ORDER BY nombre"),

@@ -23,26 +23,26 @@ Los diez casos operan en Docker local. «Cuenta académica» designa la única c
 - Excepciones: petición directa a curso anterior devuelve 403. El reprocesamiento de un evento no duplica la inscripción.
 - Resultado esperado: el acceso refleja el estado académico vigente.
 
-## CU-04 · Creación y publicación de tareas
+## CU-04 · Creación, publicación y edición de tareas
 
-- Flujo: docente asignado crea borrador con instrucciones, fecha y escala, adjunta PDF/imagen/DOCX y edita mientras sigue en borrador; luego publica.
-- Reglas: edición con versión optimista; el material se guarda privado en S3; alumnos no leen borradores. La escala máxima es configurable por tarea.
-- Excepciones: versión obsoleta, 409; otro docente, 403; adjunto inválido o mayor de 100 MB, 400; tarea publicada no se edita como borrador.
-- Resultado esperado: estudiantes matriculados ven tarea y material publicado.
+- Flujo: docente asignado escribe título, instrucciones y fecha/hora límite, elige material opcional y pulsa «Publicar tarea». El Aula registra temporalmente `FALTA_COMPLETAR`, sube el material y publica al terminar. Puede editar después título, instrucciones, plazo y reemplazar el material.
+- Reglas: edición con versión optimista; el material se guarda privado en S3. La escala de calificación se fija en 20 puntos y se conserva en la base para validar notas, sin pedirla al docente en el formulario. Las tareas incompletas no son visibles para estudiantes.
+- Excepciones: si se interrumpe la carga después de enviar el formulario, el docente ve `FALTA COMPLETAR` y puede retomarla; versión obsoleta, 409; otro docente, 403; adjunto inválido o mayor de 100 MB, 400. Una tarea antigua cerrada puede editarse y reabrirse.
+- Resultado esperado: al terminar el formulario, el docente ve `PUBLICADO` y el estudiante ve `PENDIENTE` o `URGENTE` según el plazo.
 
 ## CU-05 · Entrega y reentrega
 
-- Flujo: estudiante envía texto y opcionalmente archivo por carga multipart directa; si está permitido, vuelve a enviar. Cada envío crea una fila y versión nueva.
-- Reglas: fecha límite y banderas de entrega tardía/reentrega; archivos privados y asociados a la versión. El estado `TARDIA` distingue envíos fuera de plazo aceptados.
+- Flujo: estudiante consulta la tarea desde Mis tareas, presenta texto y opcionalmente un archivo por carga directa; el historial muestra fecha y contenido de cada entrega.
+- Reglas: las tareas nuevas aceptan una entrega hasta la fecha límite y no ofrecen reentrega. Las tareas históricas conservan sus reglas originales de entrega tardía y reentrega; los archivos son privados y asociados a la versión. El estado `TARDIA` distingue envíos fuera de plazo aceptados en esas tareas históricas.
 - Excepciones: plazo vencido sin permiso, reentrega desactivada, tarea cerrada o matrícula ausente se rechazan; tipo/tamaño/cabecera del archivo se verifican.
-- Resultado esperado: docente revisa versiones y el estudiante ve su historial.
+- Resultado esperado: el estudiante ve `PRESENTADO`; el docente ve nombre y fecha de cada entrega, además del recuento de estudiantes que entregaron frente al total matriculado.
 
 ## CU-06 · Calificación y corrección
 
 - Flujo: docente asignado revisa última entrega y registra nota; puede corregirla desde la revisión o desde Calificaciones mediante el mismo endpoint.
 - Reglas: nota dentro de la escala de la tarea; `version` optimista; cada cambio se guarda en `historial_calificaciones` y `registros_auditoria`. La nota identifica la versión de entrega calificada y señala si llegó otra pendiente de revisión. Son notas de actividades, no oficiales del ERP.
 - Excepciones: otro docente, 403; versión obsoleta, 409; estudiante sin entrega o nota fuera de escala, 400.
-- Resultado esperado: ambas vistas consultan la misma nota e historial persistente.
+- Resultado esperado: Mis notas del estudiante muestra nota, escala, comentario y fecha en su propio detalle. Calificaciones del docente lista actividades con entregas para revisar, sin mostrar una nota como si fuera del docente.
 
 ## CU-07 · Programar, modificar, cancelar y continuar clase Zoom
 

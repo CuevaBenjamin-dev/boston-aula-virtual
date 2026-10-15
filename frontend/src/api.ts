@@ -1,9 +1,9 @@
 export type Perfil = {usuario:string;tipo:'ESTUDIANTE'|'DOCENTE'|'COORDINACION'|'ADMINISTRADOR';developer:boolean;csrfToken:string};
 export type Curso = {id:string;asignatura:string;grado:string;seccion:string;periodo:string};
-export type Tarea = {id:string;curso_id:string;titulo:string;instrucciones:string;fecha_limite:string;estado:string;acepta_tarde:boolean;permite_reentrega:boolean;escala_maxima:number;version:number};
+export type Tarea = {id:string;curso_id:string;titulo:string;instrucciones:string;fecha_limite:string;estado:'FALTA_COMPLETAR'|'PUBLICADA'|'CERRADA';escala_maxima:number;version:number;creado_en:string;publicado_en:string|null;presentada?:boolean;entregados?:number;total_estudiantes?:number};
 export type Clase = {id:string;curso_id:string;tema:string;inicio:string;fin:string;estado:'PROGRAMADA'|'CANCELADA';modificado_en:string|null;enlace_actual:string|null;enlace_actualizado:string|null;asignatura?:string;grado?:string;seccion?:string;periodo?:string};
-export type Entrega = {id:string;tarea_id:string;estudiante_erp_id:string;version:number;respuesta:string;estado:string;entregado_en:string};
-export type Nota = {id:string;tarea_id:string;estudiante_erp_id:string;valor:number;comentario:string;version:number;titulo:string;entrega_version:number;ultima_entrega_version:number};
+export type Entrega = {id:string;tarea_id:string;estudiante_erp_id:string;estudiante?:string;version:number;respuesta:string;estado:string;entregado_en:string};
+export type Nota = {id:string;tarea_id:string;estudiante_erp_id:string;valor:number;comentario:string;version:number;titulo:string;entrega_version:number;ultima_entrega_version:number;escala_maxima:number;fecha_limite:string;actualizado_en:string};
 export type Grabacion = {id:string;clase_id:string;curso_id:string;orden:number;youtube_id:string;url:string;estado:'PUBLICADA'|'OCULTA';tema:string;inicio:string;fin:string;estado_clase:string;asignatura:string;grado:string;seccion:string;periodo:string;docente:string;creado_en:string;actualizado_en:string};
 export type NotificacionClase = {id:string;clase_id:string;tipo:'PROGRAMADA'|'REPROGRAMADA'|'CANCELADA';mensaje:string;creada_en:string;leida_en:string|null;tema:string;inicio:string;asignatura:string;grado:string;seccion:string};
 export type Archivo = {id:string;nombre:string;tamano:number;tipo:string};

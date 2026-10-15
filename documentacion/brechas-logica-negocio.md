@@ -9,7 +9,7 @@ Las filas sobre carga, reproducción y borrado de MP4 documentan la implementaci
 | Área | Hallazgo | Corrección y evidencia |
 |---|---|---|
 | Calificaciones | Una reentrega posterior a una nota podía parecer revisada. | `entrega_version` identifica la versión calificada y la vista señala la última entrega pendiente; se verificó entrega 2 frente a nota de entrega 1 y luego revisión de entrega 2. |
-| Borradores | No había edición controlada tras crear una tarea. | `PUT /tareas/{id}` solo en borrador, con versión optimista; petición obsoleta respondió 409. |
+| Tareas | Crear exigía borrador, carga y publicación en pantallas separadas; una tarea publicada no podía corregirse. | El formulario publica al terminar la carga y conserva `FALTA_COMPLETAR` si se interrumpe; `PUT /tareas/{id}` permite cambios posteriores con versión optimista. |
 | Grabaciones | El borrado lógico reservaba el orden de parte para siempre. | Índice único parcial sobre grabaciones no eliminadas; se conserva el historial y puede volver a usarse el orden. |
 | MP4 | Extensión y tamaño no bastan para publicar un archivo. | Al completar se verifica tamaño real y cabecera `ftyp`; un archivo falso fue rechazado y retirado de S3. |
 | Tesorería | Un administrador técnico tenía acceso financiero implícito. | Permiso de tesorería separado en Identidad y validado en ERP; cuentas nuevas carecen del permiso por defecto. `admin.demo` lo recibe explícitamente como fixture local. |
@@ -32,7 +32,8 @@ Las filas sobre carga, reproducción y borrado de MP4 documentan la implementaci
 | Media | Listados de tareas, entregas y pagos no tienen paginación completa; cuentas se limita a 200 y auditoría a 50. | Incorporar cursores/páginas y mediciones con volumen representativo antes de crecer. |
 | Media | La vista global de Grabaciones consulta una lista autorizada al Aula y una consulta de nombres al ERP; la validación de sesión sigue consultando Identidad. | Medir con cursos y usuarios representativos; incorporar paginación o caché breve sin relajar la revocación cuando el volumen lo requiera. |
 | Media | La carga de archivos académicos inspecciona firma básica y tamaño, pero no analiza malware ni contenido activo de documentos. | Definir política de inspección para datos reales; mantener el bucket privado y permitir tipos cerrados. |
-| Media | La UI muestra UUID ERP del estudiante en revisión y de docentes en supervisión. | Resolver nombres mínimos desde una proyección autorizada del ERP, respetando privacidad de menores. |
+| Media | La supervisión de coordinación aún muestra UUID ERP de docentes. Las entregas docentes ya muestran nombres de estudiantes desde una consulta autorizada al ERP. | Resolver nombres docentes mínimos en coordinación, respetando privacidad de menores. |
+| Media | Una tarea publicada puede cambiar de plazo, instrucciones o material sin aviso automático a los estudiantes. | Definir qué cambios requieren aviso y qué límites se aplican si ya existen entregas. |
 | Media | El inventario y borrado técnico por periodo de MP4 históricos continúa disponible para Developer. | Definir procedimiento de migración/conservación; ocultar una referencia YouTube no borra el video externo. |
 | Baja | El Aula no comprueba disponibilidad ni privacidad del video en YouTube. | Definir responsable y frecuencia de revisión externa de enlaces publicados. |
 | Baja | Los avisos internos cubren programación, cambio de horario y cancelación; no cubren nueva tarea, nota o cambio exclusivo de enlace Zoom. | Confirmar qué avisos adicionales necesita la operación escolar. |
