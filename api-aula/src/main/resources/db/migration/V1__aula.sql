@@ -1,0 +1,28 @@
+CREATE TABLE cursos (id UUID PRIMARY KEY, seccion_erp_id UUID NOT NULL, asignatura VARCHAR(120) NOT NULL, seccion VARCHAR(30) NOT NULL, grado VARCHAR(80) NOT NULL, periodo VARCHAR(80) NOT NULL, actualizado_en TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE TABLE inscripciones_curso (curso_id UUID NOT NULL REFERENCES cursos(id), estudiante_erp_id UUID NOT NULL, activo BOOLEAN NOT NULL DEFAULT TRUE, actualizado_en TIMESTAMPTZ NOT NULL DEFAULT now(), PRIMARY KEY(curso_id,estudiante_erp_id));
+CREATE INDEX ix_inscripcion_estudiante ON inscripciones_curso(estudiante_erp_id,activo);
+CREATE TABLE docentes_curso (curso_id UUID NOT NULL REFERENCES cursos(id), docente_erp_id UUID NOT NULL, activo BOOLEAN NOT NULL DEFAULT TRUE, PRIMARY KEY(curso_id,docente_erp_id));
+CREATE INDEX ix_docente_curso ON docentes_curso(docente_erp_id,activo);
+CREATE TABLE materiales_curso (id UUID PRIMARY KEY, curso_id UUID NOT NULL REFERENCES cursos(id), nombre VARCHAR(200) NOT NULL, clave_objeto TEXT, creado_en TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE TABLE clases_academicas (id UUID PRIMARY KEY, curso_id UUID NOT NULL REFERENCES cursos(id), tema VARCHAR(200) NOT NULL, inicio TIMESTAMPTZ NOT NULL, fin TIMESTAMPTZ NOT NULL, creado_por UUID NOT NULL, creado_en TIMESTAMPTZ NOT NULL DEFAULT now(), CHECK(fin>inicio));
+CREATE INDEX ix_clases_curso ON clases_academicas(curso_id,inicio);
+CREATE TABLE bloques_zoom (id UUID PRIMARY KEY, clase_id UUID NOT NULL REFERENCES clases_academicas(id), numero INTEGER NOT NULL, enlace TEXT NOT NULL, actualizado_en TIMESTAMPTZ NOT NULL DEFAULT now(), actualizado_por UUID NOT NULL, UNIQUE(clase_id,numero));
+CREATE TABLE grabaciones (id UUID PRIMARY KEY, clase_id UUID NOT NULL REFERENCES clases_academicas(id), curso_id UUID NOT NULL REFERENCES cursos(id), orden INTEGER NOT NULL, nombre VARCHAR(200) NOT NULL, clave_objeto TEXT NOT NULL UNIQUE, tamano BIGINT NOT NULL CHECK(tamano>=0), estado VARCHAR(24) NOT NULL CHECK(estado IN ('INICIADA','COMPLETA','PUBLICADA','ELIMINADA')), upload_id TEXT, creado_en TIMESTAMPTZ NOT NULL DEFAULT now(), publicado_en TIMESTAMPTZ, UNIQUE(clase_id,orden));
+CREATE INDEX ix_grabaciones_clase ON grabaciones(clase_id,estado);
+CREATE TABLE tareas (id UUID PRIMARY KEY, curso_id UUID NOT NULL REFERENCES cursos(id), titulo VARCHAR(200) NOT NULL, instrucciones TEXT NOT NULL, fecha_limite TIMESTAMPTZ NOT NULL, acepta_tarde BOOLEAN NOT NULL DEFAULT FALSE, permite_reentrega BOOLEAN NOT NULL DEFAULT FALSE, estado VARCHAR(20) NOT NULL CHECK(estado IN ('BORRADOR','PUBLICADA','CERRADA')), escala_maxima NUMERIC(8,2) NOT NULL DEFAULT 20 CHECK(escala_maxima>0), version INTEGER NOT NULL DEFAULT 0, creado_por UUID NOT NULL, creado_en TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE INDEX ix_tareas_curso ON tareas(curso_id,estado,fecha_limite);
+CREATE TABLE archivos_tarea (id UUID PRIMARY KEY, tarea_id UUID NOT NULL REFERENCES tareas(id), nombre VARCHAR(200) NOT NULL, clave_objeto TEXT NOT NULL);
+CREATE TABLE entregas (id UUID PRIMARY KEY, tarea_id UUID NOT NULL REFERENCES tareas(id), estudiante_erp_id UUID NOT NULL, version INTEGER NOT NULL, respuesta TEXT, estado VARCHAR(20) NOT NULL CHECK(estado IN ('ENVIADA','TARDIA')), entregado_en TIMESTAMPTZ NOT NULL DEFAULT now(), UNIQUE(tarea_id,estudiante_erp_id,version));
+CREATE INDEX ix_entregas_tarea ON entregas(tarea_id,estudiante_erp_id);
+CREATE TABLE archivos_entrega (id UUID PRIMARY KEY, entrega_id UUID NOT NULL REFERENCES entregas(id), nombre VARCHAR(200) NOT NULL, clave_objeto TEXT NOT NULL);
+CREATE TABLE calificaciones_tarea (id UUID PRIMARY KEY, tarea_id UUID NOT NULL REFERENCES tareas(id), estudiante_erp_id UUID NOT NULL, valor NUMERIC(8,2) NOT NULL, comentario TEXT, version INTEGER NOT NULL DEFAULT 1, actualizado_en TIMESTAMPTZ NOT NULL DEFAULT now(), actualizado_por UUID NOT NULL, UNIQUE(tarea_id,estudiante_erp_id));
+CREATE TABLE historial_calificaciones (id UUID PRIMARY KEY, calificacion_id UUID NOT NULL REFERENCES calificaciones_tarea(id), valor_anterior NUMERIC(8,2), valor_nuevo NUMERIC(8,2) NOT NULL, comentario TEXT, actor_id UUID NOT NULL, instante TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE TABLE configuraciones_modulos (clave VARCHAR(80) PRIMARY KEY, habilitado BOOLEAN NOT NULL, actualizado_en TIMESTAMPTZ NOT NULL DEFAULT now(), actualizado_por UUID);
+INSERT INTO configuraciones_modulos(clave,habilitado) VALUES ('clases_y_grabaciones',TRUE);
+CREATE TABLE eventos_integracion (id UUID PRIMARY KEY, secuencia_erp BIGINT NOT NULL UNIQUE, tipo VARCHAR(80) NOT NULL, estado VARCHAR(20) NOT NULL, error TEXT, recibido_en TIMESTAMPTZ NOT NULL DEFAULT now(), procesado_en TIMESTAMPTZ);
+CREATE TABLE eventos_procesados (id UUID PRIMARY KEY, secuencia_erp BIGINT NOT NULL UNIQUE, procesado_en TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE TABLE estado_sincronizacion (id INTEGER PRIMARY KEY CHECK(id=1), ultima_secuencia BIGINT NOT NULL DEFAULT 0, ultimo_exito TIMESTAMPTZ, ultimo_error TEXT);
+INSERT INTO estado_sincronizacion(id) VALUES (1);
+CREATE TABLE registros_auditoria (id UUID PRIMARY KEY, actor VARCHAR(120) NOT NULL, accion VARCHAR(80) NOT NULL, entidad_id UUID, detalle TEXT, instante TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE TABLE eliminaciones_grabaciones (id UUID PRIMARY KEY, periodo VARCHAR(80) NOT NULL, solicitante VARCHAR(120) NOT NULL, iniciada_en TIMESTAMPTZ NOT NULL DEFAULT now(), finalizada_en TIMESTAMPTZ, resultado TEXT);
+

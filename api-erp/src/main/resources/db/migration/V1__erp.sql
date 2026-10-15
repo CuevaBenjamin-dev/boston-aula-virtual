@@ -1,0 +1,24 @@
+CREATE TABLE personas (id UUID PRIMARY KEY, nombres VARCHAR(120) NOT NULL, apellidos VARCHAR(120) NOT NULL, documento VARCHAR(30) UNIQUE, creado_en TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE TABLE estudiantes (id UUID PRIMARY KEY, persona_id UUID NOT NULL UNIQUE REFERENCES personas(id), codigo VARCHAR(30) NOT NULL UNIQUE, estado VARCHAR(20) NOT NULL CHECK(estado IN ('ACTIVO','RETIRADO')));
+CREATE TABLE apoderados (id UUID PRIMARY KEY, persona_id UUID NOT NULL UNIQUE REFERENCES personas(id));
+CREATE TABLE vinculos_estudiante_apoderado (estudiante_id UUID NOT NULL REFERENCES estudiantes(id), apoderado_id UUID NOT NULL REFERENCES apoderados(id), vinculo VARCHAR(40) NOT NULL, PRIMARY KEY(estudiante_id, apoderado_id));
+CREATE TABLE docentes (id UUID PRIMARY KEY, persona_id UUID NOT NULL UNIQUE REFERENCES personas(id), estado VARCHAR(20) NOT NULL DEFAULT 'ACTIVO');
+CREATE TABLE periodos_academicos (id UUID PRIMARY KEY, nombre VARCHAR(80) NOT NULL UNIQUE, inicio DATE NOT NULL, fin DATE NOT NULL CHECK(fin >= inicio));
+CREATE TABLE niveles_educativos (id UUID PRIMARY KEY, nombre VARCHAR(80) NOT NULL UNIQUE);
+CREATE TABLE grados (id UUID PRIMARY KEY, nivel_id UUID NOT NULL REFERENCES niveles_educativos(id), nombre VARCHAR(80) NOT NULL, UNIQUE(nivel_id,nombre));
+CREATE TABLE secciones (id UUID PRIMARY KEY, grado_id UUID NOT NULL REFERENCES grados(id), periodo_id UUID NOT NULL REFERENCES periodos_academicos(id), nombre VARCHAR(30) NOT NULL, UNIQUE(grado_id,periodo_id,nombre));
+CREATE TABLE matriculas (id UUID PRIMARY KEY, estudiante_id UUID NOT NULL REFERENCES estudiantes(id), seccion_id UUID NOT NULL REFERENCES secciones(id), estado VARCHAR(20) NOT NULL CHECK(estado IN ('ACTIVA','RETIRADA')), creado_en TIMESTAMPTZ NOT NULL DEFAULT now(), actualizado_en TIMESTAMPTZ NOT NULL DEFAULT now(), UNIQUE(estudiante_id,seccion_id));
+CREATE UNIQUE INDEX ux_matricula_activa ON matriculas(estudiante_id) WHERE estado='ACTIVA';
+CREATE TABLE asignaturas (id UUID PRIMARY KEY, nombre VARCHAR(120) NOT NULL UNIQUE);
+CREATE TABLE ofertas_academicas (id UUID PRIMARY KEY, seccion_id UUID NOT NULL REFERENCES secciones(id), asignatura_id UUID NOT NULL REFERENCES asignaturas(id), estado VARCHAR(20) NOT NULL DEFAULT 'ACTIVA', UNIQUE(seccion_id,asignatura_id));
+CREATE TABLE asignaciones_docentes (id UUID PRIMARY KEY, oferta_id UUID NOT NULL REFERENCES ofertas_academicas(id), docente_id UUID NOT NULL REFERENCES docentes(id), estado VARCHAR(20) NOT NULL CHECK(estado IN ('ACTIVA','INACTIVA')), creado_en TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE UNIQUE INDEX ux_docente_activo_oferta ON asignaciones_docentes(oferta_id) WHERE estado='ACTIVA';
+CREATE TABLE conceptos_cobro (id UUID PRIMARY KEY, nombre VARCHAR(120) NOT NULL UNIQUE, activo BOOLEAN NOT NULL DEFAULT TRUE);
+CREATE TABLE obligaciones_pago (id UUID PRIMARY KEY, estudiante_id UUID NOT NULL REFERENCES estudiantes(id), concepto_id UUID NOT NULL REFERENCES conceptos_cobro(id), descripcion VARCHAR(200) NOT NULL, importe NUMERIC(12,2) NOT NULL CHECK(importe >= 0), vencimiento DATE NOT NULL, estado VARCHAR(20) NOT NULL DEFAULT 'PENDIENTE', creado_en TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE INDEX ix_obligacion_estudiante ON obligaciones_pago(estudiante_id,vencimiento);
+CREATE TABLE pagos (id UUID PRIMARY KEY, referencia VARCHAR(100) NOT NULL UNIQUE, estudiante_id UUID NOT NULL REFERENCES estudiantes(id), importe NUMERIC(12,2) NOT NULL CHECK(importe > 0), estado VARCHAR(20) NOT NULL CHECK(estado IN ('REGISTRADO','ANULADO')), registrado_en TIMESTAMPTZ NOT NULL DEFAULT now(), registrado_por VARCHAR(120) NOT NULL, motivo_anulacion TEXT);
+CREATE TABLE aplicaciones_pago (id UUID PRIMARY KEY, pago_id UUID NOT NULL REFERENCES pagos(id), obligacion_id UUID NOT NULL REFERENCES obligaciones_pago(id), importe NUMERIC(12,2) NOT NULL CHECK(importe > 0), UNIQUE(pago_id,obligacion_id));
+CREATE TABLE eventos_pendientes (id UUID PRIMARY KEY, secuencia BIGINT GENERATED ALWAYS AS IDENTITY UNIQUE, tipo VARCHAR(80) NOT NULL, version INTEGER NOT NULL DEFAULT 1, entidad_id UUID NOT NULL, datos JSONB NOT NULL, creado_en TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE INDEX ix_eventos_secuencia ON eventos_pendientes(secuencia);
+CREATE TABLE auditoria_erp (id UUID PRIMARY KEY, actor VARCHAR(120) NOT NULL, accion VARCHAR(80) NOT NULL, entidad_id UUID, detalle JSONB, instante TIMESTAMPTZ NOT NULL DEFAULT now());
+

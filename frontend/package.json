@@ -1,0 +1,6 @@
+{
+  "name":"boston-aula-frontend","private":true,"version":"1.0.0","type":"module",
+  "scripts":{"dev":"vite --host 0.0.0.0","build":"tsc -b && vite build","preview":"vite preview --host 0.0.0.0"},
+  "dependencies":{"@hookform/resolvers":"latest","@tanstack/react-query":"5.104.2","react":"19.3.1","react-dom":"19.3.1","react-hook-form":"7.90.0","react-router-dom":"7.18.4","zod":"4.6.7"},
+  "devDependencies":{"@types/react":"latest","@types/react-dom":"latest","@vitejs/plugin-react":"latest","sass":"1.105.1","typescript":"latest","vite":"8.3.4"}
+}

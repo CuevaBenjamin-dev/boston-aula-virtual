@@ -1,0 +1,125 @@
+name: boston-aula
+services:
+  postgres:
+    image: postgres:18.6-alpine
+    environment:
+      POSTGRES_USER: boston
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cambiar-local-postgres}
+      POSTGRES_DB: postgres
+    volumes:
+      - pg_data:/var/lib/postgresql
+      - ./infraestructura/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U boston -d postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+  seaweedfs:
+    image: chrislusf/seaweedfs:4.06
+    command: server -s3 -s3.port=8333 -dir=/data
+    environment:
+      AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY:-local-aula}
+      AWS_SECRET_ACCESS_KEY: ${S3_SECRET_KEY:-cambiar-local-s3}
+    volumes:
+      - s3_data:/data
+    ports:
+      - "127.0.0.1:8333:8333"
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z $(hostname -i) 8333"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+  identidad:
+    build: ./identidad
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/identidad_boston
+      SPRING_DATASOURCE_USERNAME: boston
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-cambiar-local-postgres}
+      BOSTON_ISSUER: http://localhost:9000
+      BOSTON_BFF_SECRET: ${OIDC_CLIENT_SECRET:-cambiar-local-bff}
+      BOSTON_ERP_SECRET: ${ERP_CLIENT_SECRET:-cambiar-local-erp}
+      BOSTON_SEED_PASSWORD: ${SEED_PASSWORD:-cambiar-local-cuentas}
+    ports:
+      - "127.0.0.1:9000:9000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:9000/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+  api-erp:
+    build: ./api-erp
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/erp_boston
+      SPRING_DATASOURCE_USERNAME: boston
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-cambiar-local-postgres}
+      BOSTON_JWKS_URI: http://identidad:9000/oauth2/jwks
+      BOSTON_ISSUER: http://localhost:9000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      identidad:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+  api-aula:
+    build: ./api-aula
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/aula_boston
+      SPRING_DATASOURCE_USERNAME: boston
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-cambiar-local-postgres}
+      BOSTON_ISSUER: http://localhost:9000
+      BOSTON_JWKS_URI: http://identidad:9000/oauth2/jwks
+      BOSTON_TOKEN_URI: http://identidad:9000/oauth2/token
+      BOSTON_ERP_URL: http://api-erp:8080
+      BOSTON_BFF_SECRET: ${OIDC_CLIENT_SECRET:-cambiar-local-bff}
+      BOSTON_ERP_SECRET: ${ERP_CLIENT_SECRET:-cambiar-local-erp}
+      BOSTON_S3_ENDPOINT: http://seaweedfs:8333
+      BOSTON_S3_PUBLIC_ENDPOINT: http://localhost:8333
+      BOSTON_S3_ACCESS_KEY: ${S3_ACCESS_KEY:-local-aula}
+      BOSTON_S3_SECRET_KEY: ${S3_SECRET_KEY:-cambiar-local-s3}
+      BOSTON_DATOS_DEMO: ${DATOS_DEMO:-true}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      identidad:
+        condition: service_healthy
+      api-erp:
+        condition: service_healthy
+      seaweedfs:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+  frontend:
+    build: ./frontend
+  proxy:
+    image: caddy:2.10-alpine
+    ports:
+      - "127.0.0.1:8088:80"
+    volumes:
+      - ./infraestructura/Caddyfile:/etc/caddy/Caddyfile:ro
+    depends_on:
+      api-aula:
+        condition: service_healthy
+      frontend:
+        condition: service_started
+  k6:
+    image: grafana/k6:0.55.0
+    profiles: [pruebas]
+    environment:
+      ERP_CLIENT_SECRET: ${ERP_CLIENT_SECRET:-cambiar-local-erp}
+    volumes:
+      - ./pruebas:/pruebas:ro
+    command: run /pruebas/carga.js
+volumes:
+  pg_data:
+  s3_data:
+

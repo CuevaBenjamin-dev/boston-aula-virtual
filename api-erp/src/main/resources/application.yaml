@@ -1,0 +1,21 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: api-erp-boston
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/erp_boston}
+    username: ${SPRING_DATASOURCE_USERNAME:boston}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+

@@ -1,0 +1,2293 @@
+openapi: 3.1.0
+info:
+  title: Boston Aula Virtual V1 - API local
+  version: 1.0.0
+  description: Rutas reales de Identidad, ERP y Aula en Docker Compose. Consulte contratos-api.md para reglas de negocio.
+servers:
+  - url: http://localhost:8088
+    description: Proxy local y BFF del Aula
+paths:
+  '/api/aula/administracion-erp/apoderados':
+    post:
+      operationId: ErpAdministracionController_6
+      summary: 'nuevoApoderado - ErpAdministracionController'
+      security:
+        - sesionBff: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/administracion-erp/catalogo':
+    get:
+      operationId: ErpAdministracionController_2
+      summary: 'catalogo - ErpAdministracionController'
+      security:
+        - sesionBff: []
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/administracion-erp/docentes':
+    post:
+      operationId: ErpAdministracionController_5
+      summary: 'nuevoDocente - ErpAdministracionController'
+      security:
+        - sesionBff: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/administracion-erp/estudiantes':
+    post:
+      operationId: ErpAdministracionController_7
+      summary: 'estudiante - ErpAdministracionController'
+      security:
+        - sesionBff: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/administracion-erp/estudiantes/{id}/apoderados':
+    get:
+      operationId: ErpAdministracionController_9
+      summary: 'apoderados - ErpAdministracionController'
+      security:
+        - sesionBff: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+    post:
+      operationId: ErpAdministracionController_8
+      summary: 'vincularApoderado - ErpAdministracionController'
+      security:
+        - sesionBff: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/administracion-erp/estudiantes/{id}/estado':
+    put:
+      operationId: ErpAdministracionController_13
+      summary: 'estado - ErpAdministracionController'
+      security:
+        - sesionBff: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/administracion-erp/estudiantes/{id}/retiro':
+    post:
+      operationId: ErpAdministracionController_12
+      summary: 'retiro - ErpAdministracionController'
+      security:
+        - sesionBff: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/administracion-erp/estudiantes/{id}/seccion':
+    put:
+      operationId: ErpAdministracionController_11
+      summary: 'seccion - ErpAdministracionController'
+      security:
+        - sesionBff: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/administracion-erp/matriculas':
+    post:
+      operationId: ErpAdministracionController_10
+      summary: 'matricula - ErpAdministracionController'
+      security:
+        - sesionBff: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/administracion-erp/ofertas':
+    get:
+      operationId: ErpAdministracionController_1
+      summary: 'ofertas - ErpAdministracionController'
+      security:
+        - sesionBff: []
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+    post:
+      operationId: ErpAdministracionController_4
+      summary: 'nuevaOferta - ErpAdministracionController'
+      security:
+        - sesionBff: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/administracion-erp/ofertas/{id}/docente':
+    put:
+      operationId: ErpAdministracionController_14
+      summary: 'docente - ErpAdministracionController'
+      security:
+        - sesionBff: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/administracion-erp/secciones':
+    post:
+      operationId: ErpAdministracionController_3
+      summary: 'nuevaSeccion - ErpAdministracionController'
+      security:
+        - sesionBff: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/administracion-erp/tesoreria/conceptos':
+    post:
+      operationId: ErpAdministracionController_17
+      summary: 'concepto - ErpAdministracionController'
+      security:
+        - sesionBff: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/administracion-erp/tesoreria/estudiantes/{id}':
+    get:
+      operationId: ErpAdministracionController_15
+      summary: 'deuda - ErpAdministracionController'
+      security:
+        - sesionBff: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/administracion-erp/tesoreria/obligaciones':
+    post:
+      operationId: ErpAdministracionController_18
+      summary: 'obligacion - ErpAdministracionController'
+      security:
+        - sesionBff: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/administracion-erp/tesoreria/pagos':
+    post:
+      operationId: ErpAdministracionController_16
+      summary: 'pago - ErpAdministracionController'
+      security:
+        - sesionBff: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/administracion-erp/tesoreria/pagos/{id}/anular':
+    post:
+      operationId: ErpAdministracionController_19
+      summary: 'anular - ErpAdministracionController'
+      security:
+        - sesionBff: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/archivos/{id}/completar':
+    post:
+      operationId: ArchivosAcademicosController_6
+      summary: 'completar - ArchivosAcademicosController'
+      security:
+        - sesionBff: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/archivos/{id}/partes/{numero}':
+    get:
+      operationId: ArchivosAcademicosController_5
+      summary: 'parte - ArchivosAcademicosController'
+      security:
+        - sesionBff: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: numero
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/archivos/{id}/url':
+    get:
+      operationId: ArchivosAcademicosController_7
+      summary: 'enlace - ArchivosAcademicosController'
+      security:
+        - sesionBff: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/clases/{clase}/enlaces':
+    get:
+      operationId: OperacionesController_6
+      summary: 'enlaces - OperacionesController'
+      security:
+        - sesionBff: []
+      parameters:
+        - name: clase
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+    post:
+      operationId: OperacionesController_5
+      summary: 'enlace - OperacionesController'
+      security:
+        - sesionBff: []
+      parameters:
+        - name: clase
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/cuentas':
+    get:
+      operationId: CuentasRemotasController_1
+      summary: 'listar - CuentasRemotasController'
+      security:
+        - sesionBff: []
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+    post:
+      operationId: CuentasRemotasController_2
+      summary: 'crear - CuentasRemotasController'
+      security:
+        - sesionBff: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/cuentas/{id}/estado':
+    put:
+      operationId: CuentasRemotasController_3
+      summary: 'estado - CuentasRemotasController'
+      security:
+        - sesionBff: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/cuentas/{id}/recuperacion':
+    post:
+      operationId: CuentasRemotasController_4
+      summary: 'recuperacion - CuentasRemotasController'
+      security:
+        - sesionBff: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/cursos':
+    get:
+      operationId: CursosController_1
+      summary: 'cursos - CursosController'
+      security:
+        - sesionBff: []
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/cursos/{curso}/clases':
+    get:
+      operationId: OperacionesController_3
+      summary: 'clases - OperacionesController'
+      security:
+        - sesionBff: []
+      parameters:
+        - name: curso
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+    post:
+      operationId: OperacionesController_4
+      summary: 'clase - OperacionesController'
+      security:
+        - sesionBff: []
+      parameters:
+        - name: curso
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/cursos/{curso}/notas':
+    get:
+      operationId: CursosController_11
+      summary: 'notas - CursosController'
+      security:
+        - sesionBff: []
+      parameters:
+        - name: curso
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/cursos/{curso}/tareas':
+    get:
+      operationId: CursosController_2
+      summary: 'tareas - CursosController'
+      security:
+        - sesionBff: []
+      parameters:
+        - name: curso
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+    post:
+      operationId: CursosController_3
+      summary: 'crear - CursosController'
+      security:
+        - sesionBff: []
+      parameters:
+        - name: curso
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/entregas/{id}/archivos':
+    get:
+      operationId: ArchivosAcademicosController_4
+      summary: 'entrega - ArchivosAcademicosController'
+      security:
+        - sesionBff: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+    post:
+      operationId: ArchivosAcademicosController_2
+      summary: 'iniciarEntrega - ArchivosAcademicosController'
+      security:
+        - sesionBff: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/grabaciones':
+    post:
+      operationId: GrabacionesController_1
+      summary: 'iniciar - GrabacionesController'
+      security:
+        - sesionBff: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/grabaciones/clase/{clase}':
+    get:
+      operationId: GrabacionesController_4
+      summary: 'listar - GrabacionesController'
+      security:
+        - sesionBff: []
+      parameters:
+        - name: clase
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/grabaciones/eliminacion':
+    post:
+      operationId: GrabacionesController_9
+      summary: 'eliminar - GrabacionesController'
+      security:
+        - sesionBff: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/grabaciones/eliminacion/vista-previa':
+    get:
+      operationId: GrabacionesController_8
+      summary: 'vista - GrabacionesController'
+      security:
+        - sesionBff: []
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/grabaciones/{id}/abrir':
+    get:
+      operationId: GrabacionesController_6
+      summary: 'abrir - GrabacionesController'
+      security:
+        - sesionBff: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/grabaciones/{id}/completar':
+    post:
+      operationId: GrabacionesController_3
+      summary: 'completar - GrabacionesController'
+      security:
+        - sesionBff: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/grabaciones/{id}/descargar':
+    get:
+      operationId: GrabacionesController_7
+      summary: 'descargar - GrabacionesController'
+      security:
+        - sesionBff: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/grabaciones/{id}/partes/{numero}':
+    get:
+      operationId: GrabacionesController_2
+      summary: 'parte - GrabacionesController'
+      security:
+        - sesionBff: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: numero
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/grabaciones/{id}/url':
+    get:
+      operationId: GrabacionesController_5
+      summary: 'url - GrabacionesController'
+      security:
+        - sesionBff: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/integraciones':
+    get:
+      operationId: OperacionesController_8
+      summary: 'integraciones - OperacionesController'
+      security:
+        - sesionBff: []
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/integraciones/reintentar':
+    post:
+      operationId: OperacionesController_9
+      summary: 'reintentar - OperacionesController'
+      security:
+        - sesionBff: []
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/modulos':
+    get:
+      operationId: OperacionesController_1
+      summary: 'modulos - OperacionesController'
+      security:
+        - sesionBff: []
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/modulos/clases-y-grabaciones':
+    put:
+      operationId: OperacionesController_2
+      summary: 'modulo - OperacionesController'
+      security:
+        - sesionBff: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/pagos':
+    get:
+      operationId: OperacionesController_7
+      summary: 'pagos - OperacionesController'
+      security:
+        - sesionBff: []
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/supervision/administracion/clases':
+    get:
+      operationId: SupervisionController_5
+      summary: 'clases - SupervisionController'
+      security:
+        - sesionBff: []
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/supervision/administracion/grabaciones':
+    get:
+      operationId: SupervisionController_6
+      summary: 'grabaciones - SupervisionController'
+      security:
+        - sesionBff: []
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/supervision/ambitos/{cuenta}':
+    get:
+      operationId: SupervisionController_1
+      summary: 'ambitos - SupervisionController'
+      security:
+        - sesionBff: []
+      parameters:
+        - name: cuenta
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+    put:
+      operationId: SupervisionController_2
+      summary: 'ambito - SupervisionController'
+      security:
+        - sesionBff: []
+      parameters:
+        - name: cuenta
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/supervision/coordinacion/docentes':
+    get:
+      operationId: SupervisionController_4
+      summary: 'docentes - SupervisionController'
+      security:
+        - sesionBff: []
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/supervision/coordinacion/resumen':
+    get:
+      operationId: SupervisionController_3
+      summary: 'resumen - SupervisionController'
+      security:
+        - sesionBff: []
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/supervision/seguridad/auditoria':
+    get:
+      operationId: SupervisionController_7
+      summary: 'auditoria - SupervisionController'
+      security:
+        - sesionBff: []
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/supervision/sistema':
+    get:
+      operationId: SupervisionController_8
+      summary: 'sistema - SupervisionController'
+      security:
+        - sesionBff: []
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/tareas/{id}':
+    get:
+      operationId: CursosController_4
+      summary: 'tarea - CursosController'
+      security:
+        - sesionBff: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+    put:
+      operationId: CursosController_5
+      summary: 'editar - CursosController'
+      security:
+        - sesionBff: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/tareas/{id}/archivos':
+    get:
+      operationId: ArchivosAcademicosController_3
+      summary: 'tarea - ArchivosAcademicosController'
+      security:
+        - sesionBff: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+    post:
+      operationId: ArchivosAcademicosController_1
+      summary: 'iniciarTarea - ArchivosAcademicosController'
+      security:
+        - sesionBff: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/tareas/{id}/calificacion':
+    put:
+      operationId: CursosController_10
+      summary: 'calificar - CursosController'
+      security:
+        - sesionBff: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/tareas/{id}/cerrar':
+    post:
+      operationId: CursosController_7
+      summary: 'cerrar - CursosController'
+      security:
+        - sesionBff: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/tareas/{id}/entregas':
+    get:
+      operationId: CursosController_9
+      summary: 'entregas - CursosController'
+      security:
+        - sesionBff: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+    post:
+      operationId: CursosController_8
+      summary: 'entregar - CursosController'
+      security:
+        - sesionBff: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/tareas/{id}/publicar':
+    post:
+      operationId: CursosController_6
+      summary: 'publicar - CursosController'
+      security:
+        - sesionBff: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/erp/apoderados':
+    post:
+      operationId: InstitucionalController_12
+      summary: 'apoderado - InstitucionalController'
+      servers:
+        - url: http://api-erp:8080
+      security:
+        - portador: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/erp/catalogo':
+    get:
+      operationId: InstitucionalController_8
+      summary: 'catalogo - InstitucionalController'
+      servers:
+        - url: http://api-erp:8080
+      security:
+        - portador: []
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/erp/docentes':
+    post:
+      operationId: InstitucionalController_11
+      summary: 'docente - InstitucionalController'
+      servers:
+        - url: http://api-erp:8080
+      security:
+        - portador: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/erp/estudiantes':
+    post:
+      operationId: InstitucionalController_1
+      summary: 'estudiante - InstitucionalController'
+      servers:
+        - url: http://api-erp:8080
+      security:
+        - portador: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/erp/estudiantes/{id}/apoderados':
+    get:
+      operationId: InstitucionalController_14
+      summary: 'apoderados - InstitucionalController'
+      servers:
+        - url: http://api-erp:8080
+      security:
+        - portador: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+    post:
+      operationId: InstitucionalController_13
+      summary: 'vincular - InstitucionalController'
+      servers:
+        - url: http://api-erp:8080
+      security:
+        - portador: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/erp/estudiantes/{id}/estado':
+    put:
+      operationId: InstitucionalController_5
+      summary: 'estado - InstitucionalController'
+      servers:
+        - url: http://api-erp:8080
+      security:
+        - portador: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/erp/estudiantes/{id}/retiro':
+    post:
+      operationId: InstitucionalController_4
+      summary: 'retiro - InstitucionalController'
+      servers:
+        - url: http://api-erp:8080
+      security:
+        - portador: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/erp/estudiantes/{id}/seccion':
+    put:
+      operationId: InstitucionalController_3
+      summary: 'seccion - InstitucionalController'
+      servers:
+        - url: http://api-erp:8080
+      security:
+        - portador: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/erp/eventos':
+    get:
+      operationId: InstitucionalController_15
+      summary: 'eventos - InstitucionalController'
+      servers:
+        - url: http://api-erp:8080
+      security:
+        - portador: []
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/erp/matriculas':
+    post:
+      operationId: InstitucionalController_2
+      summary: 'matricula - InstitucionalController'
+      servers:
+        - url: http://api-erp:8080
+      security:
+        - portador: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/erp/ofertas':
+    get:
+      operationId: InstitucionalController_7
+      summary: 'ofertas - InstitucionalController'
+      servers:
+        - url: http://api-erp:8080
+      security:
+        - portador: []
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+    post:
+      operationId: InstitucionalController_10
+      summary: 'oferta - InstitucionalController'
+      servers:
+        - url: http://api-erp:8080
+      security:
+        - portador: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/erp/ofertas/{id}/docente':
+    put:
+      operationId: InstitucionalController_6
+      summary: 'docente - InstitucionalController'
+      servers:
+        - url: http://api-erp:8080
+      security:
+        - portador: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/erp/secciones':
+    post:
+      operationId: InstitucionalController_9
+      summary: 'seccion - InstitucionalController'
+      servers:
+        - url: http://api-erp:8080
+      security:
+        - portador: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/erp/tesoreria/conceptos':
+    post:
+      operationId: TesoreriaController_1
+      summary: 'concepto - TesoreriaController'
+      servers:
+        - url: http://api-erp:8080
+      security:
+        - portador: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/erp/tesoreria/estudiantes/{id}':
+    get:
+      operationId: TesoreriaController_3
+      summary: 'estado - TesoreriaController'
+      servers:
+        - url: http://api-erp:8080
+      security:
+        - portador: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/erp/tesoreria/obligaciones':
+    post:
+      operationId: TesoreriaController_2
+      summary: 'obligacion - TesoreriaController'
+      servers:
+        - url: http://api-erp:8080
+      security:
+        - portador: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/erp/tesoreria/pagos':
+    post:
+      operationId: TesoreriaController_4
+      summary: 'pago - TesoreriaController'
+      servers:
+        - url: http://api-erp:8080
+      security:
+        - portador: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/erp/tesoreria/pagos/{id}/anular':
+    post:
+      operationId: TesoreriaController_5
+      summary: 'anular - TesoreriaController'
+      servers:
+        - url: http://api-erp:8080
+      security:
+        - portador: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/identidad/cuentas':
+    get:
+      operationId: CuentasController_1
+      summary: 'listar - CuentasController'
+      servers:
+        - url: http://localhost:9000
+      security:
+        - portador: []
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+    post:
+      operationId: CuentasController_3
+      summary: 'crear - CuentasController'
+      servers:
+        - url: http://localhost:9000
+      security:
+        - portador: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/identidad/cuentas/{id}/estado':
+    put:
+      operationId: CuentasController_4
+      summary: 'estado - CuentasController'
+      servers:
+        - url: http://localhost:9000
+      security:
+        - portador: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/identidad/cuentas/{id}/recuperacion':
+    post:
+      operationId: CuentasController_5
+      summary: 'recuperacion - CuentasController'
+      servers:
+        - url: http://localhost:9000
+      security:
+        - portador: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/identidad/estado/{id}':
+    get:
+      operationId: CuentasController_2
+      summary: 'activo - CuentasController'
+      servers:
+        - url: http://localhost:9000
+      security:
+        - portador: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/identidad/restablecer':
+    post:
+      operationId: CuentasController_6
+      summary: 'restablecer - CuentasController'
+      servers:
+        - url: http://localhost:9000
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/sesion':
+    get:
+      operationId: SesionController_1
+      summary: 'sesion - SesionController'
+      security:
+        - sesionBff: []
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+components:
+  securitySchemes:
+    sesionBff:
+      type: apiKey
+      in: cookie
+      name: JSESSIONID
+      description: Los cambios requieren además X-XSRF-TOKEN obtenido de la cookie CSRF.
+    portador:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

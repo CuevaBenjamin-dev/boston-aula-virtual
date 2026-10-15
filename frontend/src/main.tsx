@@ -1,0 +1,28 @@
+import React, {Suspense, lazy, useState} from 'react';
+import {createRoot} from 'react-dom/client';
+import {BrowserRouter, Link, Navigate, Route, Routes, useLocation} from 'react-router-dom';
+import {QueryClient, QueryClientProvider, useQuery} from '@tanstack/react-query';
+import type {Perfil} from './api';
+import './style.scss';
+
+const Academico=lazy(()=>import('./pages/Academico'));
+const Operacion=lazy(()=>import('./pages/Operacion'));
+const queryClient=new QueryClient({defaultOptions:{queries:{staleTime:15000,retry:1}}});
+const menu:Record<Perfil['tipo'],Array<[string,string]>>={
+  ESTUDIANTE:[['/','Inicio'],['/cursos','Mis cursos'],['/clases','Clases virtuales'],['/grabaciones','Grabaciones'],['/tareas','Mis tareas'],['/notas','Mis notas'],['/pagos','Mis pagos'],['/cuenta','Mi cuenta']],
+  DOCENTE:[['/','Inicio'],['/cursos','Mis cursos'],['/clases','Clases virtuales'],['/grabaciones','Grabaciones'],['/tareas','Tareas y entregas'],['/notas','Calificaciones'],['/cuenta','Mi cuenta']],
+  COORDINACION:[['/','Inicio'],['/cursos','Cursos y secciones'],['/docentes','Docentes'],['/reportes','Seguimiento y reportes'],['/tareas','Tareas y evaluaciones'],['/clases','Clases virtuales'],['/cuenta','Mi cuenta']],
+  ADMINISTRADOR:[['/','Inicio'],['/usuarios','Usuarios y accesos'],['/modulos','Módulos del aula'],['/clases','Control de clases virtuales'],['/grabaciones','Grabaciones'],['/cuenta','Mi cuenta']]
+};
+
+function Shell(){
+  const {data:perfil,isLoading,error}=useQuery<Perfil>({queryKey:['sesion'],queryFn:async()=>{const r=await fetch('/api/sesion',{credentials:'same-origin'});if(!r.ok)throw new Error('sin sesión');return r.json()}});
+  const {data:modulos}=useQuery<{clasesYGrabaciones:boolean}>({queryKey:['modulos'],queryFn:async()=>{const r=await fetch('/api/aula/modulos');return r.json()},enabled:!!perfil});
+  const [developer,setDeveloper]=useState(false);const [mobile,setMobile]=useState(false);const location=useLocation();
+  if(isLoading)return <div className="center"><div className="spinner"/>Preparando tu aula…</div>;
+  if(error||!perfil)return <main className="login"><div className="login-card"><div className="brand-mark">B</div><span className="eyebrow">BOSTON BILINGUAL SCHOOL</span><h1>Aula Virtual</h1><p>Accede con tu cuenta institucional para continuar.</p><a className="button primary" href="/oauth2/authorization/boston">Iniciar sesión</a><small>Entorno local de validación · Trujillo, Perú</small></div></main>;
+  const items=menu[perfil.tipo].filter(([,label])=>modulos?.clasesYGrabaciones!==false||!['Clases virtuales','Grabaciones','Control de clases virtuales'].includes(label));
+  if(perfil.tipo==='ADMINISTRADOR'&&perfil.developer&&developer)items.push(['/almacenamiento','Almacenamiento'],['/integraciones','Integraciones'],['/seguridad','Seguridad y auditoría'],['/estado','Estado del sistema']);
+  return <div className="layout"><aside className={mobile?'sidebar open':'sidebar'}><div className="brand"><div className="brand-mark">B</div><div><strong>Boston</strong><span>Aula Virtual</span></div></div><nav aria-label="Menú principal">{items.map(([path,label])=><Link key={path} to={path} className={location.pathname===path?'active':''} onClick={()=>setMobile(false)}>{label}</Link>)}</nav><div className="sidebar-bottom"><span>{perfil.usuario}</span><small>{perfil.tipo.toLowerCase()}</small></div></aside><div className="main"><header className="topbar"><button className="menu-button" onClick={()=>setMobile(!mobile)} aria-label="Abrir menú">☰</button><div className="top-title">Boston Bilingual School <span> / Aula Virtual</span></div><div className="top-actions">{perfil.tipo==='ADMINISTRADOR'&&perfil.developer&&<label className="switch-label"><input type="checkbox" checked={developer} onChange={e=>setDeveloper(e.target.checked)}/> Modo Developer</label>}<span className="avatar">{perfil.usuario[0].toUpperCase()}</span></div></header><div className="content"><Suspense fallback={<div className="center"><div className="spinner"/>Cargando módulo…</div>}><Routes><Route path="/" element={<Academico perfil={perfil} pagina="inicio" modulos={modulos}/>}/><Route path="/cuenta" element={<Operacion perfil={perfil} pagina="cuenta"/>}/><Route path="/pagos" element={<Operacion perfil={perfil} pagina="pagos"/>}/><Route path="/modulos" element={<Operacion perfil={perfil} pagina="modulos"/>}/><Route path="/integraciones" element={<Operacion perfil={perfil} pagina="integraciones"/>}/><Route path="/almacenamiento" element={<Operacion perfil={perfil} pagina="almacenamiento"/>}/><Route path="/seguridad" element={<Operacion perfil={perfil} pagina="seguridad"/>}/><Route path="/estado" element={<Operacion perfil={perfil} pagina="estado"/>}/><Route path="/usuarios" element={<Operacion perfil={perfil} pagina="usuarios"/>}/><Route path="/docentes" element={<Academico perfil={perfil} pagina="docentes" modulos={modulos}/>}/><Route path="/reportes" element={<Academico perfil={perfil} pagina="reportes" modulos={modulos}/>}/><Route path="/cursos/:cursoId" element={<Academico perfil={perfil} pagina="curso" modulos={modulos}/>}/><Route path="/tareas/:tareaId" element={<Academico perfil={perfil} pagina="tarea" modulos={modulos}/>}/><Route path="/clases/:claseId" element={<Academico perfil={perfil} pagina="clase" modulos={modulos}/>}/><Route path="/:pagina" element={<Academico perfil={perfil} modulos={modulos}/>}/><Route path="*" element={<Navigate to="/"/>}/></Routes></Suspense></div></div></div>;
+}
+createRoot(document.getElementById('root')!).render(<React.StrictMode><QueryClientProvider client={queryClient}><BrowserRouter><Shell/></BrowserRouter></QueryClientProvider></React.StrictMode>);

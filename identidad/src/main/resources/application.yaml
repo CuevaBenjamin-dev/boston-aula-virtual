@@ -1,0 +1,31 @@
+server:
+  port: 9000
+  servlet:
+    session:
+      cookie:
+        name: IDENTIDAD_SESSION
+        http-only: true
+        same-site: lax
+spring:
+  application:
+    name: identidad-boston
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/identidad_boston}
+    username: ${SPRING_DATASOURCE_USERNAME:boston}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+  security:
+    oauth2:
+      authorizationserver:
+        issuer: ${BOSTON_ISSUER:http://localhost:9000}
+  flyway:
+    enabled: true
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
