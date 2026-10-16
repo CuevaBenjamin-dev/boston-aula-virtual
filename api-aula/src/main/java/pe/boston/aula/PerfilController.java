@@ -38,7 +38,7 @@ import org.springframework.web.multipart.MultipartFile;
     if("COORDINACION".equals(tipo)) datos.put("secciones",db.queryForList("""
       SELECT DISTINCT c.grado,c.seccion,c.periodo FROM cursos c
       JOIN coordinaciones_seccion x ON x.seccion_erp_id=c.seccion_erp_id
-      WHERE x.cuenta_id=? ORDER BY c.grado,c.seccion,c.periodo
+      WHERE x.cuenta_id=? AND x.confirmado_erp ORDER BY c.grado,c.seccion,c.periodo
       """,cuenta));
     return datos;
   }

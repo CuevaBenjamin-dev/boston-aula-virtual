@@ -25,7 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
     return switch(usuario.tipo(a)) {
       case "ESTUDIANTE" -> db.queryForList(base+"JOIN inscripciones_curso i ON i.curso_id=c.curso_id WHERE i.estudiante_erp_id=? AND i.activo ORDER BY c.inicio DESC",usuario.referencia(a));
       case "DOCENTE" -> db.queryForList(base+"JOIN docentes_curso d ON d.curso_id=c.curso_id WHERE d.docente_erp_id=? AND d.activo ORDER BY c.inicio DESC",usuario.referencia(a));
-      case "COORDINACION" -> db.queryForList(base+"JOIN coordinaciones_seccion x ON x.seccion_erp_id=curso.seccion_erp_id WHERE x.cuenta_id=? ORDER BY c.inicio DESC",usuario.cuenta(a));
+      case "COORDINACION" -> db.queryForList(base+"JOIN coordinaciones_seccion x ON x.seccion_erp_id=curso.seccion_erp_id WHERE x.cuenta_id=? AND x.confirmado_erp ORDER BY c.inicio DESC",usuario.cuenta(a));
       default -> throw new org.springframework.security.access.AccessDeniedException("Sin acceso académico");
     };
   }

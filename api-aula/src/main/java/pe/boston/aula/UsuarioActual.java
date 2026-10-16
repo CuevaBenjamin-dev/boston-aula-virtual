@@ -36,7 +36,7 @@ import org.springframework.stereotype.Component;
     if ("ESTUDIANTE".equals(tipo(a))) estudianteCurso(a,curso);
     else if ("DOCENTE".equals(tipo(a))) docente(a,curso);
     else if ("COORDINACION".equals(tipo(a))) {
-      if(db.queryForObject("SELECT count(*) FROM cursos c JOIN coordinaciones_seccion x ON x.seccion_erp_id=c.seccion_erp_id WHERE c.id=? AND x.cuenta_id=?",Long.class,curso,cuenta(a))==0) throw new AccessDeniedException("Curso fuera del ámbito de coordinación");
+      if(db.queryForObject("SELECT count(*) FROM cursos c JOIN coordinaciones_seccion x ON x.seccion_erp_id=c.seccion_erp_id WHERE c.id=? AND x.cuenta_id=? AND x.confirmado_erp",Long.class,curso,cuenta(a))==0) throw new AccessDeniedException("Curso fuera del ámbito de coordinación");
     } else throw new AccessDeniedException("Sin acceso académico");
   }
   public void administrador(Authentication a) { if (!"ADMINISTRADOR".equals(tipo(a))) throw new AccessDeniedException("Solo administrador"); }

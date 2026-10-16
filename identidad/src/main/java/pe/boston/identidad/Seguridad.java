@@ -53,6 +53,10 @@ import org.springframework.security.web.authentication.LoginUrlAuthenticationEnt
 @Configuration
 public class Seguridad {
   @Bean PasswordEncoder codificador() { return new Argon2PasswordEncoder(16, 32, 1, 19456, 2); }
+  @Bean org.springframework.boot.web.servlet.FilterRegistrationBean<EstadoCuentaFiltro> registroEstado(EstadoCuentaFiltro filtro) {
+    var registro=new org.springframework.boot.web.servlet.FilterRegistrationBean<>(filtro);
+    registro.setEnabled(false); return registro;
+  }
 
   @Bean UserDetailsService usuarios(JdbcTemplate jdbc) {
     return nombre -> jdbc.query("SELECT usuario,clave_hash,tipo,activo,developer,bloqueado_hasta FROM cuentas WHERE usuario=?",
@@ -65,17 +69,18 @@ public class Seguridad {
       }, nombre).stream().findFirst().orElseThrow(() -> new org.springframework.security.core.userdetails.UsernameNotFoundException(nombre));
   }
 
-  @Bean @Order(1) SecurityFilterChain protocolo(HttpSecurity http) throws Exception {
+  @Bean @Order(1) SecurityFilterChain protocolo(HttpSecurity http,EstadoCuentaFiltro estado) throws Exception {
     var configurer = new OAuth2AuthorizationServerConfigurer();
     http.securityMatcher(configurer.getEndpointsMatcher())
       .with(configurer, c -> c.oidc(Customizer.withDefaults()))
       .authorizeHttpRequests(a -> a.anyRequest().authenticated())
       .exceptionHandling(e -> e.authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint("/login")))
-      .oauth2ResourceServer(o -> o.jwt(Customizer.withDefaults()));
+      .oauth2ResourceServer(o -> o.jwt(Customizer.withDefaults()))
+      .addFilterAfter(estado,org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter.class);
     return http.build();
   }
 
-  @Bean @Order(2) SecurityFilterChain paginas(HttpSecurity http, JdbcTemplate jdbc) throws Exception {
+  @Bean @Order(2) SecurityFilterChain paginas(HttpSecurity http, JdbcTemplate jdbc,EstadoCuentaFiltro estado) throws Exception {
     var jwtConverter=new JwtAuthenticationConverter();
     jwtConverter.setJwtGrantedAuthoritiesConverter(jwt -> {
       var tipo=jwt.getClaimAsString("tipo");
@@ -105,7 +110,8 @@ public class Seguridad {
         jdbc.update("INSERT INTO auditoria_seguridad(id,cuenta_id,accion) SELECT ?,id,'LOGIN' FROM cuentas WHERE usuario=?", UUID.randomUUID(), authentication.getName());
         new org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler().onAuthenticationSuccess(request, response, authentication);
       }))
-      .logout(l -> l.logoutSuccessUrl("/login?logout"));
+      .logout(l -> l.logoutSuccessUrl("/login?logout"))
+      .addFilterAfter(estado,org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter.class);
     return http.build();
   }
 

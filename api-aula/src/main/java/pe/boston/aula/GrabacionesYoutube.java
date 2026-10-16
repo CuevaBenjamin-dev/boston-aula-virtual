@@ -30,7 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
     List<Map<String,Object>> filas=switch(tipo) {
       case "ESTUDIANTE" -> db.queryForList(BASE+" JOIN inscripciones_curso i ON i.curso_id=c.id WHERE i.estudiante_erp_id=? AND i.activo AND g.estado='PUBLICADA' ORDER BY cl.inicio DESC,g.orden",usuario.referencia(a));
       case "DOCENTE" -> db.queryForList(BASE+" JOIN docentes_curso d ON d.curso_id=c.id WHERE d.docente_erp_id=? AND d.activo ORDER BY cl.inicio DESC,g.orden",usuario.referencia(a));
-      case "COORDINACION" -> db.queryForList(BASE+" JOIN coordinaciones_seccion x ON x.seccion_erp_id=c.seccion_erp_id WHERE x.cuenta_id=? ORDER BY cl.inicio DESC,g.orden",usuario.cuenta(a));
+      case "COORDINACION" -> db.queryForList(BASE+" JOIN coordinaciones_seccion x ON x.seccion_erp_id=c.seccion_erp_id WHERE x.cuenta_id=? AND x.confirmado_erp ORDER BY cl.inicio DESC,g.orden",usuario.cuenta(a));
       default -> throw new AccessDeniedException("Sin acceso académico");
     };
     return conDocentes(filas);

@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
   public record Docente(@NotBlank String nombres,@NotBlank String apellidos) {}
   public record Apoderado(@NotBlank String nombres,@NotBlank String apellidos,String documento) {}
   public record Vinculo(UUID apoderadoId,@NotBlank String vinculo) {}
+  public record Ambito(UUID seccionId,boolean asignado) {}
 
   @PostMapping("/estudiantes") @ResponseStatus(HttpStatus.CREATED) public Map<String,UUID> estudiante(@Valid @RequestBody Estudiante datos,@AuthenticationPrincipal Jwt actor) {
     return Map.of("id",servicio.nuevoEstudiante(datos.nombres(),datos.apellidos(),datos.codigo(),actor));
@@ -46,4 +47,7 @@ import org.springframework.web.bind.annotation.*;
   @PostMapping("/estudiantes/{id}/apoderados") @ResponseStatus(HttpStatus.CREATED) public void vincular(@PathVariable UUID id,@Valid @RequestBody Vinculo d,@AuthenticationPrincipal Jwt actor) { servicio.vincularApoderado(id,d.apoderadoId(),d.vinculo(),actor); }
   @GetMapping("/estudiantes/{id}/apoderados") public List<Map<String,Object>> apoderados(@PathVariable UUID id,@AuthenticationPrincipal Jwt actor) { return servicio.apoderados(id,actor); }
   @GetMapping("/eventos") public List<Map<String,Object>> eventos(@RequestParam(defaultValue="0") long despues,@RequestParam(defaultValue="100") int limite) { return servicio.eventos(despues,limite); }
+  @GetMapping("/coordinaciones/{cuenta}/ambitos") public List<Map<String,Object>> ambitos(@PathVariable UUID cuenta,@AuthenticationPrincipal Jwt actor) { return servicio.ambitos(cuenta,actor); }
+  @PutMapping("/coordinaciones/{cuenta}/ambitos") public void ambito(@PathVariable UUID cuenta,@RequestBody Ambito d,@AuthenticationPrincipal Jwt actor) { servicio.cambiarAmbito(cuenta,d.seccionId(),d.asignado(),actor); }
+  @PostMapping("/reconciliar") public void reconciliar(@AuthenticationPrincipal Jwt actor) { servicio.reconciliar(actor); }
 }

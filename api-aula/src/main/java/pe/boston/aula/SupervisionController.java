@@ -23,12 +23,21 @@ import org.springframework.web.bind.annotation.*;
   }
   private void coordinacion(Authentication a) { if(!"COORDINACION".equals(usuario.tipo(a))) throw new AccessDeniedException("Solo coordinación"); }
   public record Ambito(UUID seccionId,boolean asignado) {}
-  @GetMapping("/ambitos/{cuenta}") public List<Map<String,Object>> ambitos(@PathVariable UUID cuenta,Authentication a) { usuario.administrador(a);return db.queryForList("SELECT seccion_erp_id,asignado_en FROM coordinaciones_seccion WHERE cuenta_id=? ORDER BY asignado_en",cuenta); }
-  @PutMapping("/ambitos/{cuenta}") public void ambito(@PathVariable UUID cuenta,@RequestBody Ambito d,Authentication a) {
+  @GetMapping("/ambitos/{cuenta}") public org.springframework.http.ResponseEntity<String> ambitos(@PathVariable UUID cuenta,Authentication a,
+      @org.springframework.security.oauth2.client.annotation.RegisteredOAuth2AuthorizedClient("boston") org.springframework.security.oauth2.client.OAuth2AuthorizedClient client) throws Exception {
+    usuario.administrador(a);
+    var respuesta=http.send(HttpRequest.newBuilder(URI.create(erp+"/api/erp/coordinaciones/"+cuenta+"/ambitos"))
+      .timeout(Duration.ofSeconds(8)).header("Authorization","Bearer "+client.getAccessToken().getTokenValue()).GET().build(),HttpResponse.BodyHandlers.ofString());
+    return org.springframework.http.ResponseEntity.status(respuesta.statusCode()).contentType(org.springframework.http.MediaType.APPLICATION_JSON).body(respuesta.body());
+  }
+  @PutMapping("/ambitos/{cuenta}") public void ambito(@PathVariable UUID cuenta,@RequestBody Ambito d,Authentication a,
+      @org.springframework.security.oauth2.client.annotation.RegisteredOAuth2AuthorizedClient("boston") org.springframework.security.oauth2.client.OAuth2AuthorizedClient client) throws Exception {
     usuario.administrador(a);if(d.seccionId()==null)throw new IllegalArgumentException("Sección requerida");
-    if(d.asignado()) db.update("INSERT INTO coordinaciones_seccion(cuenta_id,seccion_erp_id) VALUES (?,?) ON CONFLICT DO NOTHING",cuenta,d.seccionId());
-    else db.update("DELETE FROM coordinaciones_seccion WHERE cuenta_id=? AND seccion_erp_id=?",cuenta,d.seccionId());
-    db.update("INSERT INTO registros_auditoria(id,actor,accion,entidad_id,detalle) VALUES (?,?,?,?,?)",UUID.randomUUID(),usuario.oidc(a).getSubject(),"AMBITO_COORDINACION",cuenta,d.seccionId()+"="+d.asignado());
+    String cuerpo=new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(d);
+    var respuesta=http.send(HttpRequest.newBuilder(URI.create(erp+"/api/erp/coordinaciones/"+cuenta+"/ambitos"))
+      .timeout(Duration.ofSeconds(8)).header("Authorization","Bearer "+client.getAccessToken().getTokenValue())
+      .header("Content-Type","application/json").PUT(HttpRequest.BodyPublishers.ofString(cuerpo)).build(),HttpResponse.BodyHandlers.discarding());
+    if(respuesta.statusCode()!=200) throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatusCode.valueOf(respuesta.statusCode()),"ERP rechazó el ámbito");
   }
   @GetMapping("/coordinacion/resumen") public List<Map<String,Object>> resumen(Authentication a) {
     coordinacion(a);
@@ -39,7 +48,7 @@ import org.springframework.web.bind.annotation.*;
       (SELECT count(*) FROM tareas t WHERE t.curso_id=c.id AND t.estado<>'BORRADOR') AS tareas,
       (SELECT count(*) FROM entregas e JOIN tareas t ON t.id=e.tarea_id WHERE t.curso_id=c.id) AS entregas,
       (SELECT count(*) FROM calificaciones_tarea n JOIN tareas t ON t.id=n.tarea_id WHERE t.curso_id=c.id) AS calificaciones
-      FROM cursos c JOIN coordinaciones_seccion x ON x.seccion_erp_id=c.seccion_erp_id WHERE x.cuenta_id=? ORDER BY c.grado,c.seccion,c.asignatura
+      FROM cursos c JOIN coordinaciones_seccion x ON x.seccion_erp_id=c.seccion_erp_id WHERE x.cuenta_id=? AND x.confirmado_erp ORDER BY c.grado,c.seccion,c.asignatura
       """,usuario.cuenta(a));
   }
   @GetMapping("/coordinacion/docentes") public List<Map<String,Object>> docentes(Authentication a) {
@@ -47,7 +56,7 @@ import org.springframework.web.bind.annotation.*;
     return db.queryForList("""
       SELECT d.docente_erp_id, count(*) AS cursos, string_agg(c.asignatura || ' ' || c.seccion, ', ' ORDER BY c.asignatura) AS asignaciones
       FROM docentes_curso d JOIN cursos c ON c.id=d.curso_id JOIN coordinaciones_seccion x ON x.seccion_erp_id=c.seccion_erp_id
-      WHERE x.cuenta_id=? AND d.activo GROUP BY d.docente_erp_id ORDER BY asignaciones
+      WHERE x.cuenta_id=? AND x.confirmado_erp AND d.activo GROUP BY d.docente_erp_id ORDER BY asignaciones
       """,usuario.cuenta(a));
   }
   @GetMapping("/administracion/clases") public List<Map<String,Object>> clases(Authentication a,@RequestParam(defaultValue="0") int pagina) {

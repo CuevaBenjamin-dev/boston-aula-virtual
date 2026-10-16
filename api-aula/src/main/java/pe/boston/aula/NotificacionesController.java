@@ -37,7 +37,7 @@ import org.springframework.web.bind.annotation.RestController;
       """;
     return switch(tipo) {
       case "DOCENTE" -> db.queryForList(base+" AND EXISTS (SELECT 1 FROM docentes_curso d WHERE d.curso_id=c.curso_id AND d.docente_erp_id=? AND d.activo) ORDER BY h.registrado_en DESC LIMIT 100",usuario.cuenta(a),usuario.referencia(a));
-      case "COORDINACION" -> db.queryForList(base+" AND EXISTS (SELECT 1 FROM coordinaciones_seccion x WHERE x.seccion_erp_id=curso.seccion_erp_id AND x.cuenta_id=?) ORDER BY h.registrado_en DESC LIMIT 100",usuario.cuenta(a),usuario.cuenta(a));
+      case "COORDINACION" -> db.queryForList(base+" AND EXISTS (SELECT 1 FROM coordinaciones_seccion x WHERE x.seccion_erp_id=curso.seccion_erp_id AND x.cuenta_id=? AND x.confirmado_erp) ORDER BY h.registrado_en DESC LIMIT 100",usuario.cuenta(a),usuario.cuenta(a));
       case "ADMINISTRADOR" -> db.queryForList(base+" ORDER BY h.registrado_en DESC LIMIT 100",usuario.cuenta(a));
       default -> throw new AccessDeniedException("Perfil no autorizado");
     };

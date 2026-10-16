@@ -34,25 +34,37 @@ import org.springframework.transaction.annotation.Transactional;
     auditar(actor,"ESTUDIANTE_CREADO",estudiante,Map.of("codigo",codigo)); return estudiante;
   }
   @Transactional public UUID matricular(UUID estudiante, UUID seccion, Jwt actor) {
-    admin(actor); UUID id=UUID.randomUUID();
-    if(db.queryForObject("SELECT count(*) FROM estudiantes WHERE id=? AND estado='ACTIVO'",Long.class,estudiante)==0) throw new IllegalArgumentException("Estudiante no activo");
-    List<UUID> anteriores=db.query("SELECT seccion_id FROM matriculas WHERE estudiante_id=? AND estado='ACTIVA'",(rs,n)->(UUID)rs.getObject(1),estudiante);
-    db.update("UPDATE matriculas SET estado='RETIRADA',actualizado_en=now() WHERE estudiante_id=? AND estado='ACTIVA'",estudiante);
-    db.update("INSERT INTO matriculas(id,estudiante_id,seccion_id,estado) VALUES (?,?,?,'ACTIVA') ON CONFLICT (estudiante_id,seccion_id) DO UPDATE SET estado='ACTIVA',actualizado_en=now()",id,estudiante,seccion);
-    anteriores.stream().filter(anterior -> !anterior.equals(seccion)).forEach(this::publicarSeccion);
+    admin(actor);
+    bloquearEstudianteActivo(estudiante);
+    UUID periodo=db.queryForObject("SELECT periodo_id FROM secciones WHERE id=?",UUID.class,seccion);
+    var anteriores=db.queryForList("SELECT m.id,m.seccion_id,s.periodo_id FROM matriculas m JOIN secciones s ON s.id=m.seccion_id WHERE m.estudiante_id=? AND m.estado='ACTIVA' FOR UPDATE OF m",estudiante);
+    for(var anterior:anteriores) {
+      if(seccion.equals(anterior.get("seccion_id"))) return (UUID)anterior.get("id");
+      if(periodo.equals(anterior.get("periodo_id"))) throw new IllegalArgumentException("Ya existe matrícula vigente en este periodo; use cambio de sección");
+    }
+    db.update("UPDATE matriculas SET estado='FINALIZADA',actualizado_en=now() WHERE estudiante_id=? AND estado='ACTIVA'",estudiante);
+    db.update("INSERT INTO matriculas(id,estudiante_id,seccion_id,estado) VALUES (?,?,?,'ACTIVA') ON CONFLICT (estudiante_id,seccion_id) DO UPDATE SET estado='ACTIVA',actualizado_en=now()",UUID.randomUUID(),estudiante,seccion);
+    anteriores.forEach(anterior -> publicarSeccion((UUID)anterior.get("seccion_id")));
     publicarSeccion(seccion); auditar(actor,"MATRICULA",estudiante,Map.of("seccion",seccion));
     return db.queryForObject("SELECT id FROM matriculas WHERE estudiante_id=? AND seccion_id=?",UUID.class,estudiante,seccion);
   }
   @Transactional public void cambiarSeccion(UUID estudiante, UUID nueva, Jwt actor) {
     admin(actor);
-    if(db.queryForObject("SELECT count(*) FROM estudiantes WHERE id=? AND estado='ACTIVO'",Long.class,estudiante)==0) throw new IllegalArgumentException("Estudiante no activo");
-    List<UUID> anteriores=db.query("SELECT seccion_id FROM matriculas WHERE estudiante_id=? AND estado='ACTIVA'",(rs,n)->(UUID)rs.getObject(1),estudiante);
+    bloquearEstudianteActivo(estudiante);
+    UUID periodo=db.queryForObject("SELECT periodo_id FROM secciones WHERE id=?",UUID.class,nueva);
+    var anteriores=db.queryForList("SELECT m.seccion_id,s.periodo_id FROM matriculas m JOIN secciones s ON s.id=m.seccion_id WHERE m.estudiante_id=? AND m.estado='ACTIVA' FOR UPDATE OF m",estudiante);
+    if(anteriores.isEmpty()) throw new IllegalArgumentException("No hay matrícula vigente para cambiar de sección");
+    if(!periodo.equals(anteriores.getFirst().get("periodo_id"))) throw new IllegalArgumentException("El nuevo periodo requiere una matrícula nueva");
+    if(nueva.equals(anteriores.getFirst().get("seccion_id"))) return;
     db.update("UPDATE matriculas SET estado='RETIRADA',actualizado_en=now() WHERE estudiante_id=? AND estado='ACTIVA'",estudiante);
     db.update("INSERT INTO matriculas(id,estudiante_id,seccion_id,estado) VALUES (?,?,?,'ACTIVA') ON CONFLICT (estudiante_id,seccion_id) DO UPDATE SET estado='ACTIVA',actualizado_en=now()",UUID.randomUUID(),estudiante,nueva);
-    anteriores.forEach(this::publicarSeccion); publicarSeccion(nueva); auditar(actor,"CAMBIO_SECCION",estudiante,Map.of("nueva",nueva));
+    anteriores.forEach(anterior -> publicarSeccion((UUID)anterior.get("seccion_id"))); publicarSeccion(nueva); auditar(actor,"CAMBIO_SECCION",estudiante,Map.of("nueva",nueva));
   }
   @Transactional public void retirar(UUID estudiante, Jwt actor) {
     admin(actor);
+    var estados=db.query("SELECT estado FROM estudiantes WHERE id=? FOR UPDATE",(rs,n)->rs.getString(1),estudiante);
+    if(estados.isEmpty()) throw new IllegalArgumentException("Estudiante inexistente");
+    if("RETIRADO".equals(estados.getFirst())) return;
     List<UUID> secciones=db.query("SELECT seccion_id FROM matriculas WHERE estudiante_id=? AND estado='ACTIVA'",(rs,n)->(UUID)rs.getObject(1),estudiante);
     db.update("UPDATE matriculas SET estado='RETIRADA',actualizado_en=now() WHERE estudiante_id=? AND estado='ACTIVA'",estudiante);
     db.update("UPDATE estudiantes SET estado='RETIRADO' WHERE id=?",estudiante);
@@ -60,20 +72,50 @@ import org.springframework.transaction.annotation.Transactional;
   }
   @Transactional public void asignarDocente(UUID oferta, UUID docente, Jwt actor) {
     admin(actor);
+    if(db.queryForObject("SELECT count(*) FROM ofertas_academicas WHERE id=? AND estado='ACTIVA'",Long.class,oferta)==0) throw new IllegalArgumentException("Oferta no activa");
     if(db.queryForObject("SELECT count(*) FROM docentes WHERE id=? AND estado='ACTIVO'",Long.class,docente)==0) throw new IllegalArgumentException("Docente no activo");
+    if(db.queryForObject("SELECT count(*) FROM asignaciones_docentes WHERE oferta_id=? AND docente_id=? AND estado='ACTIVA'",Long.class,oferta,docente)>0) return;
     db.update("UPDATE asignaciones_docentes SET estado='INACTIVA' WHERE oferta_id=? AND estado='ACTIVA'",oferta);
     db.update("INSERT INTO asignaciones_docentes(id,oferta_id,docente_id,estado) VALUES (?,?,?,'ACTIVA')",UUID.randomUUID(),oferta,docente);
     publicarOferta(oferta); auditar(actor,"CAMBIO_DOCENTE",oferta,Map.of("docente",docente));
   }
   @Transactional public void estadoAcademico(UUID estudiante, String estado, Jwt actor) {
     admin(actor); if (!List.of("ACTIVO","RETIRADO").contains(estado)) throw new IllegalArgumentException("Estado inválido");
+    if("RETIRADO".equals(estado)) { retirar(estudiante,actor); return; }
     db.update("UPDATE estudiantes SET estado=? WHERE id=?",estado,estudiante);
     db.query("SELECT seccion_id FROM matriculas WHERE estudiante_id=?",(rs,n)->(UUID)rs.getObject(1),estudiante).forEach(this::publicarSeccion);
     auditar(actor,"ESTADO_ACADEMICO",estudiante,Map.of("estado",estado));
   }
+  private void bloquearEstudianteActivo(UUID estudiante) {
+    var estados=db.query("SELECT estado FROM estudiantes WHERE id=? FOR UPDATE",(rs,n)->rs.getString(1),estudiante);
+    if(estados.isEmpty()||!"ACTIVO".equals(estados.getFirst())) throw new IllegalArgumentException("Estudiante no activo");
+  }
 
   public List<Map<String,Object>> eventos(long despues, int limite) {
     return db.queryForList("SELECT id,secuencia,tipo,version,entidad_id,datos,creado_en FROM eventos_pendientes WHERE secuencia>? ORDER BY secuencia LIMIT ?",despues,Math.min(200,Math.max(1,limite)));
+  }
+  public List<Map<String,Object>> ambitos(UUID cuenta,Jwt actor) {
+    admin(actor);
+    return db.queryForList("SELECT seccion_id AS seccion_erp_id,asignado_en FROM ambitos_coordinacion WHERE cuenta_id=? ORDER BY asignado_en",cuenta);
+  }
+  @Transactional public void cambiarAmbito(UUID cuenta,UUID seccion,boolean asignado,Jwt actor) {
+    admin(actor);
+    if(cuenta==null||seccion==null) throw new IllegalArgumentException("Cuenta y sección requeridas");
+    int cambios=asignado
+      ? db.update("INSERT INTO ambitos_coordinacion(cuenta_id,seccion_id) VALUES (?,?) ON CONFLICT DO NOTHING",cuenta,seccion)
+      : db.update("DELETE FROM ambitos_coordinacion WHERE cuenta_id=? AND seccion_id=?",cuenta,seccion);
+    if(cambios==0) return;
+    db.update("INSERT INTO eventos_pendientes(id,tipo,version,entidad_id,datos) VALUES (?,'AMBITO_COORDINACION',?,?,?::jsonb)",UUID.randomUUID(),version(cuenta),cuenta,json(Map.of("cuentaId",cuenta,"seccionId",seccion,"asignado",asignado)));
+    auditar(actor,"AMBITO_COORDINACION",cuenta,Map.of("seccion",seccion,"asignado",asignado));
+  }
+  @Transactional public void reconciliar(Jwt actor) {
+    admin(actor);
+    bloquearPublicacion();
+    publicarTodas();
+    var ambitos=db.queryForList("SELECT cuenta_id AS \"cuentaId\",seccion_id AS \"seccionId\" FROM ambitos_coordinacion ORDER BY cuenta_id,seccion_id");
+    UUID entidad=UUID.fromString("00000000-0000-0000-0000-000000000000");
+    db.update("INSERT INTO eventos_pendientes(id,tipo,version,entidad_id,datos) VALUES (?,'AMBITOS_RECONCILIACION',?,?,?::jsonb)",UUID.randomUUID(),version(entidad),entidad,json(Map.of("ambitos",ambitos)));
+    auditar(actor,"RECONCILIACION",null,Map.of("ambitos",ambitos.size()));
   }
   public List<Map<String,Object>> ofertas() { return db.queryForList("SELECT o.id,a.nombre AS asignatura,s.nombre AS seccion,g.nombre AS grado FROM ofertas_academicas o JOIN asignaturas a ON a.id=o.asignatura_id JOIN secciones s ON s.id=o.seccion_id JOIN grados g ON g.id=s.grado_id ORDER BY a.nombre"); }
   public List<Map<String,Object>> docentesResumen(Jwt actor) {
@@ -160,11 +202,20 @@ import org.springframework.transaction.annotation.Transactional;
   @Transactional public void publicarTodas() { db.query("SELECT id FROM ofertas_academicas",(rs,n)->(UUID)rs.getObject(1)).forEach(this::publicarOferta); }
   private void publicarSeccion(UUID seccion) { db.query("SELECT id FROM ofertas_academicas WHERE seccion_id=?",(rs,n)->(UUID)rs.getObject(1),seccion).forEach(this::publicarOferta); }
   private void publicarOferta(UUID oferta) {
+    bloquearPublicacion();
     var base=db.queryForMap("SELECT o.id,o.seccion_id,a.nombre AS asignatura,s.nombre AS seccion,g.nombre AS grado,p.nombre AS periodo FROM ofertas_academicas o JOIN asignaturas a ON a.id=o.asignatura_id JOIN secciones s ON s.id=o.seccion_id JOIN grados g ON g.id=s.grado_id JOIN periodos_academicos p ON p.id=s.periodo_id WHERE o.id=?",oferta);
     var estudiantes=db.query("SELECT m.estudiante_id FROM matriculas m JOIN estudiantes e ON e.id=m.estudiante_id WHERE m.seccion_id=? AND m.estado='ACTIVA' AND e.estado='ACTIVO'",(rs,n)->rs.getString(1),base.get("seccion_id"));
-    var docentes=db.query("SELECT docente_id FROM asignaciones_docentes WHERE oferta_id=? AND estado='ACTIVA'",(rs,n)->rs.getString(1),oferta);
+    var docentes=db.queryForList("SELECT d.id,concat_ws(' ',p.nombres,p.apellidos) AS nombre FROM asignaciones_docentes ad JOIN docentes d ON d.id=ad.docente_id JOIN personas p ON p.id=d.persona_id WHERE ad.oferta_id=? AND ad.estado='ACTIVA' ORDER BY p.apellidos,p.nombres",oferta);
     Map<String,Object> datos=Map.of("cursoId",oferta.toString(),"seccionId",base.get("seccion_id").toString(),"asignatura",base.get("asignatura"),"seccion",base.get("seccion"),"grado",base.get("grado"),"periodo",base.get("periodo"),"estudiantes",estudiantes,"docentes",docentes);
-    db.update("INSERT INTO eventos_pendientes(id,tipo,version,entidad_id,datos) VALUES (?,'OFERTA_ACTUALIZADA',1,?,?::jsonb)",UUID.randomUUID(),oferta,json(datos));
+    db.update("INSERT INTO eventos_pendientes(id,tipo,version,entidad_id,datos) VALUES (?,'OFERTA_ACTUALIZADA',?,?,?::jsonb)",UUID.randomUUID(),version(oferta),oferta,json(datos));
+  }
+  private int version(UUID entidad) {
+    bloquearPublicacion();
+    return db.queryForObject("INSERT INTO versiones_eventos(entidad_id,version) VALUES (?,1) ON CONFLICT(entidad_id) DO UPDATE SET version=versiones_eventos.version+1 RETURNING version",Integer.class,entidad);
+  }
+  private void bloquearPublicacion() {
+    // Serializa las instantáneas y su publicación para conservar el orden de commit.
+    db.execute("SELECT pg_advisory_xact_lock(132987,1)");
   }
   private String json(Object value) { try { return json.writeValueAsString(value); } catch(JsonProcessingException e) { throw new IllegalStateException(e); } }
   private void auditar(Jwt actor,String accion,UUID entidad,Object detalle) {

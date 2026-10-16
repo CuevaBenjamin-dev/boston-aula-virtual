@@ -1,6 +1,7 @@
 package pe.boston.erp;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.springframework.security.access.AccessDeniedException;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -35,5 +36,10 @@ class TesoreriaTest {
   }
   @Test void noPermiteReferenciaVacia() {
     assertThrows(IllegalArgumentException.class,()->tesoreria.registrar(estudiante,obligacion,new BigDecimal("1.00")," ",admin));
+  }
+  @Test void cuentaAcademicaSoloConsultaSuEstudianteVinculado() {
+    Jwt cuenta=new Jwt("token",Instant.now(),Instant.now().plusSeconds(300),Map.of("alg","RS256"),Map.of("sub","estudiante.demo","tipo","ESTUDIANTE","referencia_erp",estudiante.toString()));
+    assertThrows(AccessDeniedException.class,()->tesoreria.estado(UUID.randomUUID(),cuenta));
+    assertEquals(BigDecimal.ZERO,tesoreria.estado(estudiante,cuenta).get("saldoTotal"));
   }
 }

@@ -1,5 +1,5 @@
 export type Perfil = {usuario:string;tipo:'ESTUDIANTE'|'DOCENTE'|'COORDINACION'|'ADMINISTRADOR';developer:boolean;csrfToken:string};
-export type Curso = {id:string;asignatura:string;grado:string;seccion:string;periodo:string};
+export type Curso = {id:string;asignatura:string;grado:string;seccion:string;periodo:string;docentes:string|null};
 export type Tarea = {id:string;curso_id:string;titulo:string;instrucciones:string;fecha_limite:string;estado:'FALTA_COMPLETAR'|'PUBLICADA'|'CERRADA';escala_maxima:number;version:number;creado_en:string;publicado_en:string|null;presentada?:boolean;entregados?:number;total_estudiantes?:number};
 export type Clase = {id:string;curso_id:string;tema:string;inicio:string;fin:string;estado:'PROGRAMADA'|'CANCELADA';modificado_en:string|null;enlace_actual:string|null;enlace_actualizado:string|null;asignatura?:string;grado?:string;seccion?:string;periodo?:string};
 export type Entrega = {id:string;tarea_id:string;estudiante_erp_id:string;estudiante?:string;version:number;respuesta:string;estado:string;entregado_en:string};
@@ -9,11 +9,13 @@ export type NotificacionClase = {id:string;clase_id:string;tipo:'PROGRAMADA'|'RE
 export type Archivo = {id:string;nombre:string;tamano:number;tipo:string};
 
 function csrf(){const match=document.cookie.match(/(?:^|; )XSRF-TOKEN=([^;]+)/);return match?decodeURIComponent(match[1]):''}
+let redirigiendoAlInicio=false;
 export async function api<T>(path:string, options:RequestInit={}):Promise<T>{
   const headers:Record<string,string>={...options.headers as Record<string,string>};
   if(options.body && !(options.body instanceof FormData)) headers['Content-Type']='application/json';
   if(options.method && !['GET','HEAD'].includes(options.method.toUpperCase())) headers['X-XSRF-TOKEN']=csrf();
   const response=await fetch('/api/aula'+path,{...options,headers,credentials:'same-origin'});
+  if(response.status===401&&!redirigiendoAlInicio){redirigiendoAlInicio=true;window.location.assign('/');}
   if(!response.ok){const body=await response.json().catch(()=>({error:response.statusText}));throw new Error(body.error||`Error HTTP ${response.status}`)}
   if(response.status===204)return undefined as T;
   const body=await response.text();return body?JSON.parse(body) as T:undefined as T;

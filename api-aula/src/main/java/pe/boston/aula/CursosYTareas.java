@@ -13,13 +13,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service public class CursosYTareas {
+  private static final String CURSOS_CON_DOCENTES="SELECT c.*,(SELECT string_agg(dc.nombre_completo, ', ' ORDER BY dc.nombre_completo) FROM docentes_curso dc WHERE dc.curso_id=c.id AND dc.activo AND dc.nombre_completo IS NOT NULL) AS docentes FROM cursos c ";
   private final JdbcTemplate db; private final UsuarioActual usuario; private final ErpCliente erp;
   public CursosYTareas(JdbcTemplate db,UsuarioActual usuario,ErpCliente erp) { this.db=db;this.usuario=usuario;this.erp=erp; }
   public List<Map<String,Object>> cursos(Authentication a) {
     return switch(usuario.tipo(a)) {
-      case "ESTUDIANTE" -> db.queryForList("SELECT c.* FROM cursos c JOIN inscripciones_curso i ON i.curso_id=c.id WHERE i.estudiante_erp_id=? AND i.activo=TRUE ORDER BY c.asignatura",usuario.referencia(a));
-      case "DOCENTE" -> db.queryForList("SELECT c.* FROM cursos c JOIN docentes_curso d ON d.curso_id=c.id WHERE d.docente_erp_id=? AND d.activo=TRUE ORDER BY c.asignatura",usuario.referencia(a));
-      case "COORDINACION" -> db.queryForList("SELECT c.* FROM cursos c JOIN coordinaciones_seccion x ON x.seccion_erp_id=c.seccion_erp_id WHERE x.cuenta_id=? ORDER BY c.asignatura",usuario.cuenta(a));
+      case "ESTUDIANTE" -> db.queryForList(CURSOS_CON_DOCENTES+"JOIN inscripciones_curso i ON i.curso_id=c.id WHERE i.estudiante_erp_id=? AND i.activo=TRUE ORDER BY c.asignatura",usuario.referencia(a));
+      case "DOCENTE" -> db.queryForList(CURSOS_CON_DOCENTES+"JOIN docentes_curso d ON d.curso_id=c.id WHERE d.docente_erp_id=? AND d.activo=TRUE ORDER BY c.asignatura",usuario.referencia(a));
+      case "COORDINACION" -> db.queryForList(CURSOS_CON_DOCENTES+"JOIN coordinaciones_seccion x ON x.seccion_erp_id=c.seccion_erp_id WHERE x.cuenta_id=? AND x.confirmado_erp ORDER BY c.asignatura",usuario.cuenta(a));
       default -> throw new AccessDeniedException("Sin cursos académicos");
     };
   }

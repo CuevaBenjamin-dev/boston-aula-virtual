@@ -32,6 +32,7 @@ public class ErpAdministracionController {
   }
   @GetMapping("/ofertas") public ResponseEntity<String> ofertas(Authentication a,@RegisteredOAuth2AuthorizedClient("boston") OAuth2AuthorizedClient c) throws Exception { return enviar("/ofertas","GET",null,a,c); }
   @GetMapping("/catalogo") public ResponseEntity<String> catalogo(Authentication a,@RegisteredOAuth2AuthorizedClient("boston") OAuth2AuthorizedClient c) throws Exception { return enviar("/catalogo","GET",null,a,c); }
+  @PostMapping("/reconciliar") public ResponseEntity<String> reconciliar(Authentication a,@RegisteredOAuth2AuthorizedClient("boston") OAuth2AuthorizedClient c) throws Exception { usuario.developerRequerido(a);return enviar("/reconciliar","POST","{}",a,c); }
   @PostMapping("/secciones") public ResponseEntity<String> nuevaSeccion(@RequestBody String d,Authentication a,@RegisteredOAuth2AuthorizedClient("boston") OAuth2AuthorizedClient c) throws Exception { return enviar("/secciones","POST",d,a,c); }
   @PostMapping("/ofertas") public ResponseEntity<String> nuevaOferta(@RequestBody String d,Authentication a,@RegisteredOAuth2AuthorizedClient("boston") OAuth2AuthorizedClient c) throws Exception { return enviar("/ofertas","POST",d,a,c); }
   @PostMapping("/docentes") public ResponseEntity<String> nuevoDocente(@RequestBody String d,Authentication a,@RegisteredOAuth2AuthorizedClient("boston") OAuth2AuthorizedClient c) throws Exception { return enviar("/docentes","POST",d,a,c); }

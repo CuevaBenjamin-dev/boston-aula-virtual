@@ -15,6 +15,14 @@ import org.springframework.web.bind.annotation.*;
   public record Enlace(String enlace) {}
   public record Modulo(boolean habilitado) {}
   @GetMapping("/modulos") public Map<String,Boolean> modulos() { return Map.of("clasesYGrabaciones",clases.habilitado()); }
+  @GetMapping("/sincronizacion/estado") public Map<String,Object> estadoSincronizacion(Authentication a) {
+    usuario.oidc(a);
+    var estado=db.queryForMap("SELECT ultimo_exito,ultimo_error FROM estado_sincronizacion WHERE id=1");
+    var respuesta=new java.util.LinkedHashMap<String,Object>();
+    respuesta.put("sincronizadoEn",estado.get("ultimo_exito"));
+    respuesta.put("pendiente",estado.get("ultimo_error")!=null);
+    return respuesta;
+  }
   @PutMapping("/modulos/clases-y-grabaciones") public void modulo(@RequestBody Modulo datos,Authentication a) {
     usuario.administrador(a); db.update("UPDATE configuraciones_modulos SET habilitado=?,actualizado_en=now(),actualizado_por=? WHERE clave='clases_y_grabaciones'",datos.habilitado(),usuario.cuenta(a));
     db.update("INSERT INTO registros_auditoria(id,actor,accion,detalle) VALUES (?,?,?,?)",UUID.randomUUID(),usuario.oidc(a).getSubject(),"MODULO_CAMBIADO",String.valueOf(datos.habilitado()));
