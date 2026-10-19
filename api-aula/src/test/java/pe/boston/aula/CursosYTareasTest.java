@@ -19,7 +19,7 @@ import org.springframework.security.core.Authentication;
 class CursosYTareasTest {
   private final JdbcTemplate db=mock(JdbcTemplate.class);
   private final UsuarioActual usuario=mock(UsuarioActual.class);
-  private final CursosYTareas tareas=new CursosYTareas(db,usuario,mock(ErpCliente.class));
+  private final CursosYTareas tareas=new CursosYTareas(db,usuario,mock(ErpCliente.class),mock(AvisosTarea.class));
   private final Authentication actor=mock(Authentication.class);
   private final UUID tarea=UUID.randomUUID(),curso=UUID.randomUUID(),estudiante=UUID.randomUUID();
 

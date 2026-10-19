@@ -5,3 +5,6 @@
 **/.DS_Store
 **/*.log
 frontend/tsconfig.tsbuildinfo
+pruebas/.cp05-backup/
+**/__pycache__/
+**/*.pyc

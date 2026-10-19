@@ -11,8 +11,8 @@ const queryClient=new QueryClient({defaultOptions:{queries:{staleTime:15000,retr
 const menu:Record<Perfil['tipo'],Array<[string,string]>>={
   ESTUDIANTE:[['/','Inicio'],['/cursos','Mis cursos'],['/clases','Clases virtuales'],['/grabaciones','Grabaciones'],['/notificaciones','Bandeja de mensajes'],['/tareas','Mis tareas'],['/notas','Mis notas'],['/pagos','Mis pagos'],['/cuenta','Mi cuenta']],
   DOCENTE:[['/','Inicio'],['/cursos','Mis cursos'],['/clases','Clases virtuales'],['/grabaciones','Grabaciones'],['/notificaciones','Bandeja de mensajes'],['/tareas','Tareas y entregas'],['/notas','Calificaciones'],['/cuenta','Mi cuenta']],
-  COORDINACION:[['/','Inicio'],['/cursos','Cursos y secciones'],['/docentes','Docentes'],['/reportes','Seguimiento y reportes'],['/tareas','Tareas y evaluaciones'],['/clases','Clases virtuales'],['/grabaciones','Grabaciones'],['/notificaciones','Bandeja de mensajes'],['/cuenta','Mi cuenta']],
-  ADMINISTRADOR:[['/','Inicio'],['/usuarios','Usuarios y accesos'],['/modulos','Módulos del aula'],['/clases','Control de clases virtuales'],['/grabaciones','Grabaciones'],['/notificaciones','Bandeja de mensajes'],['/cuenta','Mi cuenta']]
+  COORDINACION:[['/','Inicio'],['/cursos','Cursos y secciones'],['/historial','Historial académico'],['/docentes','Docentes'],['/reportes','Seguimiento y reportes'],['/tareas','Tareas y evaluaciones'],['/clases','Clases virtuales'],['/grabaciones','Grabaciones'],['/notificaciones','Bandeja de mensajes'],['/cuenta','Mi cuenta']],
+  ADMINISTRADOR:[['/','Inicio'],['/usuarios','Usuarios y accesos'],['/historial','Historial académico'],['/modulos','Módulos del aula'],['/clases','Control de clases virtuales'],['/grabaciones','Grabaciones'],['/notificaciones','Bandeja de mensajes'],['/cuenta','Mi cuenta']]
 };
 
 function Shell(){

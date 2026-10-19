@@ -16,6 +16,11 @@ erDiagram
   CURSOS ||--o{ TAREAS : contiene
   TAREAS ||--o{ ENTREGAS : recibe
   TAREAS ||--o{ CALIFICACIONES_TAREA : evalua
+  TAREAS ||--o{ NOTIFICACIONES_TAREA : avisa
+  TAREAS ||--o| TAREAS : sucede
+  LOTES_TAREA ||--o{ TAREAS : crea
+  MATERIALES_CURSO ||--o{ DESTINOS_MATERIAL : publica
+  MATERIALES_CURSO ||--o{ ARCHIVOS_MATERIAL : adjunta
   CLASES_ACADEMICAS ||--o{ BLOQUES_ZOOM : continua
   CLASES_ACADEMICAS ||--o{ HISTORIAL_CLASES : registra
   CLASES_ACADEMICAS ||--o{ NOTIFICACIONES_CLASE : avisa
@@ -38,8 +43,13 @@ IDs principales: UUID. Fechas operativas: `TIMESTAMPTZ`. Importes: `NUMERIC(12,2
 | ERP `conceptos_cobro`, `obligaciones_pago`, `pagos`, `aplicaciones_pago` | `NUMERIC(12,2)`, vencimiento, referencia, estado | Referencia de pago única, aplicación positiva, recálculo al anular. |
 | ERP `eventos_pendientes`, `auditoria_erp` | Secuencia monotónica, JSONB versionado, actor | Outbox e historial de cambios institucionales. |
 | Aula `cursos`, `inscripciones_curso`, `docentes_curso`, `coordinaciones_seccion` | UUID ERP proyectados, indicador activo y ámbito | Acceso depende de inscripción/asignación/ámbito vigente. |
-| Aula `tareas`, `archivos_tarea`, `entregas`, `archivos_entrega` | Estado, plazo, publicación, versión, clave S3 | `FALTA_COMPLETAR` es privado; `PUBLICADA` es visible al estudiante. El material reemplazado conserva su objeto S3 pero queda inactivo. Versiones de entrega únicas por alumno y tarea. |
+| Aula `tareas`, `archivos_tarea`, `entregas`, `archivos_entrega` | Estado, plazo, publicación, versión, clave S3, `fecha_limite_al_entregar` | `FALTA_COMPLETAR` es privado; `PUBLICADA` recibe entregas incluso tras vencer; `CERRADA` y `CANCELADA` las bloquean. Cada entrega conserva plazo y carácter tardío al recibirse. El material reemplazado conserva su objeto S3 pero queda inactivo. Versiones de entrega únicas por alumno y tarea. |
 | Aula `calificaciones_tarea`, `historial_calificaciones` | Valor, `version`, `entrega_version`, actor | Una nota por alumno y tarea; cada corrección conserva historia. |
+| Aula `tareas.tarea_anterior_id`, `clave_operacion`, `cambio_en` | Predecesora, reintento y fecha | Una sola sucesora por versión anterior; las entregas y notas siguen en la versión que las recibió. |
+| Aula `lotes_tarea`, `tareas.lote_id` | Lote UUID, autor, huella de solicitud y tareas hijas | Una solicitud repetida devuelve las mismas tareas; cada curso tiene una tarea independiente. |
+| Aula `registros_auditoria.operacion_id` | Operación UUID única | Evita duplicar una corrección menor ante reintentos. |
+| Aula `notificaciones_tarea`, `eventos_notificacion_entrega` | Tarea, curso de origen, destinatario, tipo, contador, lectura y evento de entrega | Evento único por entrega/docente; índice único parcial de aviso `ENTREGAS` no leído por docente/tarea. |
+| Aula `materiales_curso`, `destinos_material`, `archivos_material` | Estado, enlace, varios cursos destino y claves S3 | Borrador/oculto sin acceso estudiantil; archivo retirado queda inactivo sin borrado físico. |
 | Aula `clases_academicas`, `bloques_zoom` | Tema, horario, estado, docente ERP, enlace y número de bloque | Cancelar conserva clase y bloques; último bloque es enlace vigente. |
 | Aula `historial_clases` | Clase, acción, tema, horario, estado y fecha | Cada creación, edición o cancelación conserva una instantánea; V8 registra el estado conocido de las clases anteriores. |
 | Aula `notificaciones_clase` | Clase, estudiante ERP, tipo, mensaje, creación, lectura | Avisos persistentes por estudiante matriculado; cada uno se marca leído por separado. |
@@ -52,4 +62,6 @@ IDs principales: UUID. Fechas operativas: `TIMESTAMPTZ`. Importes: `NUMERIC(12,2
 | Aula `eliminaciones_grabaciones`, `preparacion_demo` | Lote, resultado, marcador `academico_v1` | Borrado auditado y fixtures insertados una sola vez. |
 
 Cada servicio mantiene su propio esquema lógico dentro de una base independiente. Los UUID que cruzan servicios son referencias externas sin FK entre bases. La migración V7 del Aula añade estado de clases, avisos y referencias de YouTube sin borrar MP4 históricos. V8 crea el historial de clases y registra una instantánea del estado conocido de cada clase anterior; no puede reconstruir modificaciones anteriores a la migración. En clases anteriores, el docente ERP se reconstruye desde la asignación actualmente activa cuando existe; podría no corresponder al docente que impartió una clase histórica si hubo reasignación.
+
+La migración V15 incorpora CP-06: tareas canceladas, entregas tardías admitidas por defecto, plazo congelado en cada entrega, lotes de tareas y clave de operación para cambios menores. Para entregas anteriores, rellena el plazo con el valor conocido al migrar, pues no puede reconstruir ampliaciones antiguas.
 

@@ -2,13 +2,17 @@ server:
   port: 8080
   servlet:
     session:
+      timeout: 2147483647s
       cookie:
         name: AULA_SESSION
         http-only: true
         same-site: lax
+        max-age: 2147483647s
 spring:
   application:
     name: api-aula-boston
+  session:
+    timeout: 2147483647s
   servlet:
     multipart:
       max-file-size: 2MB

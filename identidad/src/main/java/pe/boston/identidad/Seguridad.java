@@ -8,6 +8,7 @@ import java.security.interfaces.RSAPublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.time.Instant;
+import java.time.Duration;
 import java.util.Base64;
 import java.util.List;
 import java.util.Set;
@@ -42,6 +43,7 @@ import org.springframework.security.oauth2.server.authorization.client.Registere
 import org.springframework.security.config.annotation.web.configurers.oauth2.server.authorization.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
+import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
 import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -118,13 +120,20 @@ public class Seguridad {
   @Bean RegisteredClientRepository clientes(JdbcTemplate jdbc, PasswordEncoder encoder,
       @Value("${BOSTON_BFF_SECRET}") String bff, @Value("${BOSTON_ERP_SECRET}") String erp) {
     var repo = new JdbcRegisteredClientRepository(jdbc);
-    if (repo.findByClientId("aula-bff") == null) repo.save(RegisteredClient.withId(UUID.randomUUID().toString())
+    var bffActual = repo.findByClientId("aula-bff");
+    var tokensBff = TokenSettings.builder().refreshTokenTimeToLive(Duration.ofSeconds(Integer.MAX_VALUE))
+      .reuseRefreshTokens(false).build();
+    if (bffActual == null) repo.save(RegisteredClient.withId(UUID.randomUUID().toString())
       .clientId("aula-bff").clientSecret(encoder.encode(bff)).clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
       .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE).authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
       .redirectUri("http://localhost:8088/login/oauth2/code/boston")
       .postLogoutRedirectUri("http://localhost:8088/")
       .scope(OidcScopes.OPENID).scope(OidcScopes.PROFILE)
-      .clientSettings(ClientSettings.builder().requireProofKey(true).requireAuthorizationConsent(false).build()).build());
+      .clientSettings(ClientSettings.builder().requireProofKey(true).requireAuthorizationConsent(false).build())
+      .tokenSettings(tokensBff).build());
+    else if (!tokensBff.getRefreshTokenTimeToLive().equals(bffActual.getTokenSettings().getRefreshTokenTimeToLive())
+        || bffActual.getTokenSettings().isReuseRefreshTokens())
+      repo.save(RegisteredClient.from(bffActual).tokenSettings(tokensBff).build());
     if (repo.findByClientId("aula-servicio") == null) repo.save(RegisteredClient.withId(UUID.randomUUID().toString())
       .clientId("aula-servicio").clientSecret(encoder.encode(erp)).clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
       .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS).scope("erp.read").scope("erp.sync").build());

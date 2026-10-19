@@ -203,10 +203,10 @@ import org.springframework.transaction.annotation.Transactional;
   private void publicarSeccion(UUID seccion) { db.query("SELECT id FROM ofertas_academicas WHERE seccion_id=?",(rs,n)->(UUID)rs.getObject(1),seccion).forEach(this::publicarOferta); }
   private void publicarOferta(UUID oferta) {
     bloquearPublicacion();
-    var base=db.queryForMap("SELECT o.id,o.seccion_id,a.nombre AS asignatura,s.nombre AS seccion,g.nombre AS grado,p.nombre AS periodo FROM ofertas_academicas o JOIN asignaturas a ON a.id=o.asignatura_id JOIN secciones s ON s.id=o.seccion_id JOIN grados g ON g.id=s.grado_id JOIN periodos_academicos p ON p.id=s.periodo_id WHERE o.id=?",oferta);
+    var base=db.queryForMap("SELECT o.id,o.seccion_id,a.nombre AS asignatura,s.nombre AS seccion,g.nombre AS grado,n.nombre AS nivel,p.nombre AS periodo,p.fin AS periodo_fin FROM ofertas_academicas o JOIN asignaturas a ON a.id=o.asignatura_id JOIN secciones s ON s.id=o.seccion_id JOIN grados g ON g.id=s.grado_id JOIN niveles_educativos n ON n.id=g.nivel_id JOIN periodos_academicos p ON p.id=s.periodo_id WHERE o.id=?",oferta);
     var estudiantes=db.query("SELECT m.estudiante_id FROM matriculas m JOIN estudiantes e ON e.id=m.estudiante_id WHERE m.seccion_id=? AND m.estado='ACTIVA' AND e.estado='ACTIVO'",(rs,n)->rs.getString(1),base.get("seccion_id"));
     var docentes=db.queryForList("SELECT d.id,concat_ws(' ',p.nombres,p.apellidos) AS nombre FROM asignaciones_docentes ad JOIN docentes d ON d.id=ad.docente_id JOIN personas p ON p.id=d.persona_id WHERE ad.oferta_id=? AND ad.estado='ACTIVA' ORDER BY p.apellidos,p.nombres",oferta);
-    Map<String,Object> datos=Map.of("cursoId",oferta.toString(),"seccionId",base.get("seccion_id").toString(),"asignatura",base.get("asignatura"),"seccion",base.get("seccion"),"grado",base.get("grado"),"periodo",base.get("periodo"),"estudiantes",estudiantes,"docentes",docentes);
+    Map<String,Object> datos=Map.of("cursoId",oferta.toString(),"seccionId",base.get("seccion_id").toString(),"asignatura",base.get("asignatura"),"seccion",base.get("seccion"),"grado",base.get("grado"),"nivel",base.get("nivel"),"periodo",base.get("periodo"),"periodoFin",base.get("periodo_fin").toString(),"estudiantes",estudiantes,"docentes",docentes);
     db.update("INSERT INTO eventos_pendientes(id,tipo,version,entidad_id,datos) VALUES (?,'OFERTA_ACTUALIZADA',?,?,?::jsonb)",UUID.randomUUID(),version(oferta),oferta,json(datos));
   }
   private int version(UUID entidad) {

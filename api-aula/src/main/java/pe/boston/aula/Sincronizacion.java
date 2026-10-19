@@ -55,8 +55,8 @@ import org.slf4j.LoggerFactory;
     }
     if(!"OFERTA_ACTUALIZADA".equals(evento.get("tipo").asText())) throw new IllegalArgumentException("Tipo de evento ERP desconocido");
     UUID curso=UUID.fromString(d.get("cursoId").asText());
-    db.update("INSERT INTO cursos(id,seccion_erp_id,asignatura,seccion,grado,periodo) VALUES (?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET asignatura=EXCLUDED.asignatura,seccion=EXCLUDED.seccion,grado=EXCLUDED.grado,periodo=EXCLUDED.periodo,actualizado_en=now()",
-      curso,UUID.fromString(d.get("seccionId").asText()),d.get("asignatura").asText(),d.get("seccion").asText(),d.get("grado").asText(),d.get("periodo").asText());
+    db.update("INSERT INTO cursos(id,seccion_erp_id,asignatura,seccion,grado,nivel,periodo,periodo_fin) VALUES (?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET asignatura=EXCLUDED.asignatura,seccion=EXCLUDED.seccion,grado=EXCLUDED.grado,nivel=COALESCE(EXCLUDED.nivel,cursos.nivel),periodo=EXCLUDED.periodo,periodo_fin=COALESCE(EXCLUDED.periodo_fin,cursos.periodo_fin),actualizado_en=now()",
+      curso,UUID.fromString(d.get("seccionId").asText()),d.get("asignatura").asText(),d.get("seccion").asText(),d.get("grado").asText(),d.hasNonNull("nivel")?d.get("nivel").asText():null,d.get("periodo").asText(),d.hasNonNull("periodoFin")?java.time.LocalDate.parse(d.get("periodoFin").asText()):null);
     db.update("UPDATE inscripciones_curso SET activo=FALSE,actualizado_en=now() WHERE curso_id=?",curso);
     for(JsonNode id:d.get("estudiantes")) db.update("INSERT INTO inscripciones_curso(curso_id,estudiante_erp_id,activo) VALUES (?,?,TRUE) ON CONFLICT(curso_id,estudiante_erp_id) DO UPDATE SET activo=TRUE,actualizado_en=now()",curso,UUID.fromString(id.asText()));
     db.update("UPDATE docentes_curso SET activo=FALSE WHERE curso_id=?",curso);

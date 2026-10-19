@@ -83,7 +83,9 @@ services:
       BOSTON_S3_PUBLIC_ENDPOINT: http://localhost:8333
       BOSTON_S3_ACCESS_KEY: ${S3_ACCESS_KEY:-local-aula}
       BOSTON_S3_SECRET_KEY: ${S3_SECRET_KEY:-cambiar-local-s3}
-      BOSTON_DATOS_DEMO: ${DATOS_DEMO:-true}
+      BOSTON_DATOS_DEMO: ${DATOS_DEMO:-false}
+      BOSTON_ARCHIVOS_MAX_MB: ${ARCHIVO_MAX_MB:-100}
+      BOSTON_ARCHIVOS_CAPACIDAD_PADRE_MB: ${ARCHIVOS_POR_ACTIVIDAD_MB:-1024}
     depends_on:
       postgres:
         condition: service_healthy

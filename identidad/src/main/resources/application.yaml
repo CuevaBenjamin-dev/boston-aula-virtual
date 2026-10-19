@@ -2,13 +2,17 @@ server:
   port: 9000
   servlet:
     session:
+      timeout: 2147483647s
       cookie:
         name: IDENTIDAD_SESSION
         http-only: true
         same-site: lax
+        max-age: 2147483647s
 spring:
   application:
     name: identidad-boston
+  session:
+    timeout: 2147483647s
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/identidad_boston}
     username: ${SPRING_DATASOURCE_USERNAME:boston}

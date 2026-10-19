@@ -4,6 +4,7 @@ import {api,type Perfil} from '../api';
 import {AdminGrabaciones,ClaseDetalle,ClasesListado,GrabacionesListado} from './ClasesGrabaciones';
 import {Cursos,CursoPage,TareaPage,NotaPage} from './AcademicoTareas';
 import Bandeja from './Bandeja';
+import Historial from './Historial';
 
 type Props={perfil:Perfil;pagina?:string;modulos?:{clasesYGrabaciones:boolean}};
 const fecha=(s:string)=>new Date(s).toLocaleString('es-PE',{dateStyle:'medium',timeStyle:'short'});
@@ -26,6 +27,7 @@ export default function Academico({perfil,pagina='inicio',modulos}:Props){
   if(p.notaId)return <NotaPage/>;
   if(p.claseId)return <ClaseDetalle perfil={perfil}/>;
   if(actual==='notificaciones')return <Bandeja perfil={perfil}/>;
+  if(actual==='historial'&&['COORDINACION','ADMINISTRADOR'].includes(perfil.tipo))return <Historial/>;
   if(perfil.tipo==='ADMINISTRADOR'&&actual==='grabaciones')return <AdminGrabaciones/>;
   if(perfil.tipo==='ADMINISTRADOR')return <AdministracionVista pagina={actual}/>;
   if(['ESTUDIANTE','DOCENTE','COORDINACION'].includes(perfil.tipo)&&actual==='clases')return <ClasesListado perfil={perfil}/>;

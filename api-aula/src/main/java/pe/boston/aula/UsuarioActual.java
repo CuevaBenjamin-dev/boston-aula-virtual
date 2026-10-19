@@ -26,17 +26,17 @@ import org.springframework.stereotype.Component;
   public void estudiante(Authentication a) { if (!"ESTUDIANTE".equals(tipo(a))) throw new AccessDeniedException("Solo cuenta académica"); }
   public void docente(Authentication a,UUID curso) {
     if (!"DOCENTE".equals(tipo(a))) throw new AccessDeniedException("Solo docente");
-    if (db.queryForObject("SELECT count(*) FROM docentes_curso WHERE curso_id=? AND docente_erp_id=? AND activo=TRUE",Long.class,curso,referencia(a))==0) throw new AccessDeniedException("Curso ajeno");
+    if (db.queryForObject("SELECT count(*) FROM docentes_curso d JOIN cursos c ON c.id=d.curso_id WHERE d.curso_id=? AND d.docente_erp_id=? AND d.activo=TRUE AND (c.periodo_fin IS NULL OR c.periodo_fin>=CURRENT_DATE)",Long.class,curso,referencia(a))==0) throw new AccessDeniedException("Curso ajeno");
   }
   public void estudianteCurso(Authentication a,UUID curso) {
     estudiante(a);
-    if (db.queryForObject("SELECT count(*) FROM inscripciones_curso WHERE curso_id=? AND estudiante_erp_id=? AND activo=TRUE",Long.class,curso,referencia(a))==0) throw new AccessDeniedException("Curso ajeno");
+    if (db.queryForObject("SELECT count(*) FROM inscripciones_curso i JOIN cursos c ON c.id=i.curso_id WHERE i.curso_id=? AND i.estudiante_erp_id=? AND i.activo=TRUE AND (c.periodo_fin IS NULL OR c.periodo_fin>=CURRENT_DATE)",Long.class,curso,referencia(a))==0) throw new AccessDeniedException("Curso ajeno");
   }
   public void leerCurso(Authentication a,UUID curso) {
     if ("ESTUDIANTE".equals(tipo(a))) estudianteCurso(a,curso);
     else if ("DOCENTE".equals(tipo(a))) docente(a,curso);
     else if ("COORDINACION".equals(tipo(a))) {
-      if(db.queryForObject("SELECT count(*) FROM cursos c JOIN coordinaciones_seccion x ON x.seccion_erp_id=c.seccion_erp_id WHERE c.id=? AND x.cuenta_id=? AND x.confirmado_erp",Long.class,curso,cuenta(a))==0) throw new AccessDeniedException("Curso fuera del ámbito de coordinación");
+      if(db.queryForObject("SELECT count(*) FROM cursos c JOIN coordinaciones_seccion x ON x.seccion_erp_id=c.seccion_erp_id WHERE c.id=? AND x.cuenta_id=? AND x.confirmado_erp AND (c.periodo_fin IS NULL OR c.periodo_fin>=CURRENT_DATE)",Long.class,curso,cuenta(a))==0) throw new AccessDeniedException("Curso fuera del ámbito de coordinación");
     } else throw new AccessDeniedException("Sin acceso académico");
   }
   public void administrador(Authentication a) { if (!"ADMINISTRADOR".equals(tipo(a))) throw new AccessDeniedException("Solo administrador"); }
