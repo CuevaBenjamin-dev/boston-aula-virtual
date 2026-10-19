@@ -13,6 +13,7 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
@@ -51,9 +52,26 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.security.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+import org.springframework.session.web.http.CookieSerializer;
+import org.springframework.session.web.http.DefaultCookieSerializer;
+import jakarta.servlet.http.HttpServletRequest;
 
 @Configuration
 public class Seguridad {
+  private static final Pattern ID_SESION = Pattern.compile("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}");
+  @Bean CookieSerializer cookieSesion() {
+    var cookie = new DefaultCookieSerializer();
+    cookie.setCookieName("IDENTIDAD_SESSION");
+    cookie.setSameSite("Lax");
+    cookie.setCookieMaxAge(Integer.MAX_VALUE);
+    return new CookieSerializer() {
+      @Override public List<String> readCookieValues(HttpServletRequest request) {
+        try { return cookie.readCookieValues(request).stream().filter(id -> ID_SESION.matcher(id).matches()).toList(); }
+        catch (IllegalArgumentException e) { return List.of(); }
+      }
+      @Override public void writeCookieValue(CookieValue value) { cookie.writeCookieValue(value); }
+    };
+  }
   @Bean PasswordEncoder codificador() { return new Argon2PasswordEncoder(16, 32, 1, 19456, 2); }
   @Bean org.springframework.boot.web.servlet.FilterRegistrationBean<EstadoCuentaFiltro> registroEstado(EstadoCuentaFiltro filtro) {
     var registro=new org.springframework.boot.web.servlet.FilterRegistrationBean<>(filtro);

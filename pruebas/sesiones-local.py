@@ -27,6 +27,13 @@ def esperar(url):
 def main():
     esperar("http://localhost:9000/actuator/health")
     esperar("http://localhost:8088/actuator/health")
+    with urlopen(Request("http://localhost:9000/login", headers={"Cookie": "IDENTIDAD_SESSION=AA=="}), timeout=20) as response:
+        assert response.status == 200
+    try:
+        urlopen(Request("http://localhost:8088/api/sesion", headers={"Cookie": "AULA_SESSION=AA=="}), timeout=20)
+        raise AssertionError("Una cookie inválida no debe dar acceso al Aula")
+    except HTTPError as error:
+        assert error.code == 401, f"La cookie inválida causó HTTP {error.code}"
     sesion = Session("estudiante.demo")
     cookies = {cookie.name: cookie for cookie in sesion.cookies}
     assert cookies["AULA_SESSION"].expires is not None

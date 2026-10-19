@@ -15,8 +15,27 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 import org.springframework.jdbc.core.JdbcTemplate;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.regex.Pattern;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.session.web.http.CookieSerializer;
+import org.springframework.session.web.http.DefaultCookieSerializer;
 
 @Configuration public class Seguridad {
+  private static final Pattern ID_SESION = Pattern.compile("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}");
+  @Bean CookieSerializer cookieSesion() {
+    var cookie = new DefaultCookieSerializer();
+    cookie.setCookieName("AULA_SESSION");
+    cookie.setSameSite("Lax");
+    cookie.setCookieMaxAge(Integer.MAX_VALUE);
+    return new CookieSerializer() {
+      @Override public List<String> readCookieValues(HttpServletRequest request) {
+        try { return cookie.readCookieValues(request).stream().filter(id -> ID_SESION.matcher(id).matches()).toList(); }
+        catch (IllegalArgumentException e) { return List.of(); }
+      }
+      @Override public void writeCookieValue(CookieValue value) { cookie.writeCookieValue(value); }
+    };
+  }
   @Bean OAuth2AuthorizedClientService clientesAutorizados(JdbcTemplate jdbc, ClientRegistrationRepository registros) {
     return new JdbcOAuth2AuthorizedClientService(jdbc, registros);
   }
