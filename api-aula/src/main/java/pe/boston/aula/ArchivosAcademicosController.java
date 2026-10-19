@@ -15,9 +15,11 @@ import org.springframework.web.bind.annotation.*;
   @PostMapping("/tareas/{id}/archivos") public Map<String,Object> iniciarTarea(@PathVariable UUID id,@RequestBody Inicio d,Authentication a) { return archivos.iniciarTarea(id,d.nombre(),d.tipo(),d.tamano(),d.sustituyeId(),a); }
   @PostMapping("/materiales/{id}/archivos") public Map<String,Object> iniciarMaterial(@PathVariable UUID id,@RequestBody Inicio d,Authentication a) { return archivos.iniciarMaterial(id,d.nombre(),d.tipo(),d.tamano(),d.sustituyeId(),a); }
   @PostMapping("/entregas/{id}/archivos") public Map<String,Object> iniciarEntrega(@PathVariable UUID id,@RequestBody Inicio d,Authentication a) { return archivos.iniciarEntrega(id,d.nombre(),d.tipo(),d.tamano(),a); }
+  @PostMapping("/preparaciones/{id}/archivos") public Map<String,Object> iniciarPreparacion(@PathVariable UUID id,@RequestBody Inicio d,Authentication a) { return archivos.iniciarPreparacion(id,d.nombre(),d.tipo(),d.tamano(),d.sustituyeId(),a); }
   @GetMapping("/tareas/{id}/archivos") public List<Map<String,Object>> tarea(@PathVariable UUID id,Authentication a) { return archivos.tarea(id,a); }
   @GetMapping("/materiales/{id}/archivos") public List<Map<String,Object>> material(@PathVariable UUID id,Authentication a) { return archivos.material(id,a); }
   @GetMapping("/entregas/{id}/archivos") public List<Map<String,Object>> entrega(@PathVariable UUID id,Authentication a) { return archivos.entrega(id,a); }
+  @GetMapping("/preparaciones/{id}/archivos") public List<Map<String,Object>> preparacion(@PathVariable UUID id,Authentication a) { return archivos.preparacion(id,a); }
   @GetMapping("/archivos/{id}/partes/{numero}") public Map<String,URI> parte(@PathVariable UUID id,@PathVariable int numero,Authentication a) { return Map.of("url",archivos.parte(id,numero,a)); }
   @PostMapping("/archivos/{id}/completar") public void completar(@PathVariable UUID id,@RequestBody Completar d,Authentication a) { archivos.completar(id,d.partes(),a); }
   @GetMapping("/archivos/{id}/url") public Map<String,URI> enlace(@PathVariable UUID id,Authentication a) { return Map.of("url",archivos.enlace(id,a)); }

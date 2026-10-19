@@ -56,4 +56,23 @@ import org.springframework.stereotype.Service;
       db.update("UPDATE eventos_notificacion_entrega SET notificacion_id=? WHERE entrega_id=? AND docente_erp_id=?",aviso,entrega,docente);
     }
   }
+
+  public void calificacion(UUID tarea,UUID curso,UUID estudiante,String titulo,UUID nota,int version,boolean actualizada) {
+    db.update("""
+      INSERT INTO notificaciones_tarea(id,tarea_id,curso_id,destinatario_tipo,destinatario_erp_id,tipo,mensaje,clave_evento,calificacion_id)
+      VALUES (gen_random_uuid(),?,?,'ESTUDIANTE',?,'CALIFICADA',?,
+              'CALIFICADA:' || ?::text || ':' || ?::text,?)
+      ON CONFLICT (clave_evento) DO NOTHING
+      """,tarea,curso,estudiante,
+      (actualizada?"Se actualizó la calificación de tu tarea: ":"Tu tarea fue calificada: ")+titulo,
+      nota,version,nota);
+  }
+  public void reentrega(UUID tarea,UUID curso,UUID estudiante,String titulo,int intento) {
+    db.update("""
+      INSERT INTO notificaciones_tarea(id,tarea_id,curso_id,destinatario_tipo,destinatario_erp_id,tipo,mensaje,clave_evento)
+      VALUES (gen_random_uuid(),?,?,'ESTUDIANTE',?,'REENTREGA_AUTORIZADA',?,
+              'REENTREGA:' || ?::text || ':' || ?::text || ':' || ?::text)
+      ON CONFLICT (clave_evento) DO NOTHING
+      """,tarea,curso,estudiante,"Puedes realizar una nueva entrega de la tarea: "+titulo,tarea,estudiante,intento);
+  }
 }

@@ -47,7 +47,7 @@ import org.springframework.web.bind.annotation.*;
       (SELECT count(*) FROM docentes_curso d WHERE d.curso_id=c.id AND d.activo) AS docentes,
       (SELECT count(*) FROM tareas t WHERE t.curso_id=c.id AND t.estado<>'BORRADOR') AS tareas,
       (SELECT count(*) FROM entregas e JOIN tareas t ON t.id=e.tarea_id WHERE t.curso_id=c.id) AS entregas,
-      (SELECT count(*) FROM calificaciones_tarea n JOIN tareas t ON t.id=n.tarea_id WHERE t.curso_id=c.id) AS calificaciones
+      (SELECT count(*) FROM calificaciones_tarea n JOIN tareas t ON t.id=n.tarea_id WHERE t.curso_id=c.id AND n.estado='PUBLICADA') AS calificaciones
       FROM cursos c JOIN coordinaciones_seccion x ON x.seccion_erp_id=c.seccion_erp_id WHERE x.cuenta_id=? AND x.confirmado_erp ORDER BY c.grado,c.seccion,c.asignatura
       """,usuario.cuenta(a));
   }

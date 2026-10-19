@@ -11,6 +11,8 @@ public interface AlmacenamientoObjetos {
   void completar(String clave,String uploadId,List<Map<String,Object>> partes);
   long tamano(String clave);
   byte[] cabecera(String clave);
+  byte[] contenido(String clave);
+  void abortar(String clave,String uploadId);
   URI leer(String clave,Duration vigencia);
   URI descargar(String clave,String nombre,Duration vigencia);
   void guardarFixture(String clave,byte[] contenido,String tipo);

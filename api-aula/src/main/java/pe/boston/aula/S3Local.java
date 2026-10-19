@@ -38,6 +38,8 @@ import software.amazon.awssdk.services.s3.presigner.model.*;
   }
   public long tamano(String clave) { return interno.headObject(HeadObjectRequest.builder().bucket(BUCKET).key(clave).build()).contentLength(); }
   public byte[] cabecera(String clave) { return interno.getObjectAsBytes(GetObjectRequest.builder().bucket(BUCKET).key(clave).range("bytes=0-15").build()).asByteArray(); }
+  public byte[] contenido(String clave) { return interno.getObjectAsBytes(GetObjectRequest.builder().bucket(BUCKET).key(clave).build()).asByteArray(); }
+  public void abortar(String clave,String uploadId) { interno.abortMultipartUpload(AbortMultipartUploadRequest.builder().bucket(BUCKET).key(clave).uploadId(uploadId).build()); }
   public URI leer(String clave,Duration vigencia) { return URI.create(publico.presignGetObject(GetObjectPresignRequest.builder().signatureDuration(vigencia).getObjectRequest(GetObjectRequest.builder().bucket(BUCKET).key(clave).build()).build()).url().toString()); }
   public URI descargar(String clave,String nombre,Duration vigencia) {
     String seguro=nombre.replaceAll("[^a-zA-Z0-9._-]","_");

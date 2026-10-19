@@ -39,7 +39,7 @@ import org.springframework.web.bind.annotation.RestController;
         (SELECT count(*) FROM entregas e JOIN tareas t ON t.id=e.tarea_id
          WHERE t.curso_id=i.curso_id AND e.estudiante_erp_id=i.estudiante_erp_id) AS entregas,
         (SELECT count(*) FROM calificaciones_tarea n JOIN tareas t ON t.id=n.tarea_id
-         WHERE t.curso_id=i.curso_id AND n.estudiante_erp_id=i.estudiante_erp_id) AS calificaciones
+         WHERE t.curso_id=i.curso_id AND n.estudiante_erp_id=i.estudiante_erp_id AND n.estado='PUBLICADA') AS calificaciones
       FROM inscripciones_curso i WHERE i.curso_id=? ORDER BY i.activo,i.actualizado_en DESC
       """,curso);
     Map<String,String> nombres=new HashMap<>();
@@ -58,7 +58,7 @@ import org.springframework.web.bind.annotation.RestController;
         e.id AS entrega_id,e.entregado_en,e.respuesta,
         n.valor,n.comentario,n.actualizado_en AS calificada_en
       FROM tareas t LEFT JOIN entregas e ON e.tarea_id=t.id AND e.estudiante_erp_id=?
-      LEFT JOIN calificaciones_tarea n ON n.tarea_id=t.id AND n.estudiante_erp_id=?
+      LEFT JOIN calificaciones_tarea n ON n.tarea_id=t.id AND n.estudiante_erp_id=? AND n.entrega_version=e.version AND n.estado='PUBLICADA'
       WHERE t.curso_id=? AND (e.id IS NOT NULL OR n.id IS NOT NULL)
       ORDER BY t.creado_en DESC,e.entregado_en DESC
       """,estudiante,estudiante,curso);

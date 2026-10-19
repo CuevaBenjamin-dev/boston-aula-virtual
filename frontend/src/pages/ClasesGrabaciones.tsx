@@ -27,9 +27,9 @@ export function normalizarYoutube(valor:string):string|null {
 function useFiltros(){
   const [params,setParams]=useSearchParams();
   function cambiar(clave:string,valor:string){const p=new URLSearchParams(params);if(valor)p.set(clave,valor);else p.delete(clave);if(clave!=='p')p.delete('p');setParams(p)}
-  return {params,cambiar};
+  return {params,cambiar,limpiar:()=>setParams(new URLSearchParams())};
 }
-function Filtros({params,cambiar,asignaturas,grados,secciones,estados,conTitulo=false}:{params:URLSearchParams;cambiar:(k:string,v:string)=>void;asignaturas:string[];grados:string[];secciones:string[];estados?:string[];conTitulo?:boolean}){
+function Filtros({params,cambiar,limpiar,asignaturas,grados,secciones,estados,conTitulo=false}:{params:URLSearchParams;cambiar:(k:string,v:string)=>void;limpiar:()=>void;asignaturas:string[];grados:string[];secciones:string[];estados?:string[];conTitulo?:boolean}){
   return <div className="panel form filters"><div className="filter-grid">
     <label>{conTitulo?'Buscar título':'Buscar tema'}<input value={params.get('q')||''} onChange={e=>cambiar('q',e.target.value)} placeholder="Escribe para buscar"/></label>
     <label>Curso<select value={params.get('asignatura')||''} onChange={e=>cambiar('asignatura',e.target.value)}><option value="">Todos</option>{asignaturas.map(x=><option key={x}>{x}</option>)}</select></label>
@@ -37,7 +37,7 @@ function Filtros({params,cambiar,asignaturas,grados,secciones,estados,conTitulo=
     <label>Sección<select value={params.get('seccion')||''} onChange={e=>cambiar('seccion',e.target.value)}><option value="">Todas</option>{secciones.map(x=><option key={x}>{x}</option>)}</select></label>
     <label>Fecha<input type="date" value={params.get('fecha')||''} onChange={e=>cambiar('fecha',e.target.value)}/></label>
     {estados&&<label>Estado<select value={params.get('estado')||''} onChange={e=>cambiar('estado',e.target.value)}><option value="">Todos</option>{estados.map(x=><option key={x} value={x}>{x}</option>)}</select></label>}
-  </div></div>
+  </div><button type="button" className="button secondary" onClick={limpiar}>Limpiar filtros</button></div>
 }
 function Paginacion({total,params,cambiar}:{total:number;params:URLSearchParams;cambiar:(k:string,v:string)=>void}){
   const max=Math.max(1,Math.ceil(total/paginaTamano)),actual=Math.min(max,Math.max(1,Number(params.get('p'))||1));
@@ -65,12 +65,12 @@ function CrearClase({cursos}:{cursos:Curso[]}){
 }
 
 export function ClasesListado({perfil}:{perfil:Perfil}){
-  const {params,cambiar}=useFiltros();const {data:clases=[],isLoading,error}=useQuery<Clase[]>({queryKey:['clases-global'],queryFn:()=>api('/clases'),refetchInterval:30000});
+  const {params,cambiar,limpiar}=useFiltros();const {data:clases=[],isLoading,error}=useQuery<Clase[]>({queryKey:['clases-global'],queryFn:()=>api('/clases'),refetchInterval:30000});
   const {data:cursos=[]}=useQuery<Curso[]>({queryKey:['cursos'],queryFn:()=>api('/cursos'),enabled:perfil.tipo==='DOCENTE'});
   const filas=useMemo(()=>clases.filter(c=>(!params.get('q')||c.tema.toLowerCase().includes(params.get('q')!.toLowerCase()))&&(!params.get('asignatura')||c.asignatura===params.get('asignatura'))&&(!params.get('grado')||c.grado===params.get('grado'))&&(!params.get('seccion')||c.seccion===params.get('seccion'))&&(!params.get('fecha')||local(c.inicio).slice(0,10)===params.get('fecha'))&&(!params.get('estado')||c.estado===params.get('estado'))),[clases,params]);
   return <><div className="page-head"><div><span className="eyebrow">AULA VIRTUAL</span><h1>Clases virtuales</h1><p>{perfil.tipo==='DOCENTE'?'Programa y administra tus clases asignadas.':'Consulta tus clases y el enlace vigente de Zoom.'}</p></div></div>
     {perfil.tipo==='DOCENTE'&&<CrearClase cursos={cursos}/>}
-    <Filtros params={params} cambiar={cambiar} asignaturas={unico(clases.map(c=>c.asignatura||''))} grados={unico(clases.map(c=>c.grado||''))} secciones={unico(clases.map(c=>c.seccion||''))} estados={['PROGRAMADA','CANCELADA']}/>
+    <Filtros params={params} cambiar={cambiar} limpiar={limpiar} asignaturas={unico(clases.map(c=>c.asignatura||''))} grados={unico(clases.map(c=>c.grado||''))} secciones={unico(clases.map(c=>c.seccion||''))} estados={['PROGRAMADA','CANCELADA']}/>
     {isLoading?<p className="muted">Cargando clases…</p>:error?<div className="alert">{errorDe(error)}</div>:!filas.length?<div className="empty">No hay clases para estos filtros.</div>:<div className="list">{paginaFilas(filas,params).map(c=><div className="list-row stack-mobile" key={c.id}><div><strong>{c.tema}</strong><span>{c.asignatura} · {c.grado} {c.seccion} · {fecha(c.inicio)}</span></div><span className={'badge '+c.estado.toLowerCase()}>{estadoClase(c)}</span><div className="row-actions">{perfil.tipo==='ESTUDIANTE'&&c.estado==='PROGRAMADA'&&c.enlace_actual&&<a className="button secondary" href={c.enlace_actual} target="_blank" rel="noopener noreferrer">Abrir Zoom ↗</a>}<Link className="button secondary" to={`/clases/${c.id}?return=${encodeURIComponent('/clases'+window.location.search)}`}>Ver detalle</Link></div></div>)}</div>}
     <Paginacion total={filas.length} params={params} cambiar={cambiar}/>
   </>
@@ -118,12 +118,12 @@ export function ClaseDetalle({perfil}:{perfil:Perfil}){
 }
 
 export function GrabacionesListado({perfil}:{perfil:Perfil}){
-  const {params,cambiar}=useFiltros();const {data:grabaciones=[],isLoading,error}=useQuery<Grabacion[]>({queryKey:['grabaciones-global'],queryFn:()=>api('/grabaciones'),refetchInterval:30000});
+  const {params,cambiar,limpiar}=useFiltros();const {data:grabaciones=[],isLoading,error}=useQuery<Grabacion[]>({queryKey:['grabaciones-global'],queryFn:()=>api('/grabaciones'),refetchInterval:30000});
   const {data:clases=[]}=useQuery<Clase[]>({queryKey:['clases-global'],queryFn:()=>api('/clases'),enabled:perfil.tipo==='DOCENTE'});
   const grupos=useMemo(()=>{const m=new Map<string,Grabacion[]>();for(const g of grabaciones){if((params.get('q')&&!g.tema.toLowerCase().includes(params.get('q')!.toLowerCase()))||(params.get('asignatura')&&g.asignatura!==params.get('asignatura'))||(params.get('grado')&&g.grado!==params.get('grado'))||(params.get('seccion')&&g.seccion!==params.get('seccion'))||(params.get('fecha')&&local(g.inicio).slice(0,10)!==params.get('fecha')))continue;const a=m.get(g.clase_id)||[];a.push(g);m.set(g.clase_id,a)}return [...m.values()]},[grabaciones,params]);
   return <><div className="page-head"><div><span className="eyebrow">AULA VIRTUAL</span><h1>Grabaciones</h1><p>Videos de clases registrados como enlaces de YouTube.</p></div></div>
     {perfil.tipo==='DOCENTE'&&<RegistrarVideo clases={clases}/>}
-    <Filtros params={params} cambiar={cambiar} asignaturas={unico(grabaciones.map(g=>g.asignatura))} grados={unico(grabaciones.map(g=>g.grado))} secciones={unico(grabaciones.map(g=>g.seccion))} conTitulo/>
+    <Filtros params={params} cambiar={cambiar} limpiar={limpiar} asignaturas={unico(grabaciones.map(g=>g.asignatura))} grados={unico(grabaciones.map(g=>g.grado))} secciones={unico(grabaciones.map(g=>g.seccion))} conTitulo/>
     {isLoading?<p className="muted">Cargando grabaciones…</p>:error?<div className="alert">{errorDe(error)}</div>:!grupos.length?<div className="empty">No hay grabaciones para estos filtros.</div>:<div className="list">{paginaFilas(grupos,params).map(partes=>{const g=partes[0];return <div className="panel" key={g.clase_id}><div className="section-head"><div><h2>{g.tema}</h2><p className="muted">{g.asignatura} · {g.grado} {g.seccion} · {fecha(g.inicio)} · {g.docente}</p></div><Link className="text-link" to={`/clases/${g.clase_id}?return=${encodeURIComponent('/grabaciones'+window.location.search)}`}>Ver clase →</Link></div>{partes.map(parte=><Video key={parte.id} g={parte} editable={perfil.tipo==='DOCENTE'}/>)}</div>})}</div>}
     <Paginacion total={grupos.length} params={params} cambiar={cambiar}/>
   </>

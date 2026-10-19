@@ -45,7 +45,7 @@ import org.springframework.web.bind.annotation.RestController;
       default -> throw new AccessDeniedException("Perfil no autorizado");
     });
     if("ESTUDIANTE".equals(tipo)||"DOCENTE".equals(tipo)) filas.addAll(db.queryForList("""
-      SELECT n.id,NULL::uuid AS clase_id,n.tarea_id,n.tipo,n.mensaje,n.creada_en,n.actualizada_en,n.leida_en,
+      SELECT n.id,NULL::uuid AS clase_id,n.tarea_id,nota.id AS nota_id,n.tipo,n.mensaje,n.creada_en,n.actualizada_en,n.leida_en,
              n.nuevas_entregas,t.titulo AS tema,NULL::timestamptz AS inicio,
              CASE WHEN n.tipo='TRASLADADA' THEN FALSE
                WHEN n.destinatario_tipo='ESTUDIANTE' THEN EXISTS
@@ -58,6 +58,7 @@ import org.springframework.web.bind.annotation.RestController;
              END AS puede_abrir,
              c.asignatura,c.grado,c.seccion
       FROM notificaciones_tarea n JOIN tareas t ON t.id=n.tarea_id JOIN cursos c ON c.id=COALESCE(n.curso_id,t.curso_id)
+      LEFT JOIN calificaciones_tarea nota ON nota.id=n.calificacion_id
       WHERE n.destinatario_tipo=? AND n.destinatario_erp_id=?
       ORDER BY n.actualizada_en DESC LIMIT 100
       """,tipo,usuario.referencia(a)));
