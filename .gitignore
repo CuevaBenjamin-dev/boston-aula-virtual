@@ -5,7 +5,7 @@ cuentas-iniciales.local.txt
 **/dist/
 **/.DS_Store
 **/*.log
-frontend/tsconfig.tsbuildinfo
-pruebas/.cp05-backup/
+**/*.tsbuildinfo
+tests/legacy/.cp05-backup/
 **/__pycache__/
 **/*.pyc

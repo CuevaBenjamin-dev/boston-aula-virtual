@@ -8,9 +8,9 @@ import re
 
 RAIZ = Path(__file__).resolve().parents[1]
 CONTROLADORES = [
-    RAIZ / "identidad/src/main/java",
-    RAIZ / "api-erp/src/main/java",
-    RAIZ / "api-aula/src/main/java",
+    RAIZ / "services/identidad/src/main/java",
+    RAIZ / "apps/erp/api/src/main/java",
+    RAIZ / "apps/aula/api/src/main/java",
 ]
 RUTA = re.compile(r'@(Get|Post|Put|Delete|Patch)Mapping(?:\("([^"]*)"\))?')
 PARAMETRO = re.compile(r"\{([^}]+)\}")
@@ -81,5 +81,5 @@ lineas += [
     "      scheme: bearer",
     "      bearerFormat: JWT",
 ]
-(RAIZ / "documentacion/openapi.yaml").write_text("\n".join(lineas) + "\n", encoding="utf-8")
+(RAIZ / "docs/historico/openapi.yaml").write_text("\n".join(lineas) + "\n", encoding="utf-8")
 print(f"{len(operaciones)} rutas, {sum(map(len, operaciones.values()))} operaciones")

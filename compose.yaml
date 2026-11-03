@@ -8,7 +8,7 @@ services:
       POSTGRES_DB: postgres
     volumes:
       - pg_data:/var/lib/postgresql
-      - ./infraestructura/postgres/init:/docker-entrypoint-initdb.d:ro
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U boston -d postgres"]
       interval: 5s
@@ -30,7 +30,7 @@ services:
       timeout: 5s
       retries: 20
   identidad:
-    build: ./identidad
+    build: ./services/identidad
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/identidad_boston
       SPRING_DATASOURCE_USERNAME: boston
@@ -53,7 +53,7 @@ services:
       timeout: 5s
       retries: 20
   api-erp:
-    build: ./api-erp
+    build: ./apps/erp/api
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/erp_boston
       SPRING_DATASOURCE_USERNAME: boston
@@ -74,7 +74,7 @@ services:
       timeout: 5s
       retries: 20
   api-aula:
-    build: ./api-aula
+    build: ./apps/aula/api
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/aula_boston
       SPRING_DATASOURCE_USERNAME: boston
@@ -107,15 +107,15 @@ services:
       timeout: 5s
       retries: 20
   frontend:
-    build: ./frontend
+    build: ./apps/aula/web
   erp-web:
-    build: ./erp-web
+    build: ./apps/erp/web
   erp-proxy:
     image: caddy:2.10-alpine
     ports:
       - "127.0.0.1:8089:80"
     volumes:
-      - ./infraestructura/Caddyfile.erp:/etc/caddy/Caddyfile:ro
+      - ./infra/Caddyfile.erp:/etc/caddy/Caddyfile:ro
     depends_on:
       api-erp:
         condition: service_healthy
@@ -126,7 +126,7 @@ services:
     ports:
       - "127.0.0.1:8088:80"
     volumes:
-      - ./infraestructura/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./infra/Caddyfile:/etc/caddy/Caddyfile:ro
     depends_on:
       api-aula:
         condition: service_healthy
@@ -138,7 +138,7 @@ services:
     environment:
       ERP_CLIENT_SECRET: ${ERP_CLIENT_SECRET:-cambiar-local-erp}
     volumes:
-      - ./pruebas:/pruebas:ro
+      - ./tests/legacy:/pruebas:ro
     command: run /pruebas/carga.js
 volumes:
   pg_data:

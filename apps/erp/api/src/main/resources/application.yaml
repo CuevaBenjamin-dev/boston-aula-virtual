@@ -1,0 +1,56 @@
+server:
+  port: 8080
+  servlet:
+    session:
+      timeout: ${BOSTON_ERP_SESSION_TIMEOUT:12h}
+      cookie:
+        name: ERP_SESSION
+        http-only: true
+        same-site: lax
+        max-age: ${BOSTON_ERP_COOKIE_MAX_AGE:12h}
+spring:
+  application:
+    name: api-erp-boston
+  session:
+    timeout: ${BOSTON_ERP_SESSION_TIMEOUT:12h}
+    jdbc:
+      initialize-schema: never
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/erp_boston}
+    username: ${SPRING_DATASOURCE_USERNAME:boston}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+  servlet:
+    multipart:
+      max-file-size: 2MB
+      max-request-size: 3MB
+  security:
+    oauth2:
+      client:
+        registration:
+          boston-erp:
+            provider: boston
+            client-id: erp-web
+            client-secret: ${BOSTON_ERP_WEB_SECRET:cambiar-local-erp-web}
+            client-authentication-method: client_secret_basic
+            authorization-grant-type: authorization_code
+            redirect-uri: http://127.0.0.1:8089/login/oauth2/code/boston-erp
+            scope: openid,profile
+        provider:
+          boston:
+            authorization-uri: http://127.0.0.1:9000/oauth2/authorize
+            token-uri: ${BOSTON_TOKEN_URI:http://localhost:9000/oauth2/token}
+            jwk-set-uri: ${BOSTON_JWKS_URI:http://localhost:9000/oauth2/jwks}
+            user-info-uri: http://identidad:9000/userinfo
+            user-name-attribute: sub
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+

@@ -1,0 +1,135 @@
+openapi: 3.1.0
+info:
+  title: Boston ERP — contratos V1 tipados (cobertura parcial)
+  version: 1.0.0
+  description: >
+    Esquemas comprobados contra records Java. Inventario parcial deliberado: el resto de las rutas
+    debe generarse y verificarse antes de considerar esta especificación completa.
+servers:
+  - url: http://127.0.0.1:8089/api/erp-web
+    description: BFF local, rutas equivalentes bajo /v1
+paths:
+  /v1/matriculas/borradores:
+    post:
+      operationId: crearBorradorMatricula
+      security: [{sesionErp: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/GuardadoBorrador'}
+      responses:
+        '201':
+          description: Borrador creado
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Id'}
+        '401': {description: Sesión ausente}
+        '403': {description: Operación no autorizada}
+  /v1/matriculas/borradores/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdRuta'
+    get:
+      operationId: verBorradorMatricula
+      security: [{sesionErp: []}]
+      responses:
+        '200':
+          description: Borrador propio
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Borrador'}
+        '401': {description: Sesión ausente}
+    put:
+      operationId: guardarBorradorMatricula
+      security: [{sesionErp: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/GuardadoBorrador'}
+      responses:
+        '200': {description: Borrador actualizado}
+        '401': {description: Sesión ausente}
+  /v1/matriculas/borradores/{id}/finalizar:
+    parameters:
+      - $ref: '#/components/parameters/IdRuta'
+    post:
+      operationId: finalizarBorradorMatricula
+      security: [{sesionErp: []}]
+      responses:
+        '200':
+          description: Matrícula creada o identificador de la ya finalizada
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Id'}
+        '401': {description: Sesión ausente}
+  /v1/estudiantes/verificar:
+    get:
+      operationId: verificarEstudiantePorDocumento
+      security: [{sesionErp: []}]
+      parameters:
+        - {name: tipoDocumento, in: query, required: true, schema: {type: string}}
+        - {name: documento, in: query, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: Resultado actual de verificación; campos dependientes del historial
+          content:
+            application/json:
+              schema: {type: object, additionalProperties: true}
+        '401': {description: Sesión ausente}
+  /v1/matriculas/{id}/pago-externo:
+    parameters:
+      - $ref: '#/components/parameters/IdRuta'
+    post:
+      operationId: registrarPagoExterno
+      security: [{sesionErp: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/PagoExterno'}
+      responses:
+        '200': {description: Pago externo registrado}
+        '400': {description: Datos inválidos}
+        '401': {description: Sesión ausente}
+components:
+  parameters:
+    IdRuta:
+      name: id
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+  securitySchemes:
+    sesionErp: {type: apiKey, in: cookie, name: ERP_SESSION}
+  schemas:
+    Id:
+      type: object
+      required: [id]
+      properties:
+        id: {type: string, format: uuid}
+    GuardadoBorrador:
+      type: object
+      required: [paso, datos]
+      properties:
+        paso: {type: integer, minimum: 1, maximum: 4}
+        datos:
+          type: object
+          additionalProperties: true
+          description: >
+            JSON del asistente actual. Incluye procedencia, periodoId, gradoId, seccionId,
+            usarExistente, estudiante/estudianteId, apoderado y pagoEstado al finalizar.
+    Borrador:
+      type: object
+      required: [id, paso, datos, finalizado, matriculaId]
+      properties:
+        id: {type: string, format: uuid}
+        paso: {type: integer}
+        datos: {type: object, additionalProperties: true}
+        finalizado: {type: boolean}
+        matriculaId: {type: string, description: UUID o cadena vacía antes de finalizar}
+    PagoExterno:
+      type: object
+      required: [medio, monto]
+      properties:
+        medio: {type: string}
+        monto: {type: number}
