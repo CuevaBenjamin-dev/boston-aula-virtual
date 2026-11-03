@@ -4,7 +4,7 @@
 
 ## A. Identificación y línea base
 
-- Rama inicial `main`, commit inicial `edb8b3bf52dd938fa7c062f553e7fd377c89d460`, árbol limpio. Rama de trabajo local `refactor/sistema-bbs-java25`. Sin push ni despliegue remoto. Los cambios de esta reestructuración están en el repositorio local; consultar `git status` para el estado de staging/commit al recibir este documento.
+- Rama inicial `main`, commit inicial `edb8b3bf52dd938fa7c062f553e7fd377c89d460`, árbol limpio. La reestructuración se publica en la rama `refactor/sistema-bbs-java25` de GitHub para revisión. `main` permanece sin fusionar. No hay despliegue externo.
 - Ruta final: `C:\Valana-Pruebas\Aula Virtual Boston\sistema-bbs`. Un directorio anterior `boston-aula` puede quedar como remanente vacío con `.git` vacío por un bloqueo de Windows durante el movimiento; el único repositorio funcional es `sistema-bbs/.git`.
 - Punto de recuperación externo, fuera de Git: `C:\Valana-Pruebas\Aula Virtual Boston\respaldo-sistema-bbs-20261103`. Incluye dumps personalizados de `identidad_boston`, `erp_boston`, `aula_boston` y copia de datos S3. `pg_restore --list` funcionó y los tres dumps se restauraron en un PostgreSQL 18.6 temporal aislado. No se restauró sobre volúmenes originales.
 - `docs/historico/ESTADO_MAESTRO_BOSTON.md` se movió sin editar; SHA256 antes/después `50E49AEE9A081D663C2A537C7D2C74F8FEBD7790DC70D807D78B80E655303DE5`.
@@ -38,7 +38,7 @@ Frontend ERP: `src/app/router`, `src/app/pages`, `src/modules/{personas,matricul
 - Java y Docker: POM de tres backends en Java 25/Spring Boot 4.1.2; imágenes de construcción Maven 3.9.12 Temurin 25 y runtime Temurin 25. Spring Modulith BOM/starter/test 2.1.2 se incorporó sólo al ERP.
 - Seguridad ERP: sesión JDBC con timeout local configurable de inactividad 12 h, cookie máximo local configurable 12 h, límite absoluto configurable 24 h; cookie `ERP_SESSION` HttpOnly y SameSite Lax, Secure parametrizado (`false` sólo HTTP local). `SesionAbsolutaFiltroTest` verifica caducidad/conservación. La API JWT conserva validación de emisor/JWK y el BFF conserva CSRF. **No se ha validado cada caso de autorización/IDOR.** Las duraciones son valores operativos locales, no política institucional aprobada.
 - Infraestructura: `name: boston-aula` se conservó para evitar renombrar volúmenes. No se editaron migraciones históricas ni se agregaron nuevas; Flyway validó 6 Identidad, 11 ERP y 25 Aula. El Dockerfile de ERP Web usa `npm ci` y lockfile para instalación reproducible.
-- DevOps: `.github/workflows/ci.yaml` compila y prueba los tres backends con Temurin 25, hace build/audit de ERP Web y verifica Compose. No se ha ejecutado en GitHub porque no hubo push. `AGENTS.md` raíz y por aplicación documentan límites y comandos.
+- DevOps: `.github/workflows/ci.yaml` compila y prueba los tres backends con Temurin 25, hace build/audit de ERP Web y verifica Compose. La ejecución de GitHub Actions tras publicar la rama debe consultarse en GitHub; las verificaciones locales se detallan abajo. `AGENTS.md` raíz y por aplicación documentan límites y comandos.
 - Limpieza: se sustituyó un controlador V1 grande por controladores de dominio; no se borró SQL ni Tesorería legada. Los scripts de división quedan en `scripts/` como registro reproducible de la transformación; no son parte del arranque. Ningún dato, volumen o migración se eliminó.
 
 ## D. Cinco módulos ERP
@@ -99,4 +99,4 @@ Prioridades para el siguiente ciclo de ingeniería: (1) aprobar PRD y reglas ins
 
 ## I. Resumen ejecutivo
 
-Se conservaron datos, volúmenes, tres bases, migraciones, APIs e historial. Se rehízo la distribución física del repositorio y la estructura de controladores ERP/Web; se añadió Java 25, Modulith, prueba de límites, CI y documentación vigente. Se eliminó la concentración del controlador V1, pero **no** la de los dos servicios raíz. El sistema está funcionando localmente; el estado global sigue **parcial** hasta extraer lógica de dominio y verificar flujos críticos completos. No hubo push ni cambios de producción.
+Se conservaron datos, volúmenes, tres bases, migraciones, APIs e historial. Se rehízo la distribución física del repositorio y la estructura de controladores ERP/Web; se añadió Java 25, Modulith, prueba de límites, CI y documentación vigente. Se eliminó la concentración del controlador V1, pero **no** la de los dos servicios raíz. El sistema está funcionando localmente; el estado global sigue **parcial** hasta extraer lógica de dominio y verificar flujos críticos completos. La rama se publica para revisión en GitHub sin modificar producción.
