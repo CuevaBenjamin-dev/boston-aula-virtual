@@ -1,4 +1,5 @@
 .env
+cuentas-iniciales.local.txt
 **/target/
 **/node_modules/
 **/dist/

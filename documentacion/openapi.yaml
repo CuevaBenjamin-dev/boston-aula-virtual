@@ -1782,10 +1782,40 @@ paths:
           description: Recurso fuera del ámbito autorizado
         '409':
           description: Conflicto de versión o estado
-  '/api/aula/tareas/{id}/calificacion':
+  '/api/aula/tareas/{id}/calificacion/borrador':
     put:
-      operationId: CursosController_10
-      summary: 'calificar - CursosController'
+      operationId: CursosController_guardarBorrador
+      summary: 'Guardar evaluación como borrador - CursosController'
+      security:
+        - sesionBff: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Operación completada
+        '400':
+          description: Datos o transición inválidos
+        '401':
+          description: Sesión o token ausente
+        '403':
+          description: Recurso fuera del ámbito autorizado
+        '409':
+          description: Conflicto de versión o estado
+  '/api/aula/tareas/{id}/calificacion/publicar':
+    post:
+      operationId: CursosController_publicarCalificacion
+      summary: 'Publicar evaluación guardada - CursosController'
       security:
         - sesionBff: []
       parameters:

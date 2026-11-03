@@ -51,11 +51,14 @@ import org.springframework.transaction.annotation.Transactional;
     if("ESTUDIANTE".equals(usuario.tipo(a))) return db.queryForList("""
       SELECT t.*,EXISTS(SELECT 1 FROM entregas e WHERE e.tarea_id=t.id AND e.estudiante_erp_id=?) AS presentada,
         (SELECT e.estado FROM entregas e WHERE e.tarea_id=t.id AND e.estudiante_erp_id=? ORDER BY e.version DESC LIMIT 1) AS ultima_entrega_estado,
-        (SELECT max(e.version) FROM entregas e WHERE e.tarea_id=t.id AND e.estudiante_erp_id=?) AS ultima_entrega_version
+        (SELECT max(e.version) FROM entregas e WHERE e.tarea_id=t.id AND e.estudiante_erp_id=?) AS ultima_entrega_version,
+        EXISTS(SELECT 1 FROM calificaciones_tarea n WHERE n.tarea_id=t.id AND n.estudiante_erp_id=?
+          AND n.estado='PUBLICADA' AND n.entrega_version=(SELECT max(e.version) FROM entregas e
+            WHERE e.tarea_id=t.id AND e.estudiante_erp_id=?)) AS evaluacion_publicada
       FROM tareas t WHERE t.curso_id=? AND t.estado<>'FALTA_COMPLETAR'
         AND NOT EXISTS (SELECT 1 FROM tareas siguiente WHERE siguiente.tarea_anterior_id=t.id)
       ORDER BY t.publicado_en DESC NULLS LAST,t.fecha_limite
-      """,usuario.referencia(a),usuario.referencia(a),usuario.referencia(a),curso);
+      """,usuario.referencia(a),usuario.referencia(a),usuario.referencia(a),usuario.referencia(a),usuario.referencia(a),curso);
     if("DOCENTE".equals(usuario.tipo(a))) return db.queryForList("""
       SELECT t.*,k.total_estudiantes,k.entregados,k.tardias,
         (k.total_estudiantes-k.entregados) AS pendientes,k.pendientes_revision,
@@ -390,13 +393,6 @@ import org.springframework.transaction.annotation.Transactional;
       case "REVISION" -> e.get("entrega_id")!=null && e.get("nota_id")==null;
       default -> true;
     }).toList();
-  }
-  @Transactional public Map<String,Object> calificar(UUID tarea,UUID estudiante,BigDecimal valor,String comentario,Integer version,Authentication a) {
-    return calificar(tarea,estudiante,valor,comentario,version,null,a);
-  }
-  @Transactional public Map<String,Object> calificar(UUID tarea,UUID estudiante,BigDecimal valor,String comentario,Integer version,Integer entregaEsperada,Authentication a) {
-    var borrador=guardarBorrador(tarea,estudiante,valor,comentario,version,entregaEsperada,a);
-    return publicarCalificacion(tarea,estudiante,entregaEsperada,((Number)borrador.get("version")).intValue(),UUID.randomUUID(),a);
   }
   private Map<String,Object> contextoCalificacion(UUID tarea,Authentication a) {
     var t=tarea(tarea,a);

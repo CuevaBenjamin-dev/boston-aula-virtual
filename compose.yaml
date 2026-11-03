@@ -38,7 +38,10 @@ services:
       BOSTON_ISSUER: http://localhost:9000
       BOSTON_BFF_SECRET: ${OIDC_CLIENT_SECRET:-cambiar-local-bff}
       BOSTON_ERP_SECRET: ${ERP_CLIENT_SECRET:-cambiar-local-erp}
-      BOSTON_SEED_PASSWORD: ${SEED_PASSWORD:-cambiar-local-cuentas}
+      BOSTON_ERP_WEB_SECRET: ${ERP_WEB_CLIENT_SECRET:-cambiar-local-erp-web}
+      BOSTON_CUENTAS_INICIALES_FILE: /run/secrets/boston-cuentas-iniciales
+    volumes:
+      - ./cuentas-iniciales.local.txt:/run/secrets/boston-cuentas-iniciales:ro
     ports:
       - "127.0.0.1:9000:9000"
     depends_on:
@@ -57,6 +60,9 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-cambiar-local-postgres}
       BOSTON_JWKS_URI: http://identidad:9000/oauth2/jwks
       BOSTON_ISSUER: http://localhost:9000
+      BOSTON_TOKEN_URI: http://identidad:9000/oauth2/token
+      BOSTON_IDENTIDAD_URL: http://identidad:9000
+      BOSTON_ERP_WEB_SECRET: ${ERP_WEB_CLIENT_SECRET:-cambiar-local-erp-web}
     depends_on:
       postgres:
         condition: service_healthy
@@ -102,6 +108,19 @@ services:
       retries: 20
   frontend:
     build: ./frontend
+  erp-web:
+    build: ./erp-web
+  erp-proxy:
+    image: caddy:2.10-alpine
+    ports:
+      - "127.0.0.1:8089:80"
+    volumes:
+      - ./infraestructura/Caddyfile.erp:/etc/caddy/Caddyfile:ro
+    depends_on:
+      api-erp:
+        condition: service_healthy
+      erp-web:
+        condition: service_started
   proxy:
     image: caddy:2.10-alpine
     ports:

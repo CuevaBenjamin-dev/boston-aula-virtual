@@ -159,8 +159,12 @@ def main():
               next(n for n in grouped if n["leida_en"] is None)["nuevas_entregas"] == 1,
               "Una entrega posterior crea un aviso nuevo y conserva el leído")
 
-        teacher.api(f"/tareas/{task_id}/calificacion", "PUT", {
+        draft = teacher.api(f"/tareas/{task_id}/calificacion/borrador", "PUT", {
             "estudianteId": ident("cp05:estudiante:1:1"), "valor": 18, "comentario": "Nota de prueba anterior", "version": 0
+        })
+        teacher.api(f"/tareas/{task_id}/calificacion/publicar", "POST", {
+            "estudianteId": ident("cp05:estudiante:1:1"), "entregaVersion": draft["entrega_version"],
+            "version": draft["version"], "operacionId": str(uuid.uuid4())
         })
         old = teacher.api(f"/tareas/{task_id}")
         operation = str(uuid.uuid4())

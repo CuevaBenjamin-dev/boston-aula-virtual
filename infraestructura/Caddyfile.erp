@@ -1,0 +1,20 @@
+:80 {
+  encode zstd gzip
+  @oldHost host localhost
+  redir @oldHost http://127.0.0.1:8089{uri} 308
+  handle /api/* {
+    reverse_proxy api-erp:8080
+  }
+  handle /oauth2/* {
+    reverse_proxy api-erp:8080
+  }
+  handle /login/* {
+    reverse_proxy api-erp:8080
+  }
+  handle /logout {
+    reverse_proxy api-erp:8080
+  }
+  handle {
+    reverse_proxy erp-web:80
+  }
+}

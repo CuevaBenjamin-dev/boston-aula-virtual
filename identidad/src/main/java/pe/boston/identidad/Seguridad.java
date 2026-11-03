@@ -114,6 +114,7 @@ public class Seguridad {
     http.csrf(c -> c.ignoringRequestMatchers("/api/identidad/**"))
       .authorizeHttpRequests(a -> a.requestMatchers("/actuator/health", "/error", "/login", "/restablecer", "/.well-known/**", "/api/identidad/restablecer").permitAll()
       .requestMatchers("/api/identidad/estado/**").hasAuthority("SCOPE_erp.read")
+      .requestMatchers("/api/identidad/docentes").hasRole("DIRECCION")
       .requestMatchers("/api/identidad/directorio", "/api/identidad/mi-clave").authenticated()
       .requestMatchers("/api/identidad/**").hasRole("ADMINISTRADOR")
       .anyRequest().authenticated())
@@ -136,7 +137,8 @@ public class Seguridad {
   }
 
   @Bean RegisteredClientRepository clientes(JdbcTemplate jdbc, PasswordEncoder encoder,
-      @Value("${BOSTON_BFF_SECRET}") String bff, @Value("${BOSTON_ERP_SECRET}") String erp) {
+      @Value("${BOSTON_BFF_SECRET}") String bff, @Value("${BOSTON_ERP_SECRET}") String erp,
+      @Value("${BOSTON_ERP_WEB_SECRET:cambiar-local-erp-web}") String erpWeb) {
     var repo = new JdbcRegisteredClientRepository(jdbc);
     var bffActual = repo.findByClientId("aula-bff");
     var tokensBff = TokenSettings.builder().refreshTokenTimeToLive(Duration.ofSeconds(Integer.MAX_VALUE))
@@ -155,6 +157,14 @@ public class Seguridad {
     if (repo.findByClientId("aula-servicio") == null) repo.save(RegisteredClient.withId(UUID.randomUUID().toString())
       .clientId("aula-servicio").clientSecret(encoder.encode(erp)).clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
       .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS).scope("erp.read").scope("erp.sync").build());
+    if (repo.findByClientId("erp-web") == null) repo.save(RegisteredClient.withId(UUID.randomUUID().toString())
+      .clientId("erp-web").clientSecret(encoder.encode(erpWeb)).clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+      .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE).authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
+      .redirectUri("http://127.0.0.1:8089/login/oauth2/code/boston-erp")
+      .postLogoutRedirectUri("http://127.0.0.1:8089/")
+      .scope(OidcScopes.OPENID).scope(OidcScopes.PROFILE)
+      .clientSettings(ClientSettings.builder().requireProofKey(true).requireAuthorizationConsent(false).build())
+      .build());
     return repo;
   }
 

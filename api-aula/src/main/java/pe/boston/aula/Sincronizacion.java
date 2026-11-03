@@ -3,6 +3,8 @@ package pe.boston.aula;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.UUID;
+import java.util.Set;
+import java.util.HashSet;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -59,12 +61,17 @@ import org.slf4j.LoggerFactory;
       curso,UUID.fromString(d.get("seccionId").asText()),d.get("asignatura").asText(),d.get("seccion").asText(),d.get("grado").asText(),d.hasNonNull("nivel")?d.get("nivel").asText():null,d.get("periodo").asText(),d.hasNonNull("periodoFin")?java.time.LocalDate.parse(d.get("periodoFin").asText()):null);
     db.update("UPDATE inscripciones_curso SET activo=FALSE,actualizado_en=now() WHERE curso_id=?",curso);
     for(JsonNode id:d.get("estudiantes")) db.update("INSERT INTO inscripciones_curso(curso_id,estudiante_erp_id,activo) VALUES (?,?,TRUE) ON CONFLICT(curso_id,estudiante_erp_id) DO UPDATE SET activo=TRUE,actualizado_en=now()",curso,UUID.fromString(id.asText()));
+    Set<UUID> anteriores=new HashSet<>(db.queryForList("SELECT docente_erp_id FROM docentes_curso WHERE curso_id=? AND activo",UUID.class,curso));
+    Set<UUID> actuales=new HashSet<>();
     db.update("UPDATE docentes_curso SET activo=FALSE WHERE curso_id=?",curso);
     for(JsonNode docente:d.get("docentes")) {
       UUID id=UUID.fromString(docente.isObject()?docente.get("id").asText():docente.asText());
+      actuales.add(id);
       String nombre=docente.isObject()?docente.get("nombre").asText():null;
       db.update("INSERT INTO docentes_curso(curso_id,docente_erp_id,activo,nombre_completo) VALUES (?,?,TRUE,?) ON CONFLICT(curso_id,docente_erp_id) DO UPDATE SET activo=TRUE,nombre_completo=COALESCE(EXCLUDED.nombre_completo,docentes_curso.nombre_completo)",curso,id,nombre);
     }
+    for(UUID id:actuales) if(!anteriores.contains(id)) db.update("INSERT INTO notificaciones_asignacion(id,secuencia_erp,curso_id,docente_erp_id,tipo,mensaje) VALUES (?,?,?,?,'ASIGNADA',?) ON CONFLICT DO NOTHING",UUID.randomUUID(),secuencia,curso,id,"Nuevo curso asignado: "+d.get("asignatura").asText());
+    for(UUID id:anteriores) if(!actuales.contains(id)) db.update("INSERT INTO notificaciones_asignacion(id,secuencia_erp,curso_id,docente_erp_id,tipo,mensaje) VALUES (?,?,?,?,'RETIRADA',?) ON CONFLICT DO NOTHING",UUID.randomUUID(),secuencia,curso,id,"Asignación retirada: "+d.get("asignatura").asText());
     registrar(evento,secuencia);
   }
   private void registrar(JsonNode evento,long secuencia) {

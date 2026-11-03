@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -30,6 +31,7 @@ class CursosYTareasTest {
     var t=new HashMap<String,Object>();t.put("curso_id",curso);t.put("estado",estado);
     t.put("escala_maxima",new BigDecimal("20.00"));t.put("fecha_limite",Timestamp.from(Instant.now().plusSeconds(3600)));
     when(db.queryForMap("SELECT * FROM tareas WHERE id=?",tarea)).thenReturn(t);
+    when(db.queryForMap("SELECT estado FROM tareas WHERE id=? FOR UPDATE",tarea)).thenReturn(Map.of("estado",estado));
     when(db.queryForObject("SELECT count(*) FROM tareas WHERE tarea_anterior_id=?",Long.class,tarea)).thenReturn(0L);
     return t;
   }
@@ -39,14 +41,14 @@ class CursosYTareasTest {
   }
   @Test void notaFueraDeEscalaSeRechaza() {
     tarea("PUBLICADA");when(usuario.tipo(actor)).thenReturn("DOCENTE");
-    assertThrows(IllegalArgumentException.class,()->tareas.calificar(tarea,estudiante,new BigDecimal("21"),"",0,actor));
+    assertThrows(IllegalArgumentException.class,()->tareas.guardarBorrador(tarea,estudiante,new BigDecimal("21"),"",0,1,actor));
   }
   @Test void versionAnteriorNoSobrescribeUnaNota() {
     tarea("PUBLICADA");when(usuario.tipo(actor)).thenReturn("DOCENTE");
     when(db.queryForObject(any(String.class),eq(Integer.class),eq(tarea),eq(estudiante))).thenReturn(1);
     when(db.queryForList("SELECT * FROM calificaciones_tarea WHERE tarea_id=? AND estudiante_erp_id=? AND entrega_version=? FOR UPDATE",tarea,estudiante,1))
       .thenReturn(java.util.List.of(Map.of("id",UUID.randomUUID(),"valor",new BigDecimal("17"),"version",2,"estado","PUBLICADA")));
-    assertThrows(IllegalStateException.class,()->tareas.calificar(tarea,estudiante,new BigDecimal("18"),"corrección",1,actor));
+    assertThrows(IllegalStateException.class,()->tareas.guardarBorrador(tarea,estudiante,new BigDecimal("18"),"corrección",1,1,actor));
   }
   @Test void calificacionNuevaAvisaAlEstudiante() {
     tarea("PUBLICADA").put("titulo","Fracciones");
@@ -59,7 +61,9 @@ class CursosYTareasTest {
     var identidad=mock(OidcUser.class);
     when(usuario.oidc(actor)).thenReturn(identidad);
     when(identidad.getSubject()).thenReturn("docente.demo");
-    tareas.calificar(tarea,estudiante,new BigDecimal("18"),"Buen trabajo",0,actor);
+    var borrador=tareas.guardarBorrador(tarea,estudiante,new BigDecimal("18"),"Buen trabajo",0,1,actor);
+    verify(avisos,never()).calificacion(any(UUID.class),any(UUID.class),any(UUID.class),any(String.class),any(UUID.class),any(Integer.class),eq(false));
+    tareas.publicarCalificacion(tarea,estudiante,1,((Number)borrador.get("version")).intValue(),UUID.randomUUID(),actor);
     verify(avisos).calificacion(eq(tarea),eq(curso),eq(estudiante),any(String.class),any(UUID.class),eq(2),eq(false));
   }
 }

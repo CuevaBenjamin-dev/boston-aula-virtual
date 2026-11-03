@@ -28,7 +28,31 @@ import org.springframework.web.bind.annotation.RestController;
   private final ObjectMapper json=new ObjectMapper();
   public MensajesController(JdbcTemplate db,UsuarioActual usuario,CuentasRemotasController identidad) { this.db=db;this.usuario=usuario;this.identidad=identidad; }
   private record Destino(UUID id,String usuario,String tipo,UUID referencia) {}
-  public record Nuevo(String asunto,String cuerpo,List<UUID> destinatarios,UUID cursoId,boolean cursoCompleto) {}
+  public record Nuevo(String asunto,String cuerpo,List<UUID> destinatarios,UUID cursoId,boolean cursoCompleto,String grupoTipo) {}
+
+  private Set<UUID> estudiantesAutorizados(Authentication a) {
+    String tipo=usuario.tipo(a);
+    if("ESTUDIANTE".equals(tipo)) return Set.copyOf(db.queryForList("""
+      SELECT DISTINCT ajeno.estudiante_erp_id FROM inscripciones_curso propio
+      JOIN cursos origen ON origen.id=propio.curso_id
+      JOIN cursos destino ON destino.seccion_erp_id=origen.seccion_erp_id AND destino.grado=origen.grado AND destino.periodo=origen.periodo
+      JOIN inscripciones_curso ajeno ON ajeno.curso_id=destino.id AND ajeno.activo
+      WHERE propio.estudiante_erp_id=? AND propio.activo
+        AND (origen.periodo_fin IS NULL OR origen.periodo_fin>=CURRENT_DATE)
+        AND (destino.periodo_fin IS NULL OR destino.periodo_fin>=CURRENT_DATE)
+      """,UUID.class,usuario.referencia(a)));
+    if("DOCENTE".equals(tipo)) return Set.copyOf(db.queryForList("""
+      SELECT DISTINCT i.estudiante_erp_id FROM docentes_curso d
+      JOIN cursos c ON c.id=d.curso_id JOIN inscripciones_curso i ON i.curso_id=c.id
+      WHERE d.docente_erp_id=? AND d.activo AND i.activo
+        AND (c.periodo_fin IS NULL OR c.periodo_fin>=CURRENT_DATE)
+      """,UUID.class,usuario.referencia(a)));
+    return Set.of();
+  }
+  private boolean autorizado(Destino d,String tipo,Set<UUID> estudiantes) {
+    return ("COORDINACION".equals(tipo)||"ADMINISTRADOR".equals(tipo))
+      ||("ESTUDIANTE".equals(d.tipo())&&d.referencia()!=null&&estudiantes.contains(d.referencia()));
+  }
 
   private List<Destino> directorioInterno(Authentication a,OAuth2AuthorizedClient client) throws Exception {
     var raiz=json.readTree(identidad.directorio(a,client));
@@ -37,8 +61,8 @@ import org.springframework.web.bind.annotation.RestController;
     return lista;
   }
   @GetMapping("/directorio") public List<Map<String,Object>> directorio(Authentication a,@RegisteredOAuth2AuthorizedClient("boston") OAuth2AuthorizedClient client) throws Exception {
-    UUID propio=usuario.cuenta(a);
-    return directorioInterno(a,client).stream().filter(d->!d.id().equals(propio)).map(d->Map.<String,Object>of("id",d.id(),"usuario",d.usuario(),"tipo",d.tipo())).toList();
+    UUID propio=usuario.cuenta(a); String tipo=usuario.tipo(a); Set<UUID> estudiantes=estudiantesAutorizados(a);
+    return directorioInterno(a,client).stream().filter(d->!d.id().equals(propio)&&autorizado(d,tipo,estudiantes)).map(d->Map.<String,Object>of("id",d.id(),"usuario",d.usuario(),"tipo",d.tipo())).toList();
   }
   @GetMapping public List<Map<String,Object>> listar(@RequestParam(defaultValue="recibidos") String carpeta,Authentication a) {
     UUID cuenta=usuario.cuenta(a);
@@ -68,20 +92,28 @@ import org.springframework.web.bind.annotation.RestController;
     if(nuevo.asunto()==null||nuevo.asunto().isBlank()||nuevo.asunto().length()>200||nuevo.cuerpo()==null||nuevo.cuerpo().isBlank()||nuevo.cuerpo().length()>10000) throw new IllegalArgumentException("Escribe asunto y mensaje");
     var cuentas=directorioInterno(a,client);
     Map<UUID,Destino> porId=cuentas.stream().collect(Collectors.toMap(Destino::id,d->d));
-    UUID emisor=usuario.cuenta(a);
+    UUID emisor=usuario.cuenta(a); String tipo=usuario.tipo(a); Set<UUID> estudiantes=estudiantesAutorizados(a);
     Map<UUID,Destino> elegidos=new LinkedHashMap<>();
     if(nuevo.destinatarios()!=null) for(UUID id:nuevo.destinatarios()) {
       Destino destino=porId.get(id);
-      if(destino==null||id.equals(emisor)) throw new IllegalArgumentException("Destinatario no disponible");
+      if(destino==null||id.equals(emisor)||!autorizado(destino,tipo,estudiantes)) throw new AccessDeniedException("Destinatario no autorizado");
       elegidos.put(id,destino);
+    }
+    if(nuevo.grupoTipo()!=null&&!nuevo.grupoTipo().isBlank()) {
+      if(!"COORDINACION".equals(tipo)&&!"ADMINISTRADOR".equals(tipo)) throw new AccessDeniedException("Envío a grupos no autorizado");
+      if(!Set.of("ESTUDIANTE","DOCENTE","COORDINACION","ADMINISTRADOR").contains(nuevo.grupoTipo())) throw new IllegalArgumentException("Grupo inválido");
+      for(var d:cuentas) if(nuevo.grupoTipo().equals(d.tipo())&&!d.id().equals(emisor)) elegidos.put(d.id(),d);
     }
     UUID curso=null;
     if(nuevo.cursoCompleto()) {
       if(nuevo.cursoId()==null) throw new IllegalArgumentException("Elige un curso");
-      usuario.docente(a,nuevo.cursoId());curso=nuevo.cursoId();
-      Set<UUID> estudiantes=Set.copyOf(db.queryForList("SELECT estudiante_erp_id FROM inscripciones_curso WHERE curso_id=? AND activo",UUID.class,curso));
-      for(var d:cuentas) if("ESTUDIANTE".equals(d.tipo())&&d.referencia()!=null&&estudiantes.contains(d.referencia())) elegidos.put(d.id(),d);
+      if("DOCENTE".equals(tipo)) usuario.docente(a,nuevo.cursoId());
+      else if(!"COORDINACION".equals(tipo)&&!"ADMINISTRADOR".equals(tipo)) throw new AccessDeniedException("Envío por curso no autorizado");
+      curso=nuevo.cursoId();
+      Set<UUID> delCurso=Set.copyOf(db.queryForList("SELECT i.estudiante_erp_id FROM inscripciones_curso i JOIN cursos c ON c.id=i.curso_id WHERE i.curso_id=? AND i.activo AND (c.periodo_fin IS NULL OR c.periodo_fin>=CURRENT_DATE)",UUID.class,curso));
+      for(var d:cuentas) if("ESTUDIANTE".equals(d.tipo())&&d.referencia()!=null&&delCurso.contains(d.referencia())) elegidos.put(d.id(),d);
     }
+    if("ESTUDIANTE".equals(tipo)&&elegidos.size()>1) throw new AccessDeniedException("La cuenta académica solo puede enviar un mensaje directo a la vez");
     if(elegidos.isEmpty()) throw new IllegalArgumentException("Selecciona al menos un destinatario disponible");
     UUID id=UUID.randomUUID();
     db.update("INSERT INTO mensajes(id,emisor_cuenta,emisor_usuario,asunto,cuerpo,curso_id) VALUES (?,?,?,?,?,?)",id,emisor,usuario.oidc(a).getSubject(),nuevo.asunto().trim(),nuevo.cuerpo().trim(),curso);

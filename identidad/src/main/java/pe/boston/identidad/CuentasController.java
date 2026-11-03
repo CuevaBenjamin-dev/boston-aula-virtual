@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
   private final JdbcTemplate db; private final PasswordEncoder encoder; private final Restablecimiento restablecimiento; private final SecureRandom aleatorio=new SecureRandom();
   public CuentasController(JdbcTemplate db,PasswordEncoder encoder,Restablecimiento restablecimiento) { this.db=db;this.encoder=encoder;this.restablecimiento=restablecimiento; }
   public record Nueva(String usuario,String claveInicial,String tipo,UUID referenciaErp,boolean developer) {}
+  public record NuevaDocente(String usuario,String claveInicial,UUID referenciaErp) {}
   public record Suspension(boolean activo) {}
   public record CambioClave(String token,String nuevaClave) {}
   public record CambioPropio(String claveActual,String nuevaClave) {}
@@ -42,11 +43,14 @@ import org.springframework.web.bind.annotation.*;
     return encontrados.isEmpty()?Map.of("activo",false,"sesionVersion",-1):encontrados.getFirst();
   }
   @PostMapping("/cuentas") @ResponseStatus(HttpStatus.CREATED) @Transactional public Map<String,UUID> crear(@RequestBody Nueva d) {
-    if(d.usuario()==null||!d.usuario().matches("[a-z0-9._-]{4,120}")||d.claveInicial()==null||d.claveInicial().length()<12||!List.of("ESTUDIANTE","DOCENTE","COORDINACION","ADMINISTRADOR").contains(d.tipo())) throw new IllegalArgumentException("Cuenta inválida");
+    if(d.usuario()==null||!d.usuario().matches("[a-z0-9._-]{4,120}")||d.claveInicial()==null||d.claveInicial().length()<12||!List.of("ESTUDIANTE","DOCENTE","COORDINACION","DIRECCION","ADMINISTRADOR").contains(d.tipo())) throw new IllegalArgumentException("Cuenta inválida");
     if(("ESTUDIANTE".equals(d.tipo())||"DOCENTE".equals(d.tipo()))&&d.referenciaErp()==null) throw new IllegalArgumentException("Vínculo ERP requerido");
     if(d.developer()&&!"ADMINISTRADOR".equals(d.tipo())) throw new IllegalArgumentException("Developer requiere administración");
     UUID id=UUID.randomUUID(); db.update("INSERT INTO cuentas(id,usuario,clave_hash,tipo,referencia_erp,developer) VALUES (?,?,?,?,?,?)",id,d.usuario(),encoder.encode(d.claveInicial()),d.tipo(),d.referenciaErp(),d.developer());
     auditar(id,"CUENTA_CREADA"); return Map.of("id",id);
+  }
+  @PostMapping("/docentes") @ResponseStatus(HttpStatus.CREATED) @Transactional public Map<String,UUID> crearDocente(@RequestBody NuevaDocente d) {
+    return crear(new Nueva(d.usuario(),d.claveInicial(),"DOCENTE",d.referenciaErp(),false));
   }
   @PutMapping("/cuentas/{id}/estado") public void estado(@PathVariable UUID id,@RequestBody Suspension d) {
     db.update("UPDATE cuentas SET activo=?,sesion_version=sesion_version+1 WHERE id=?",d.activo(),id); auditar(id,d.activo()?"CUENTA_ACTIVADA":"CUENTA_SUSPENDIDA");

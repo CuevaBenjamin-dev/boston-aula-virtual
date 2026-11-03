@@ -10,7 +10,8 @@ Las rutas bajo `/api/aula` requieren sesión BFF y CSRF para cambios. Las rutas 
 | `POST /api/aula/tareas/{id}/publicar` | Publicar tarea completada o reabrir tarea cerrada |
 | `PUT /api/aula/tareas/{id}` | Editar título, instrucciones y plazo con `version` optimista, incluso tras publicar |
 | `POST/GET /api/aula/tareas/{id}/entregas` | Entregar o revisar |
-| `PUT /api/aula/tareas/{id}/calificacion` | Nota con versión optimista |
+| `PUT /api/aula/tareas/{id}/calificacion/borrador` | Guardar evaluación con versión optimista, sin publicar |
+| `POST /api/aula/tareas/{id}/calificacion/publicar` | Publicar el borrador con versión e identificador de operación |
 | `GET /api/aula/cursos/{id}/notas` | Notas y versión de entrega calificada |
 | `GET /api/aula/notas/{id}` | Detalle de nota del estudiante autorizado |
 | `GET /api/erp/cursos/{id}/estudiantes/resumen` | Nombres de matriculados para Aula, solo cliente de servicio |

@@ -180,8 +180,12 @@ def main():
         teacher_notice = [n for n in teacher.api("/notificaciones") if n.get("tarea_id") == task and n["tipo"] == "ENTREGAS"]
         check(len(teacher_notice) == 1 and teacher_notice[0]["nuevas_entregas"] == 1,
               "Docente recibe aviso agrupado solo tras la confirmación")
-        grade = teacher.api(f"/tareas/{task}/calificacion", "PUT", {
+        draft = teacher.api(f"/tareas/{task}/calificacion/borrador", "PUT", {
             "estudianteId": sofia_id, "valor": 17, "comentario": "Primer intento", "version": 0, "entregaVersion": 1,
+        })
+        grade = teacher.api(f"/tareas/{task}/calificacion/publicar", "POST", {
+            "estudianteId": sofia_id, "entregaVersion": 1, "version": draft["version"],
+            "operacionId": str(uuid.uuid4()),
         })
         check(sofia.api(f"/tareas/{task}/preparacion")["puede_iniciar"],
               "Dentro del plazo se permite reentregar sin autorización docente")

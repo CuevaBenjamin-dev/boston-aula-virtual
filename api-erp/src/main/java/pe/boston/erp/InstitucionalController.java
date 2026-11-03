@@ -13,8 +13,8 @@ import org.springframework.web.bind.annotation.*;
 @RestController @RequestMapping("/api/erp") public class InstitucionalController {
   private final Institucional servicio;
   public InstitucionalController(Institucional servicio) { this.servicio=servicio; }
-  public record Estudiante(@NotBlank String nombres,@NotBlank String apellidos,@NotBlank String codigo) {}
-  public record Matricula(UUID estudianteId,UUID seccionId) {}
+  public record Estudiante(@NotBlank String nombres,@NotBlank String apellidos,String codigo) {}
+  public record Matricula(UUID estudianteId,UUID seccionId,boolean confirmacionExplicita) {}
   public record CambioSeccion(UUID seccionId) {}
   public record Asignacion(UUID docenteId) {}
   public record Estado(@NotBlank String estado) {}
@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.*;
     return Map.of("id",servicio.nuevoEstudiante(datos.nombres(),datos.apellidos(),datos.codigo(),actor));
   }
   @PostMapping("/matriculas") @ResponseStatus(HttpStatus.CREATED) public Map<String,UUID> matricula(@RequestBody Matricula datos,@AuthenticationPrincipal Jwt actor) {
-    return Map.of("id",servicio.matricular(datos.estudianteId(),datos.seccionId(),actor));
+    return Map.of("id",servicio.matricular(datos.estudianteId(),datos.seccionId(),datos.confirmacionExplicita(),actor));
   }
   @PutMapping("/estudiantes/{id}/seccion") public void seccion(@PathVariable UUID id,@RequestBody CambioSeccion datos,@AuthenticationPrincipal Jwt actor) { servicio.cambiarSeccion(id,datos.seccionId(),actor); }
   @PostMapping("/estudiantes/{id}/retiro") public void retiro(@PathVariable UUID id,@AuthenticationPrincipal Jwt actor) { servicio.retirar(id,actor); }

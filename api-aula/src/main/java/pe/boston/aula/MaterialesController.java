@@ -14,13 +14,13 @@ import org.springframework.web.bind.annotation.*;
 @RestController @RequestMapping("/api/aula") public class MaterialesController {
   private final JdbcTemplate db; private final UsuarioActual usuario;
   public MaterialesController(JdbcTemplate db,UsuarioActual usuario) { this.db=db;this.usuario=usuario; }
-  public record Datos(String nombre,String descripcion,String enlace,List<UUID> cursoIds) {}
+  public record Datos(String nombre,String descripcion,String enlace,List<UUID> cursoIds,Integer mes,Integer semana) {}
 
   @GetMapping("/cursos/{curso}/materiales") public List<Map<String,Object>> listar(@PathVariable UUID curso,Authentication a) {
     usuario.leerCurso(a,curso);
     String filtro="ESTUDIANTE".equals(usuario.tipo(a))?" AND m.estado='PUBLICADO'":"";
     return db.queryForList("""
-      SELECT m.id,m.nombre,m.descripcion,m.enlace,m.estado,m.creado_en,m.actualizado_en,
+      SELECT m.id,m.nombre,m.descripcion,m.enlace,m.estado,m.mes,m.semana,m.creado_en,m.actualizado_en,
              (SELECT count(*) FROM archivos_material f WHERE f.material_id=m.id AND f.estado='DISPONIBLE' AND f.activo) AS total_archivos
       FROM materiales_curso m JOIN destinos_material d ON d.material_id=m.id
       WHERE d.curso_id=?
@@ -44,22 +44,24 @@ import org.springframework.web.bind.annotation.*;
   @PostMapping("/materiales") @Transactional public Map<String,UUID> crear(@RequestBody Datos d,Authentication a) {
     var cursos=cursos(d.cursoIds(),a); validar(d);
     UUID id=UUID.randomUUID();
-    db.update("INSERT INTO materiales_curso(id,curso_id,nombre,descripcion,enlace,estado,creado_por) VALUES (?,?,?,?,?,'BORRADOR',?)",
-      id,cursos.getFirst(),d.nombre().trim(),d.descripcion()==null?"":d.descripcion().trim(),url(d.enlace()),usuario.cuenta(a));
+    db.update("INSERT INTO materiales_curso(id,curso_id,nombre,descripcion,enlace,estado,creado_por,mes,semana) VALUES (?,?,?,?,?,'BORRADOR',?,?,?)",
+      id,cursos.getFirst(),d.nombre().trim(),d.descripcion()==null?"":d.descripcion().trim(),url(d.enlace()),usuario.cuenta(a),d.mes(),d.semana());
     for(UUID curso:cursos) db.update("INSERT INTO destinos_material(material_id,curso_id) VALUES (?,?)",id,curso);
     auditar(a,"MATERIAL_CREADO",id);
     return Map.of("id",id);
   }
 
   @PutMapping("/materiales/{id}") @Transactional public Map<String,Object> editar(@PathVariable UUID id,@RequestBody Datos d,Authentication a) {
-    acceso(id,a,true); var cursos=cursos(d.cursoIds(),a); validar(d);
+    acceso(id,a,true); var cursos=d.cursoIds()==null?null:cursos(d.cursoIds(),a); validar(d);
     if("PUBLICADO".equals(db.queryForObject("SELECT estado FROM materiales_curso WHERE id=?",String.class,id)) && url(d.enlace())==null &&
        db.queryForObject("SELECT count(*) FROM archivos_material WHERE material_id=? AND estado='DISPONIBLE' AND activo",Long.class,id)==0)
       throw new IllegalArgumentException("Un material publicado requiere archivo o enlace");
-    db.update("UPDATE materiales_curso SET nombre=?,descripcion=?,enlace=?,actualizado_en=now() WHERE id=?",
-      d.nombre().trim(),d.descripcion()==null?"":d.descripcion().trim(),url(d.enlace()),id);
-    db.update("DELETE FROM destinos_material WHERE material_id=?",id);
-    for(UUID curso:cursos) db.update("INSERT INTO destinos_material(material_id,curso_id,publicado_en) VALUES (?,?,CASE WHEN (SELECT estado FROM materiales_curso WHERE id=?)='PUBLICADO' THEN now() ELSE NULL END)",id,curso,id);
+    db.update("UPDATE materiales_curso SET nombre=?,descripcion=?,enlace=?,mes=COALESCE(?,mes),semana=COALESCE(?,semana),actualizado_en=now() WHERE id=?",
+      d.nombre().trim(),d.descripcion()==null?"":d.descripcion().trim(),url(d.enlace()),d.mes(),d.semana(),id);
+    if(cursos!=null) {
+      db.update("DELETE FROM destinos_material WHERE material_id=?",id);
+      for(UUID curso:cursos) db.update("INSERT INTO destinos_material(material_id,curso_id,publicado_en) VALUES (?,?,CASE WHEN (SELECT estado FROM materiales_curso WHERE id=?)='PUBLICADO' THEN now() ELSE NULL END)",id,curso,id);
+    }
     auditar(a,"MATERIAL_EDITADO",id);
     return ver(id,a);
   }
@@ -110,6 +112,8 @@ import org.springframework.web.bind.annotation.*;
   private void validar(Datos d) {
     if(d.nombre()==null||d.nombre().isBlank()||d.nombre().length()>200) throw new IllegalArgumentException("Nombre inválido");
     if(d.descripcion()!=null&&d.descripcion().length()>10000) throw new IllegalArgumentException("Descripción extensa");
+    if(d.mes()!=null&&(d.mes()<1||d.mes()>12)) throw new IllegalArgumentException("Mes inválido");
+    if(d.semana()!=null&&(d.semana()<1||d.semana()>5)) throw new IllegalArgumentException("Semana inválida");
     url(d.enlace());
   }
   private String url(String valor) {
