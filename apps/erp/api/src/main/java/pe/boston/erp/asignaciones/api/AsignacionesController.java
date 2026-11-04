@@ -8,7 +8,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import pe.boston.erp.ErpV1Service;
-import pe.boston.erp.DirectorioIdentidad;
+import pe.boston.erp.plataforma.DirectorioIdentidad;
 import pe.boston.erp.asignaciones.AsignacionesFacade;
 
 @RestController @RequestMapping("/api/erp/v1")

@@ -8,7 +8,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
-@RestController @RequestMapping("/api/erp/tesoreria") public class TesoreriaController {
+@RestController @RequestMapping({"/api/erp/tesoreria", "/api/erp/v1/tesoreria"}) public class TesoreriaController {
   private final Tesoreria servicio;
   public TesoreriaController(Tesoreria servicio) { this.servicio=servicio; }
   public record Pago(UUID estudianteId,UUID obligacionId,BigDecimal importe,String referencia) {}

@@ -1,4 +1,4 @@
-package pe.boston.erp;
+package pe.boston.erp.plataforma;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,7 +25,7 @@ public class DirectorioIdentidad {
     urlDocentes=URI.create(base+"/api/identidad/docentes");
   }
   public UUID crearDocente(String usuario,String clave,UUID docente,Jwt actor) {
-    ErpV1Service.direccion(actor);
+    AccesoAcademico.direccion(actor);
     try {
       String cuerpo=json.writeValueAsString(Map.of("usuario",usuario,"claveInicial",clave,"referenciaErp",docente));
       var solicitud=HttpRequest.newBuilder(urlDocentes).timeout(Duration.ofSeconds(10))
@@ -43,7 +43,7 @@ public class DirectorioIdentidad {
     catch(Exception e) { throw new IllegalStateException("No se pudo crear la cuenta docente",e); }
   }
   public List<Map<String,Object>> docentes(Jwt actor) {
-    ErpV1Service.lectura(actor);
+    AccesoAcademico.lectura(actor);
     try {
       var solicitud=HttpRequest.newBuilder(url).timeout(Duration.ofSeconds(5))
         .header("Authorization","Bearer "+actor.getTokenValue()).GET().build();

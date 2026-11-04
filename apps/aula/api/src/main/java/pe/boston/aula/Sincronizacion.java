@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
   @Scheduled(fixedDelay=15000,initialDelay=3000) public void ejecutar() {
     try {
       long ultimo=db.queryForObject("SELECT ultima_secuencia FROM estado_sincronizacion WHERE id=1",Long.class);
-      JsonNode eventos=erp.get("/api/erp/eventos?despues="+ultimo+"&limite=100");
+      JsonNode eventos=erp.get("/api/erp/v1/eventos?despues="+ultimo+"&limite=100");
       for(JsonNode evento:eventos) transaccion.executeWithoutResult(estado -> aplicar(evento));
       db.update("UPDATE estado_sincronizacion SET ultimo_exito=now(),ultimo_error=NULL WHERE id=1");
     } catch(Exception e) {

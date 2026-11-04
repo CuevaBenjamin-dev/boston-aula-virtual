@@ -25,27 +25,27 @@ import org.springframework.web.bind.annotation.*;
   public record Vinculo(UUID apoderadoId,@NotBlank String vinculo) {}
   public record Ambito(UUID seccionId,boolean asignado) {}
 
-  @PostMapping("/estudiantes") @ResponseStatus(HttpStatus.CREATED) public Map<String,UUID> estudiante(@Valid @RequestBody Estudiante datos,@AuthenticationPrincipal Jwt actor) {
+  @PostMapping({"/estudiantes", "/v1/administracion/estudiantes"}) @ResponseStatus(HttpStatus.CREATED) public Map<String,UUID> estudiante(@Valid @RequestBody Estudiante datos,@AuthenticationPrincipal Jwt actor) {
     return Map.of("id",servicio.nuevoEstudiante(datos.nombres(),datos.apellidos(),datos.codigo(),actor));
   }
-  @PostMapping("/matriculas") @ResponseStatus(HttpStatus.CREATED) public Map<String,UUID> matricula(@RequestBody Matricula datos,@AuthenticationPrincipal Jwt actor) {
+  @PostMapping({"/matriculas", "/v1/administracion/matriculas"}) @ResponseStatus(HttpStatus.CREATED) public Map<String,UUID> matricula(@RequestBody Matricula datos,@AuthenticationPrincipal Jwt actor) {
     return Map.of("id",servicio.matricular(datos.estudianteId(),datos.seccionId(),datos.confirmacionExplicita(),actor));
   }
-  @PutMapping("/estudiantes/{id}/seccion") public void seccion(@PathVariable UUID id,@RequestBody CambioSeccion datos,@AuthenticationPrincipal Jwt actor) { servicio.cambiarSeccion(id,datos.seccionId(),actor); }
-  @PostMapping("/estudiantes/{id}/retiro") public void retiro(@PathVariable UUID id,@AuthenticationPrincipal Jwt actor) { servicio.retirar(id,actor); }
-  @PutMapping("/estudiantes/{id}/estado") public void estado(@PathVariable UUID id,@RequestBody Estado datos,@AuthenticationPrincipal Jwt actor) { servicio.estadoAcademico(id,datos.estado(),actor); }
-  @PutMapping("/ofertas/{id}/docente") public void docente(@PathVariable UUID id,@RequestBody Asignacion datos,@AuthenticationPrincipal Jwt actor) { servicio.asignarDocente(id,datos.docenteId(),actor); }
+  @PutMapping({"/estudiantes/{id}/seccion", "/v1/administracion/estudiantes/{id}/seccion"}) public void seccion(@PathVariable UUID id,@RequestBody CambioSeccion datos,@AuthenticationPrincipal Jwt actor) { servicio.cambiarSeccion(id,datos.seccionId(),actor); }
+  @PostMapping({"/estudiantes/{id}/retiro", "/v1/administracion/estudiantes/{id}/retiro"}) public void retiro(@PathVariable UUID id,@AuthenticationPrincipal Jwt actor) { servicio.retirar(id,actor); }
+  @PutMapping({"/estudiantes/{id}/estado", "/v1/administracion/estudiantes/{id}/estado"}) public void estado(@PathVariable UUID id,@RequestBody Estado datos,@AuthenticationPrincipal Jwt actor) { servicio.estadoAcademico(id,datos.estado(),actor); }
+  @PutMapping({"/ofertas/{id}/docente", "/v1/administracion/ofertas/{id}/docente"}) public void docente(@PathVariable UUID id,@RequestBody Asignacion datos,@AuthenticationPrincipal Jwt actor) { servicio.asignarDocente(id,datos.docenteId(),actor); }
   @GetMapping("/ofertas") public List<Map<String,Object>> ofertas(@AuthenticationPrincipal Jwt actor) { Institucional.admin(actor); return servicio.ofertas(); }
   @GetMapping("/catalogo") public Map<String,Object> catalogo(@AuthenticationPrincipal Jwt actor) { return servicio.catalogo(actor); }
   @GetMapping("/docentes/resumen") public List<Map<String,Object>> docentesResumen(@AuthenticationPrincipal Jwt actor) { return servicio.docentesResumen(actor); }
   @GetMapping("/cursos/{curso}/estudiantes/resumen") public List<Map<String,Object>> estudiantesResumenCurso(@PathVariable UUID curso,@AuthenticationPrincipal Jwt actor) { return servicio.estudiantesResumenCurso(curso,actor); }
   @GetMapping("/perfiles/{tipo}/{id}") public Map<String,Object> perfil(@PathVariable String tipo,@PathVariable UUID id,@AuthenticationPrincipal Jwt actor) { return servicio.perfil(tipo,id,actor); }
-  @PostMapping("/secciones") @ResponseStatus(HttpStatus.CREATED) public Map<String,UUID> seccion(@Valid @RequestBody Seccion d,@AuthenticationPrincipal Jwt actor) { return Map.of("id",servicio.nuevaSeccion(d.gradoId(),d.periodoId(),d.nombre(),actor)); }
-  @PostMapping("/ofertas") @ResponseStatus(HttpStatus.CREATED) public Map<String,UUID> oferta(@RequestBody Oferta d,@AuthenticationPrincipal Jwt actor) { return Map.of("id",servicio.nuevaOferta(d.seccionId(),d.asignaturaId(),actor)); }
-  @PostMapping("/docentes") @ResponseStatus(HttpStatus.CREATED) public Map<String,UUID> docente(@Valid @RequestBody Docente d,@AuthenticationPrincipal Jwt actor) { return Map.of("id",servicio.nuevoDocente(d.nombres(),d.apellidos(),actor)); }
-  @PostMapping("/apoderados") @ResponseStatus(HttpStatus.CREATED) public Map<String,UUID> apoderado(@Valid @RequestBody Apoderado d,@AuthenticationPrincipal Jwt actor) { return Map.of("id",servicio.nuevoApoderado(d.nombres(),d.apellidos(),d.documento(),actor)); }
-  @PostMapping("/estudiantes/{id}/apoderados") @ResponseStatus(HttpStatus.CREATED) public void vincular(@PathVariable UUID id,@Valid @RequestBody Vinculo d,@AuthenticationPrincipal Jwt actor) { servicio.vincularApoderado(id,d.apoderadoId(),d.vinculo(),actor); }
-  @GetMapping("/estudiantes/{id}/apoderados") public List<Map<String,Object>> apoderados(@PathVariable UUID id,@AuthenticationPrincipal Jwt actor) { return servicio.apoderados(id,actor); }
+  @PostMapping({"/secciones", "/v1/administracion/secciones"}) @ResponseStatus(HttpStatus.CREATED) public Map<String,UUID> seccion(@Valid @RequestBody Seccion d,@AuthenticationPrincipal Jwt actor) { return Map.of("id",servicio.nuevaSeccion(d.gradoId(),d.periodoId(),d.nombre(),actor)); }
+  @PostMapping({"/ofertas", "/v1/administracion/ofertas"}) @ResponseStatus(HttpStatus.CREATED) public Map<String,UUID> oferta(@RequestBody Oferta d,@AuthenticationPrincipal Jwt actor) { return Map.of("id",servicio.nuevaOferta(d.seccionId(),d.asignaturaId(),actor)); }
+  @PostMapping({"/docentes", "/v1/administracion/docentes"}) @ResponseStatus(HttpStatus.CREATED) public Map<String,UUID> docente(@Valid @RequestBody Docente d,@AuthenticationPrincipal Jwt actor) { return Map.of("id",servicio.nuevoDocente(d.nombres(),d.apellidos(),actor)); }
+  @PostMapping({"/apoderados", "/v1/administracion/apoderados"}) @ResponseStatus(HttpStatus.CREATED) public Map<String,UUID> apoderado(@Valid @RequestBody Apoderado d,@AuthenticationPrincipal Jwt actor) { return Map.of("id",servicio.nuevoApoderado(d.nombres(),d.apellidos(),d.documento(),actor)); }
+  @PostMapping({"/estudiantes/{id}/apoderados", "/v1/administracion/estudiantes/{id}/apoderados"}) @ResponseStatus(HttpStatus.CREATED) public void vincular(@PathVariable UUID id,@Valid @RequestBody Vinculo d,@AuthenticationPrincipal Jwt actor) { servicio.vincularApoderado(id,d.apoderadoId(),d.vinculo(),actor); }
+  @GetMapping({"/estudiantes/{id}/apoderados", "/v1/administracion/estudiantes/{id}/apoderados"}) public List<Map<String,Object>> apoderados(@PathVariable UUID id,@AuthenticationPrincipal Jwt actor) { return servicio.apoderados(id,actor); }
   @GetMapping("/eventos") public List<Map<String,Object>> eventos(@RequestParam(defaultValue="0") long despues,@RequestParam(defaultValue="100") int limite) { return servicio.eventos(despues,limite); }
   @GetMapping("/coordinaciones/{cuenta}/ambitos") public List<Map<String,Object>> ambitos(@PathVariable UUID cuenta,@AuthenticationPrincipal Jwt actor) { return servicio.ambitos(cuenta,actor); }
   @PutMapping("/coordinaciones/{cuenta}/ambitos") public void ambito(@PathVariable UUID cuenta,@RequestBody Ambito d,@AuthenticationPrincipal Jwt actor) { servicio.cambiarAmbito(cuenta,d.seccionId(),d.asignado(),actor); }

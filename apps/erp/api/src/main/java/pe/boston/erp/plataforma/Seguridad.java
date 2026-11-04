@@ -1,4 +1,4 @@
-package pe.boston.erp;
+package pe.boston.erp.plataforma;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -66,7 +66,8 @@ import pe.boston.erp.plataforma.SesionAbsolutaFiltro;
     http.securityMatcher("/api/erp/**")
       .csrf(c -> c.disable())
       .authorizeHttpRequests(a -> a
-        .requestMatchers("/api/erp/eventos/**").hasAuthority("SCOPE_erp.sync")
+        .requestMatchers("/api/erp/eventos", "/api/erp/eventos/**", "/api/erp/v1/eventos", "/api/erp/v1/eventos/**")
+          .hasAuthority("SCOPE_erp.sync")
         .anyRequest().authenticated())
       .oauth2ResourceServer(o -> o.jwt(withDefaults()));
     return http.build();

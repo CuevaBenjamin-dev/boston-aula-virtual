@@ -23,7 +23,10 @@ public class ErpAdministracionController {
   public ErpAdministracionController(UsuarioActual usuario,@Value("${BOSTON_ERP_URL}") String erp) { this.usuario=usuario;this.erp=erp; }
   private ResponseEntity<String> enviar(String ruta,String metodo,String cuerpo,Authentication actor,OAuth2AuthorizedClient client) throws Exception {
     usuario.administrador(actor);
-    HttpRequest.Builder solicitud=HttpRequest.newBuilder(URI.create(erp+"/api/erp"+ruta)).timeout(Duration.ofSeconds(8))
+    String prefijo = ruta.startsWith("/tesoreria/") ||
+      ("GET".equals(metodo) && ("/ofertas".equals(ruta) || "/catalogo".equals(ruta))) ||
+      "/reconciliar".equals(ruta) ? "/api/erp/v1" : "/api/erp/v1/administracion";
+    HttpRequest.Builder solicitud=HttpRequest.newBuilder(URI.create(erp+prefijo+ruta)).timeout(Duration.ofSeconds(8))
       .header("Authorization","Bearer "+client.getAccessToken().getTokenValue());
     if("GET".equals(metodo)) solicitud.GET();
     else solicitud.header("Content-Type","application/json").method(metodo,HttpRequest.BodyPublishers.ofString(cuerpo==null?"{}":cuerpo));

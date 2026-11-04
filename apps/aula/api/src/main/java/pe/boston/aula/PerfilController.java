@@ -28,7 +28,7 @@ import org.springframework.web.multipart.MultipartFile;
     String tipo=usuario.tipo(a);
     if("ESTUDIANTE".equals(tipo)||"DOCENTE".equals(tipo)) {
       try {
-        var respuesta=erp.get("/api/erp/perfiles/"+tipo+"/"+usuario.referencia(a));
+        var respuesta=erp.get("/api/erp/v1/perfiles/"+tipo+"/"+usuario.referencia(a));
         var institucional=new LinkedHashMap<String,Object>();
         respuesta.fields().forEachRemaining(campo->{var valor=campo.getValue();institucional.put(campo.getKey(),valor.isNull()?null:valor.isNumber()?valor.numberValue():valor.asText());});
         datos.put("datosInstitucionales",institucional);

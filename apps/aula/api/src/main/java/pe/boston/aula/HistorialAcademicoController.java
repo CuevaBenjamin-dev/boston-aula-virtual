@@ -43,7 +43,7 @@ import org.springframework.web.bind.annotation.RestController;
       FROM inscripciones_curso i WHERE i.curso_id=? ORDER BY i.activo,i.actualizado_en DESC
       """,curso);
     Map<String,String> nombres=new HashMap<>();
-    try { for(var e:erp.get("/api/erp/cursos/"+curso+"/estudiantes/resumen")) nombres.put(e.get("id").asText(),e.get("nombre").asText()); }
+    try { for(var e:erp.get("/api/erp/v1/cursos/"+curso+"/estudiantes/resumen")) nombres.put(e.get("id").asText(),e.get("nombre").asText()); }
     catch(Exception ignored) { /* El historial permanece disponible si el ERP está temporalmente fuera de línea. */ }
     for(var fila:filas) fila.put("estudiante",nombres.getOrDefault(fila.get("estudiante_erp_id").toString(),"Estudiante "+fila.get("estudiante_erp_id")));
     return filas;

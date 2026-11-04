@@ -2,6 +2,8 @@
 
 Estado al 2026-11-03. **C** = confirmado en código, **H** = descrito en documentación histórica, **P** = propuesta, **D** = decisión institucional pendiente. Ninguna propuesta constituye una política aprobada.
 
+**Documento histórico de Fase 1.** La referencia vigente de requisitos y sus estados es [REQUISITOS_SRS.md](REQUISITOS_SRS.md), enlazada con [MATRIZ_TRAZABILIDAD.md](MATRIZ_TRAZABILIDAD.md). Las rutas de código citadas abajo corresponden al corte original y pueden haberse movido.
+
 ## Visión de producto (PRD)
 
 El ERP administra el registro institucional de alumnos y responsables, el proceso de matrícula, períodos y oferta de cursos por grado y sección, docentes y sus asignaciones. Identidad autentica usuarios; Aula recibe los cambios académicos por integración. El ERP actual incluye además Tesorería legada, fuera de los cinco módulos de esta reestructuración, que se conserva para evitar pérdida de contratos y datos.

@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.*;
   @GetMapping("/ambitos/{cuenta}") public org.springframework.http.ResponseEntity<String> ambitos(@PathVariable UUID cuenta,Authentication a,
       @org.springframework.security.oauth2.client.annotation.RegisteredOAuth2AuthorizedClient("boston") org.springframework.security.oauth2.client.OAuth2AuthorizedClient client) throws Exception {
     usuario.administrador(a);
-    var respuesta=http.send(HttpRequest.newBuilder(URI.create(erp+"/api/erp/coordinaciones/"+cuenta+"/ambitos"))
+    var respuesta=http.send(HttpRequest.newBuilder(URI.create(erp+"/api/erp/v1/coordinaciones/"+cuenta+"/ambitos"))
       .timeout(Duration.ofSeconds(8)).header("Authorization","Bearer "+client.getAccessToken().getTokenValue()).GET().build(),HttpResponse.BodyHandlers.ofString());
     return org.springframework.http.ResponseEntity.status(respuesta.statusCode()).contentType(org.springframework.http.MediaType.APPLICATION_JSON).body(respuesta.body());
   }
@@ -35,7 +35,7 @@ import org.springframework.web.bind.annotation.*;
       @org.springframework.security.oauth2.client.annotation.RegisteredOAuth2AuthorizedClient("boston") org.springframework.security.oauth2.client.OAuth2AuthorizedClient client) throws Exception {
     usuario.administrador(a);if(d.seccionId()==null)throw new IllegalArgumentException("Sección requerida");
     String cuerpo=new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(d);
-    var respuesta=http.send(HttpRequest.newBuilder(URI.create(erp+"/api/erp/coordinaciones/"+cuenta+"/ambitos"))
+    var respuesta=http.send(HttpRequest.newBuilder(URI.create(erp+"/api/erp/v1/coordinaciones/"+cuenta+"/ambitos"))
       .timeout(Duration.ofSeconds(8)).header("Authorization","Bearer "+client.getAccessToken().getTokenValue())
       .header("Content-Type","application/json").PUT(HttpRequest.BodyPublishers.ofString(cuerpo)).build(),HttpResponse.BodyHandlers.discarding());
     if(respuesta.statusCode()!=200) throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatusCode.valueOf(respuesta.statusCode()),"ERP rechazó el ámbito");
@@ -130,7 +130,7 @@ import org.springframework.web.bind.annotation.*;
       UUID curso=(UUID)fila.get("curso_id"),estudiante=(UUID)fila.get("estudiante_erp_id");
       if(!nombres.containsKey(curso)) {
         Map<String,String> porId=new HashMap<>();
-        try { for(var e:erpCliente.get("/api/erp/cursos/"+curso+"/estudiantes/resumen")) porId.put(e.get("id").asText(),e.get("nombre").asText()); }
+        try { for(var e:erpCliente.get("/api/erp/v1/cursos/"+curso+"/estudiantes/resumen")) porId.put(e.get("id").asText(),e.get("nombre").asText()); }
         catch(Exception ignored) { /* IDs y métricas siguen disponibles si ERP no responde. */ }
         nombres.put(curso,porId);
       }

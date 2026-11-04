@@ -1,5 +1,7 @@
 # ERP — módulos, datos, contratos y seguridad
 
+**Documento del corte 2026-11-03.** La estructura y las decisiones vigentes de Fase 2 están en [MAPA_MODULOS.md](MAPA_MODULOS.md) y [DECISIONES_ARQUITECTURA.md](DECISIONES_ARQUITECTURA.md). El diagrama siguiente representa el estado anterior a la extracción de responsables y componentes técnicos.
+
 ## Dependencias actuales
 
 ```mermaid

@@ -1,4 +1,4 @@
-package pe.boston.erp;
+package pe.boston.erp.plataforma;
 
 import java.util.Map;
 import org.springframework.dao.DuplicateKeyException;

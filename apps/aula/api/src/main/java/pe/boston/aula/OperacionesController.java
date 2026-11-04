@@ -63,7 +63,7 @@ import org.springframework.web.bind.annotation.*;
   }
   @GetMapping("/pagos") public Object pagos(Authentication a) {
     usuario.estudiante(a);
-    try { return new com.fasterxml.jackson.databind.ObjectMapper().convertValue(erp.get("/api/erp/tesoreria/estudiantes/"+usuario.referencia(a)),Object.class); }
+    try { return new com.fasterxml.jackson.databind.ObjectMapper().convertValue(erp.get("/api/erp/v1/tesoreria/estudiantes/"+usuario.referencia(a)),Object.class); }
     catch(Exception e) { throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE,"ERP temporalmente no disponible"); }
   }
   @GetMapping("/integraciones") public Map<String,Object> integraciones(Authentication a) { return supervision.sistema(a); }

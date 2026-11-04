@@ -1,4 +1,4 @@
-package pe.boston.erp.personas.api;
+package pe.boston.erp;
 
 import java.util.List;
 import java.util.Map;
@@ -7,7 +7,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
-import pe.boston.erp.ErpV1Service;
 import pe.boston.erp.personas.PersonasFacade;
 
 @RestController @RequestMapping("/api/erp/v1")

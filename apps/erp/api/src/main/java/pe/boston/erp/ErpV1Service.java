@@ -16,14 +16,19 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.boston.erp.plataforma.AccesoAcademico;
+import pe.boston.erp.plataforma.DirectorioIdentidad;
+import pe.boston.erp.personas.Responsables;
+import pe.boston.erp.personas.Estudiantes;
 
 @Service
 public class ErpV1Service {
   private final JdbcTemplate db;
   private final Institucional eventos;
   private final DirectorioIdentidad identidad;
+  private final Responsables responsables;
+  private final Estudiantes estudiantes;
   private final ObjectMapper json;
-  public ErpV1Service(JdbcTemplate db,Institucional eventos,DirectorioIdentidad identidad) { this.db=db;this.eventos=eventos;this.identidad=identidad;this.json=new ObjectMapper(); }
+  public ErpV1Service(JdbcTemplate db,Institucional eventos,DirectorioIdentidad identidad,Responsables responsables,Estudiantes estudiantes) { this.db=db;this.eventos=eventos;this.identidad=identidad;this.responsables=responsables;this.estudiantes=estudiantes;this.json=new ObjectMapper(); }
 
   public static void lectura(Jwt actor) {
     AccesoAcademico.lectura(actor);
@@ -56,19 +61,8 @@ public class ErpV1Service {
   public record EstudianteDato(String nombres,String apellidos,LocalDate fechaNacimiento,String tipoDocumento,String documento,
     String nacionalidad,String estado) {}
   @Transactional public UUID crearEstudiante(EstudianteDato d,Jwt actor) {
-    escritura(actor);
-    String nombres=texto(d.nombres(),120,"Nombres"), apellidos=texto(d.apellidos(),120,"Apellidos");
-    String tipo=opcional(d.tipoDocumento(),20,"Tipo de documento");
-    String documento=opcional(d.documento(),30,"Documento");
-    if((tipo==null)!=(documento==null)) throw new IllegalArgumentException("Indica tipo y número de documento juntos");
-    if(documento!=null && db.queryForObject("SELECT count(*) FROM personas WHERE tipo_documento=? AND documento=?",Long.class,tipo,documento)>0)
-      throw new IllegalArgumentException("El documento ya está registrado; busca la persona existente");
-    UUID persona=UUID.randomUUID(), estudiante=UUID.randomUUID();
-    db.update("INSERT INTO personas(id,nombres,apellidos,fecha_nacimiento,tipo_documento,documento,nacionalidad) VALUES (?,?,?,?,?,?,?)",
-      persona,nombres,apellidos,d.fechaNacimiento(),tipo,documento,opcional(d.nacionalidad(),80,"Nacionalidad"));
-    db.update("INSERT INTO estudiantes(id,persona_id,estado) VALUES (?,?,'ACTIVO')",estudiante,persona);
-    auditar(actor,"FICHA_PRELIMINAR_CREADA",estudiante,Map.of());
-    return estudiante;
+    return estudiantes.crear(d.nombres(),d.apellidos(),d.fechaNacimiento(),d.tipoDocumento(),
+      d.documento(),d.nacionalidad(),actor);
   }
   public List<Map<String,Object>> candidatosMatricula(String buscar,Jwt actor) {
     lectura(actor);
@@ -185,67 +179,21 @@ public class ErpV1Service {
     return ficha;
   }
   @Transactional public void editarEstudiante(UUID id,EstudianteDato d,Jwt actor) {
-    escritura(actor);
-    var anterior=db.queryForMap("SELECT e.codigo,p.id AS persona_id,p.documento FROM estudiantes e JOIN personas p ON p.id=e.persona_id WHERE e.id=? FOR UPDATE OF e,p",id);
-    String tipo=opcional(d.tipoDocumento(),20,"Tipo de documento"),documento=opcional(d.documento(),30,"Documento");
-    if((tipo==null)!=(documento==null)) throw new IllegalArgumentException("Indica tipo y número de documento juntos");
-    db.update("""
-      UPDATE personas SET nombres=?,apellidos=?,fecha_nacimiento=?,tipo_documento=?,documento=?,nacionalidad=?,actualizado_en=now()
-      WHERE id=?
-      """,texto(d.nombres(),120,"Nombres"),texto(d.apellidos(),120,"Apellidos"),d.fechaNacimiento(),tipo,documento,
-      opcional(d.nacionalidad(),80,"Nacionalidad"),anterior.get("persona_id"));
-    db.update("UPDATE estudiantes SET actualizado_en=now() WHERE id=?",id);
-    auditar(actor,"ESTUDIANTE_EDITADO",id,Map.of("preliminar",anterior.get("codigo")==null));
+    estudiantes.editar(id,d.nombres(),d.apellidos(),d.fechaNacimiento(),d.tipoDocumento(),
+      d.documento(),d.nacionalidad(),actor);
   }
 
   public record PersonaDato(String nombres,String apellidos,String tipoDocumento,String documento,String telefono,String correo) {}
-  public List<Map<String,Object>> personas(String tipo,String documento,Jwt actor) {
-    lectura(actor);
-    if(tipo==null||tipo.isBlank()||documento==null||documento.isBlank()) return List.of();
-    return db.queryForList("SELECT p.id,p.nombres,p.apellidos,p.tipo_documento,p.documento,p.telefono,p.correo,a.id AS apoderado_id FROM personas p LEFT JOIN apoderados a ON a.persona_id=p.id WHERE p.tipo_documento=? AND p.documento=?",
-      tipo.trim(),documento.trim());
-  }
+  public List<Map<String,Object>> personas(String tipo,String documento,Jwt actor) { return responsables.personas(tipo,documento,actor); }
   @Transactional public UUID crearPersona(PersonaDato d,Jwt actor) {
-    escritura(actor);
-    String tipo=texto(d.tipoDocumento(),20,"Tipo de documento"),doc=texto(d.documento(),30,"Documento");
-    var existente=personas(tipo,doc,actor);
-    if(!existente.isEmpty()) return (UUID)existente.getFirst().get("id");
-    UUID id=UUID.randomUUID();
-    db.update("INSERT INTO personas(id,nombres,apellidos,tipo_documento,documento,telefono,correo) VALUES (?,?,?,?,?,?,?)",
-      id,texto(d.nombres(),120,"Nombres"),texto(d.apellidos(),120,"Apellidos"),tipo,doc,
-      opcional(d.telefono(),40,"Teléfono"),opcional(d.correo(),160,"Correo"));
-    auditar(actor,"PERSONA_CREADA",id,Map.of("tipoDocumento",tipo));
-    return id;
+    return responsables.crearPersona(d.nombres(),d.apellidos(),d.tipoDocumento(),d.documento(),d.telefono(),d.correo(),actor);
   }
   public record VinculoDato(UUID personaId,String rol,String vinculo,boolean emergencia,String telefono,String correo) {}
   @Transactional public void vincular(UUID estudiante,VinculoDato d,Jwt actor) {
-    escritura(actor);
-    String rol=texto(d.rol(),24,"Rol");
-    if(!List.of("PRINCIPAL","SEGUNDO","SUPLENTE").contains(rol)) throw new IllegalArgumentException("Rol inválido");
-    UUID apoderado=db.queryForObject("""
-      INSERT INTO apoderados(id,persona_id) VALUES (?,?)
-      ON CONFLICT(persona_id) DO UPDATE SET persona_id=EXCLUDED.persona_id RETURNING id
-      """,UUID.class,UUID.randomUUID(),d.personaId());
-    if("PRINCIPAL".equals(rol)) db.update("UPDATE vinculos_estudiante_apoderado SET rol='SEGUNDO' WHERE estudiante_id=? AND rol='PRINCIPAL'",estudiante);
-    db.update("""
-      INSERT INTO vinculos_estudiante_apoderado(estudiante_id,apoderado_id,vinculo,rol,contacto_emergencia,telefono,correo)
-      VALUES (?,?,?,?,?,?,?) ON CONFLICT(estudiante_id,apoderado_id) DO UPDATE SET
-      vinculo=EXCLUDED.vinculo,rol=EXCLUDED.rol,contacto_emergencia=EXCLUDED.contacto_emergencia,
-      telefono=EXCLUDED.telefono,correo=EXCLUDED.correo,actualizado_en=now()
-      """,estudiante,apoderado,texto(d.vinculo(),40,"Vínculo"),rol,d.emergencia(),
-      opcional(d.telefono(),40,"Teléfono"),opcional(d.correo(),160,"Correo"));
-    auditar(actor,"RESPONSABLE_VINCULADO",estudiante,Map.of("personaId",d.personaId(),"rol",rol));
+    responsables.vincular(estudiante,d.personaId(),d.rol(),d.vinculo(),d.emergencia(),d.telefono(),d.correo(),actor);
   }
   public List<Map<String,Object>> apoderados(UUID estudiante,Jwt actor) {
-    lectura(actor);
-    return db.queryForList("""
-      SELECT p.id AS persona_id,a.id AS apoderado_id,p.nombres,p.apellidos,p.tipo_documento,p.documento,
-        v.rol,v.vinculo,v.contacto_emergencia,coalesce(v.telefono,p.telefono) AS telefono,
-        coalesce(v.correo,p.correo) AS correo
-      FROM vinculos_estudiante_apoderado v JOIN apoderados a ON a.id=v.apoderado_id
-      JOIN personas p ON p.id=a.persona_id WHERE v.estudiante_id=?
-      ORDER BY CASE v.rol WHEN 'PRINCIPAL' THEN 0 WHEN 'SEGUNDO' THEN 1 ELSE 2 END,p.apellidos
-      """,estudiante);
+    return responsables.apoderados(estudiante,actor);
   }
 
   public record MatriculaDato(UUID estudianteId,UUID periodoId,UUID gradoId,UUID seccionId,String procedencia,String procedenciaDetalle) {
@@ -702,7 +650,7 @@ public class ErpV1Service {
   }
   @Transactional public void asignarDocenteLote(UUID docente,List<UUID> ofertas,Jwt actor) {
     direccion(actor);
-    if(ofertas==null || ofertas.isEmpty() || ofertas.size()>100 || ofertas.contains(null))
+    if(ofertas==null || ofertas.isEmpty() || ofertas.size()>100 || ofertas.stream().anyMatch(java.util.Objects::isNull))
       throw new IllegalArgumentException("Selecciona entre 1 y 100 cursos");
     for(UUID oferta:new java.util.LinkedHashSet<>(ofertas)) asignarDocente(oferta,docente,actor);
   }

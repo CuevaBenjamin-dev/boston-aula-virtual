@@ -360,7 +360,7 @@ import org.springframework.transaction.annotation.Transactional;
     var filas=db.queryForList("SELECT * FROM entregas WHERE tarea_id=? ORDER BY entregado_en DESC",tarea);
     if(filas.isEmpty()) return filas;
     Map<String,String> nombres=new HashMap<>();
-    try { for(var e:erp.get("/api/erp/cursos/"+t.get("curso_id")+"/estudiantes/resumen")) nombres.put(e.get("id").asText(),e.get("nombre").asText()); }
+    try { for(var e:erp.get("/api/erp/v1/cursos/"+t.get("curso_id")+"/estudiantes/resumen")) nombres.put(e.get("id").asText(),e.get("nombre").asText()); }
     catch(Exception e) { /* Las entregas siguen disponibles si ERP no responde. */ }
     for(var e:filas) e.put("estudiante",nombres.getOrDefault(e.get("estudiante_erp_id").toString(),"Estudiante no identificado"));
     return filas;
@@ -383,7 +383,7 @@ import org.springframework.transaction.annotation.Transactional;
       WHERE i.curso_id=? AND i.activo ORDER BY i.estudiante_erp_id
       """,tarea,tarea,curso);
     Map<String,String> nombres=new HashMap<>();
-    try { for(var e:erp.get("/api/erp/cursos/"+curso+"/estudiantes/resumen")) nombres.put(e.get("id").asText(),e.get("nombre").asText()); }
+    try { for(var e:erp.get("/api/erp/v1/cursos/"+curso+"/estudiantes/resumen")) nombres.put(e.get("id").asText(),e.get("nombre").asText()); }
     catch(Exception e) { /* El seguimiento numérico sigue disponible sin ERP. */ }
     for(var e:filas) e.put("estudiante",nombres.getOrDefault(e.get("estudiante_erp_id").toString(),"Estudiante "+e.get("estudiante_erp_id")));
     return filas.stream().filter(e->switch(grupo) {

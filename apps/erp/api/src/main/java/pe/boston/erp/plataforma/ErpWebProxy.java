@@ -1,4 +1,4 @@
-package pe.boston.erp;
+package pe.boston.erp.plataforma;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.ByteArrayOutputStream;

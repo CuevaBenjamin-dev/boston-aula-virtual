@@ -16,7 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
   private final ObjectMapper json = new ObjectMapper();
   public Institucional(JdbcTemplate db) { this.db=db; }
 
-  static void admin(Jwt jwt) { if (!"ADMINISTRADOR".equals(jwt.getClaimAsString("tipo"))) throw new AccessDeniedException("Solo administración institucional"); }
+  public static void admin(Jwt jwt) { if (!"ADMINISTRADOR".equals(jwt.getClaimAsString("tipo"))) throw new AccessDeniedException("Solo administración institucional"); }
   static void academico(Jwt jwt) { ErpV1Service.escritura(jwt); }
   static void finanzas(Jwt jwt) { admin(jwt); if (!Boolean.TRUE.equals(jwt.getClaim("tesoreria"))) throw new AccessDeniedException("Permiso de tesorería requerido"); }
   static void lectura(Jwt jwt, UUID estudiante) {

@@ -49,7 +49,7 @@ import org.springframework.transaction.annotation.Transactional;
   private List<Map<String,Object>> conDocentes(List<Map<String,Object>> filas) {
     if(filas.isEmpty()) return filas;
     Map<String,String> nombres=new HashMap<>();
-    try { for(var d:erp.get("/api/erp/docentes/resumen")) nombres.put(d.get("id").asText(),d.get("nombre").asText()); }
+    try { for(var d:erp.get("/api/erp/v1/docentes/resumen")) nombres.put(d.get("id").asText(),d.get("nombre").asText()); }
     catch(Exception e) { /* La consulta sigue disponible si ERP está temporalmente fuera. */ }
     for(var fila:filas) { Object id=fila.get("docente_erp_id"); fila.put("docente",id==null?"Docente no identificado":nombres.getOrDefault(id.toString(),"Docente no identificado")); }
     return filas;
