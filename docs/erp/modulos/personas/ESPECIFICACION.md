@@ -14,7 +14,7 @@ Los siguientes objetivos funcionales están aprobados. Sus reglas detalladas y c
 | RF-PER-006 | Registrar relaciones entre estudiantes, familiares y responsables. |
 | RF-PER-007 | Consultar una ficha personal con condiciones y relaciones. |
 | RF-PER-008 | Activar y desactivar condiciones institucionales conservando el historial. |
-| RF-PER-009 | Auditar modificaciones relevantes. |
+| RF-PER-009 | Registrar automáticamente la trazabilidad técnica de modificaciones relevantes, sin exigir aprobaciones manuales ni una pantalla de auditoría. |
 
 ## 2. Requisitos no funcionales
 
@@ -24,14 +24,14 @@ Los objetivos siguientes están aprobados; aún faltan sus criterios medibles de
 |---|---|
 | RNF-PER-001 | Seguridad y autorización por operación y recurso. |
 | RNF-PER-002 | Integridad y prevención de duplicados. |
-| RNF-PER-003 | Auditoría de modificaciones relevantes. |
+| RNF-PER-003 | Trazabilidad técnica automática y proporcional de modificaciones relevantes, sin conservar innecesariamente valores personales ni imponer aprobaciones manuales. |
 | RNF-PER-004 | Rendimiento de consultas y búsquedas. |
 | RNF-PER-005 | Protección de datos personales. |
 | RNF-PER-006 | Accesibilidad y usabilidad. |
 
 ## 3. Reglas institucionales
 
-Estas reglas están aprobadas a nivel institucional. Los formatos, catálogos y validaciones concretas se definirán después. Ninguna está implementada todavía.
+Estas reglas están aprobadas a nivel institucional. Los formatos y validaciones concretas aún no acordados se definirán después. Ninguna está implementada todavía.
 
 | Código | Regla aprobada |
 |---|---|
@@ -46,6 +46,21 @@ Estas reglas están aprobadas a nivel institucional. Los formatos, catálogos y 
 | RI-PER-009 | Para apoderados, el correo electrónico será opcional y los demás datos definidos serán obligatorios. |
 | RI-PER-010 | Para docentes y personal institucional, todos los datos definidos en la matriz serán obligatorios. |
 | RI-PER-011 | Si una persona adquiere otra condición institucional, deberá completar los datos adicionales necesarios sin crear otro registro personal. |
+| RI-PER-012 | Los tipos de documento inicialmente admitidos serán DNI, carné de extranjería y pasaporte. El catálogo podrá ampliarse mediante configuración administrativa. |
+| RI-PER-013 | No podrán existir dos personas con el mismo tipo y número de documento vigente, después de una normalización apropiada. La normalización y las validaciones de formato concretas quedan pendientes de definición. |
+| RI-PER-014 | Si el documento ya está registrado, se permitirá consultar la ficha existente según los permisos aplicables y se incorporará cualquier nueva condición a esa persona, sin crear otro registro. |
+| RI-PER-015 | La similitud de nombres nunca provocará una fusión automática de personas. |
+| RI-PER-016 | Dirección y Administración podrán corregir documentos y datos de identidad dentro de sus facultades autorizadas, sin aprobaciones adicionales y conservando el UUID de la persona. |
+| RI-PER-017 | Las condiciones institucionales iniciales serán Estudiante, Docente, Personal institucional y Apoderado. |
+| RI-PER-018 | Cada condición tendrá estado Activa o Inactiva, vigencia y motivo de desactivación cuando corresponda. Sus estados y vigencias serán independientes y podrán coexistir varias condiciones por persona. |
+| RI-PER-019 | Apoderado será una condición institucional de la persona y requerirá vínculos explícitos con los estudiantes correspondientes. |
+| RI-PER-020 | Un estudiante podrá tener varios apoderados simultáneamente, sin categorías de apoderado principal o secundario. |
+| RI-PER-021 | El parentesco se distinguirá de la condición de apoderado y no otorgará automáticamente facultades legales. |
+| RI-PER-022 | Los vínculos entre personas conservarán su historial y vigencia. |
+| RI-PER-023 | La autorización o el control operativo de recojo de estudiantes no forman parte de Personas. |
+| RI-PER-024 | Coordinación Académica podrá registrar, consultar y editar información de Personas dentro de su ámbito autorizado. El detalle de acciones y ámbitos queda pendiente. |
+| RI-PER-025 | El personal autorizado podrá actualizar inmediatamente teléfono, correo y demás datos de contacto cotidianos, sin solicitudes de aprobación. Las correcciones sensibles quedarán reservadas a los perfiles autorizados. |
+| RI-PER-026 | Las operaciones sensibles tendrán trazabilidad técnica automática y proporcional, sin conservar innecesariamente valores personales ni requerir una pantalla de auditoría. |
 
 ### Datos personales y obligatoriedad por condición
 
@@ -62,11 +77,11 @@ Estas reglas están aprobadas a nivel institucional. Los formatos, catálogos y 
 | Correo electrónico | Opcional | Opcional | Obligatorio | Obligatorio |
 | Dirección domiciliaria | Obligatorio | Obligatorio | Obligatorio | Obligatorio |
 
-El UUID no es un campo que deba proporcionar el usuario. Si se añade otra condición a una persona existente, se completarán los datos adicionales exigidos por esa condición en el mismo registro (RI-PER-011). Quedan pendientes formatos, catálogos, validaciones y reglas específicas de privacidad.
+El UUID no es un campo que deba proporcionar el usuario. Si se añade otra condición a una persona existente, se completarán los datos adicionales exigidos por esa condición en el mismo registro (RI-PER-011 y RI-PER-014). No se establecen todavía validaciones de formato documental sin justificación oficial. Quedan pendientes los formatos, catálogos y validaciones no resueltos, así como las reglas específicas de privacidad.
 
 ## 4. Actores y casos de uso
 
-Están aprobados los siguientes casos de uso como objetivos. Sus actores autorizados, flujos principales, alternativos y excepciones todavía deben especificarse. RF-PER-009 (auditoría) se aplicará a las modificaciones relevantes; no se define un caso de uso adicional en esta etapa.
+Están aprobados los siguientes casos de uso como objetivos. Coordinación Académica podrá registrar, consultar y editar Personas dentro de su ámbito autorizado; Dirección y Administración podrán corregir identidad según RI-PER-016. La configuración detallada de permisos por acción y ámbito, los flujos principales, alternativos y las excepciones todavía deben especificarse. RF-PER-009 se aplicará automáticamente a las modificaciones relevantes; no se define un caso de uso adicional ni una aprobación manual en esta etapa.
 
 | Código | Caso de uso aprobado |
 |---|---|
@@ -88,6 +103,8 @@ Personas será el registro central de personas físicas. Una persona podrá tene
 
 Entidades conceptuales iniciales aprobadas: Persona, Documento de identidad, Condición institucional y Vínculo entre personas. No equivalen todavía a tablas ni a un diseño físico PostgreSQL aprobado.
 
+La persona conservará su UUID al corregir su identidad. Las condiciones institucionales son independientes de los roles de seguridad, conforme a las [políticas transversales](../../POLITICAS_TRANSVERSALES.md). El vínculo con un estudiante es distinto tanto de la condición de Apoderado como del parentesco; sus tipos y comprobaciones documentales están pendientes.
+
 El módulo dispone de la estructura backend `api/`, `application/`, `domain/` e `infrastructure/`. No hay entidades ni tablas de negocio implementadas. Personas no es propietario de credenciales, matrículas, oferta académica ni asignaciones docentes.
 
 ## 7. Contratos e integraciones
@@ -96,11 +113,11 @@ Los contratos públicos y las restricciones concretas están pendientes. La API 
 
 ## 8. Decisiones pendientes
 
-1. Tipos de documentos admitidos y reglas de detección y resolución de duplicados.
-2. Estados, vigencias y transiciones de las condiciones institucionales.
-3. Parentesco, apoderados y responsabilidades de los vínculos entre personas.
-4. Permisos detallados de consulta y modificación por operación y recurso.
+1. Normalización apropiada de documentos, validaciones de formato justificadas oficialmente y procedimiento para resolver incidencias de identidad sin fusionar personas automáticamente.
+2. Detalles de vigencia y transiciones entre los estados Activa e Inactiva de cada condición, incluidos los casos en que corresponde registrar un motivo de desactivación.
+3. Tipos de vínculo, comprobaciones documentales y alcance de las responsabilidades de los apoderados, sin presumir facultades legales por parentesco.
+4. Permisos detallados de registro, consulta, edición y corrección por acción, ámbito y recurso.
 5. Flujos principales, alternativos, excepciones y criterios de aceptación de los siete casos de uso.
 6. Arquitectura detallada, modelo de datos PostgreSQL, restricciones y contratos públicos.
 7. Criterios medibles de los seis requisitos no funcionales.
-8. Formatos, catálogos, validaciones y reglas específicas de privacidad para los datos personales.
+8. Formatos, catálogos y validaciones todavía no acordados, reglas específicas de privacidad y detalle técnico de la trazabilidad proporcional.

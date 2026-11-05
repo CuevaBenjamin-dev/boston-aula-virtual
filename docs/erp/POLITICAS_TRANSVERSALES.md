@@ -9,6 +9,8 @@ Estas decisiones están aprobadas para la nueva base. Las reglas particulares de
 | Permisos | Administración y Dirección pueden gestionar permisos con controles de autorización y sin elevación indebida. |
 | Solicitud de cuentas | Coordinación Académica, Dirección y Administración pueden solicitar cuentas según sus facultades. |
 | Persona y cuenta | Una persona puede existir institucionalmente sin una cuenta de acceso. |
+| Acceso al ERP | El ERP será utilizado por docentes y personal institucional. Estudiantes y apoderados no tendrán acceso directo al ERP. |
+| Condiciones y roles | Las condiciones institucionales de una persona no equivalen a roles de seguridad ni conceden por sí mismas permisos de acceso. |
 | Suspensión | Una cuenta suspendida no tiene acceso operativo y conserva su historial. |
 | Matriz de permisos | Su futura interfaz será clara, accesible y enfocada en la experiencia del usuario. |
 
