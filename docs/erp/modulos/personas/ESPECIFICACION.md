@@ -55,12 +55,13 @@ Estas reglas están aprobadas a nivel institucional. Los formatos y validaciones
 | RI-PER-018 | Cada condición tendrá estado Activa o Inactiva, vigencia y motivo de desactivación cuando corresponda. Sus estados y vigencias serán independientes y podrán coexistir varias condiciones por persona. |
 | RI-PER-019 | Apoderado será una condición institucional de la persona y requerirá vínculos explícitos con los estudiantes correspondientes. |
 | RI-PER-020 | Un estudiante podrá tener varios apoderados simultáneamente, sin categorías de apoderado principal o secundario. |
-| RI-PER-021 | El parentesco se distinguirá de la condición de apoderado y no otorgará automáticamente facultades legales. |
+| RI-PER-021 | La condición de Apoderado es independiente del parentesco; este no otorgará automáticamente facultades legales. |
 | RI-PER-022 | Los vínculos entre personas conservarán su historial y vigencia. |
 | RI-PER-023 | La autorización o el control operativo de recojo de estudiantes no forman parte de Personas. |
 | RI-PER-024 | Coordinación Académica podrá registrar, consultar y editar información de Personas dentro de su ámbito autorizado. El detalle de acciones y ámbitos queda pendiente. |
 | RI-PER-025 | El personal autorizado podrá actualizar inmediatamente teléfono, correo y demás datos de contacto cotidianos, sin solicitudes de aprobación. Las correcciones sensibles quedarán reservadas a los perfiles autorizados. |
 | RI-PER-026 | Las operaciones sensibles tendrán trazabilidad técnica automática y proporcional, sin conservar innecesariamente valores personales ni requerir una pantalla de auditoría. |
+| RI-PER-027 | Una persona podrá ser apoderada de varios estudiantes. Si no tiene parentesco familiar con alguno, el vínculo requerirá autorización institucional válida. El vínculo de apoderado no acreditará por sí solo representación legal para todos los trámites. |
 
 ### Datos personales y obligatoriedad por condición
 
@@ -115,7 +116,7 @@ Los contratos públicos y las restricciones concretas están pendientes. La API 
 
 1. Normalización apropiada de documentos, validaciones de formato justificadas oficialmente y procedimiento para resolver incidencias de identidad sin fusionar personas automáticamente.
 2. Detalles de vigencia y transiciones entre los estados Activa e Inactiva de cada condición, incluidos los casos en que corresponde registrar un motivo de desactivación.
-3. Tipos de vínculo, comprobaciones documentales y alcance de las responsabilidades de los apoderados, sin presumir facultades legales por parentesco.
+3. Tipos de vínculo y comprobaciones documentales; procedimientos concretos de autorización institucional, facultades y determinación de la vigencia de cada vínculo de apoderado.
 4. Permisos detallados de registro, consulta, edición y corrección por acción, ámbito y recurso.
 5. Flujos principales, alternativos, excepciones y criterios de aceptación de los siete casos de uso.
 6. Arquitectura detallada, modelo de datos PostgreSQL, restricciones y contratos públicos.
