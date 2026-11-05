@@ -62,6 +62,13 @@ Estas reglas están aprobadas a nivel institucional. Los formatos y validaciones
 | RI-PER-025 | El personal autorizado podrá actualizar inmediatamente teléfono, correo y demás datos de contacto cotidianos, sin solicitudes de aprobación. Las correcciones sensibles quedarán reservadas a los perfiles autorizados. |
 | RI-PER-026 | Las operaciones sensibles tendrán trazabilidad técnica automática y proporcional, sin conservar innecesariamente valores personales ni requerir una pantalla de auditoría. |
 | RI-PER-027 | Una persona podrá ser apoderada de varios estudiantes. Si no tiene parentesco familiar con alguno, el vínculo requerirá autorización institucional válida. El vínculo de apoderado no acreditará por sí solo representación legal para todos los trámites. |
+| RI-PER-028 | Cada vínculo estudiante–apoderado tendrá estado Activo o Inactivo y vigencia propia, sin afectar los demás vínculos. |
+| RI-PER-029 | La condición institucional Apoderado permanecerá Activa mientras exista al menos un vínculo de apoderado vigente y Activo. Si no existe ninguno, quedará Inactiva y conservará su historial, sin afectar las demás condiciones institucionales de la persona. |
+| RI-PER-030 | Coordinación Académica, Dirección y Administración podrán registrar vínculos de apoderados dentro de sus facultades autorizadas. Para una persona sin parentesco familiar, comprobarán la autorización institucional correspondiente y registrarán el vínculo en la misma operación administrativa, sin aprobación adicional. |
+| RI-PER-031 | Cuando corresponda comprobar una autorización, el ERP conservará como mínimo quién la verificó, la fecha de verificación, el tipo o referencia del sustento y el vínculo estudiante–apoderado correspondiente, sin almacenar datos adicionales innecesarios. |
+| RI-PER-032 | Finalizar o desactivar un vínculo estudiante–apoderado no afectará los demás vínculos vigentes de la persona. |
+| RI-PER-033 | El apoderado será reconocido para contacto y gestiones institucionales ordinarias. El módulo responsable de una operación que requiera representación legal deberá comprobar esa facultad de forma independiente; la condición Apoderado no la concede automáticamente para todos los trámites. |
+| RI-PER-034 | Se admite autorización verbal para vincular como apoderado a una persona sin parentesco familiar. Coordinación Académica, Dirección o Administración la comprobará directamente con una persona facultada para otorgarla, presencialmente, por teléfono u otro medio verificable. Se registrará quién autorizó, el medio, la fecha y hora, el personal que comprobó la autorización y el vínculo estudiante–apoderado. |
 
 ### Datos personales y obligatoriedad por condición
 
@@ -115,8 +122,8 @@ Los contratos públicos y las restricciones concretas están pendientes. La API 
 ## 8. Decisiones pendientes
 
 1. Normalización apropiada de documentos, validaciones de formato justificadas oficialmente y procedimiento para resolver incidencias de identidad sin fusionar personas automáticamente.
-2. Detalles de vigencia y transiciones entre los estados Activa e Inactiva de cada condición, incluidos los casos en que corresponde registrar un motivo de desactivación.
-3. Tipos de vínculo y comprobaciones documentales; procedimientos concretos de autorización institucional, facultades y determinación de la vigencia de cada vínculo de apoderado.
+2. Detalles de vigencia y transiciones entre los estados Activa e Inactiva de las condiciones no resueltos por RI-PER-029, incluidos los casos en que corresponde registrar un motivo de desactivación.
+3. Tipos de vínculo; criterios para determinar quién está facultado para autorizar y cómo comprobarlo por cada medio; otros sustentos aceptados y sus comprobaciones; facultades de representación legal y determinación concreta de la vigencia de cada vínculo de apoderado. La modalidad verbal está aprobada en RI-PER-034.
 4. Permisos detallados de registro, consulta, edición y corrección por acción, ámbito y recurso.
 5. Flujos principales, alternativos, excepciones y criterios de aceptación de los siete casos de uso.
 6. Arquitectura detallada, modelo de datos PostgreSQL, restricciones y contratos públicos.
