@@ -1,2 +1,2 @@
-@org.springframework.modulith.ApplicationModule(allowedDependencies = {"plataforma"})
+@org.springframework.modulith.ApplicationModule(allowedDependencies = {})
 package pe.boston.erp.oferta;

@@ -5,6 +5,9 @@
   handle /api/* {
     reverse_proxy api-erp:8080
   }
+  handle /actuator/* {
+    reverse_proxy api-erp:8080
+  }
   handle /oauth2/* {
     reverse_proxy api-erp:8080
   }

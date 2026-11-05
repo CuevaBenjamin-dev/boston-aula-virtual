@@ -55,7 +55,7 @@ services:
   api-erp:
     build: ./apps/erp/api
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/erp_boston
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/erp_boston_nuevo
       SPRING_DATASOURCE_USERNAME: boston
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-cambiar-local-postgres}
       BOSTON_JWKS_URI: http://identidad:9000/oauth2/jwks

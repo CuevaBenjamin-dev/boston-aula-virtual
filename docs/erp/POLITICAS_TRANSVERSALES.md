@@ -1,0 +1,17 @@
+# Políticas transversales del ERP
+
+Estas decisiones están aprobadas para la nueva base. Las reglas particulares de cada caso de uso se definirán en su módulo.
+
+| Tema | Política |
+|---|---|
+| API | El prefijo oficial es `/api/erp/v1`. No se conservan los contratos anteriores. |
+| Módulos | Personas, Matrículas, Oferta académica, Asignaciones docentes y Documentos. |
+| Permisos | Administración y Dirección pueden gestionar permisos con controles de autorización y sin elevación indebida. |
+| Solicitud de cuentas | Coordinación Académica, Dirección y Administración pueden solicitar cuentas según sus facultades. |
+| Persona y cuenta | Una persona puede existir institucionalmente sin una cuenta de acceso. |
+| Suspensión | Una cuenta suspendida no tiene acceso operativo y conserva su historial. |
+| Matriz de permisos | Su futura interfaz será clara, accesible y enfocada en la experiencia del usuario. |
+
+La implementación de estas políticas depende de requisitos y controles todavía por aprobar. El ERP actual solo dispone de autenticación técnica; ninguna de estas operaciones de negocio está habilitada.
+
+La integración previa con Aula está temporalmente no disponible. Aula e Identidad conservan su código y sus bases; ningún contrato de negocio ERP–Aula se considera vigente.

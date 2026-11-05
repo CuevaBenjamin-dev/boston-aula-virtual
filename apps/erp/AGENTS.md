@@ -1,8 +1,9 @@
-# ERP
+# ERP institucional
 
-- Módulos funcionales oficiales: `personas`, `matriculas`, `oferta`, `asignaciones` y `documentos`. `plataforma` contiene soporte transversal; `ErpV1Service`, `ErpV1Controller` e `Institucional` siguen como legado de compatibilidad y su extracción está pendiente.
-- API: `api/src/main/java/pe/boston/erp`. Las clases del paquete raíz de cada módulo son contratos públicos. `api`, `application`, `domain` e `infrastructure` son internos; no importarlos desde otro módulo. Usar fachadas públicas y verificar con `ApplicationModules.verify()`.
-- Web: `web/src/app`, `web/src/modules` y `web/src/shared`. El cliente HTTP está en `shared/api/client.ts`; conservar las rutas y errores visibles.
-- Documentación vigente: `../../docs/erp`. Historia original: `../../docs/historico`.
-- Cambio API o seguridad: `cd apps/erp/api && mvn test`. Cambio Web: `cd apps/erp/web && npm ci && npm run build`. Cambio de datos: restaurar y probar un dump aislado antes de aplicar Flyway a volúmenes existentes.
-- No modificar la lógica de Aula o Identidad en tareas exclusivamente ERP sin autorización explícita. No eliminar migraciones, registros ni contratos vigentes.
+- Los módulos funcionales son `personas`, `matriculas`, `oferta`, `asignaciones` y `documentos`. Cada uno tiene `api`, `application`, `domain` e `infrastructure` en `api/src/main/java/pe/boston/erp/<modulo>/`. El paquete raíz expone solo contratos públicos necesarios. `plataforma` guarda infraestructura técnica compartida sin negocio.
+- Antes de trabajar en un módulo, leer `../../docs/erp/POLITICAS_TRANSVERSALES.md` y sus `README.md`, `ESPECIFICACION.md` y `ESTADO.md` en `../../docs/erp/modulos/<modulo>/`. Inspeccionar después su código backend, frontend y pruebas. Ampliar el análisis a otro módulo solo si hay una dependencia demostrada.
+- En una tarea de un módulo, editar solamente sus carpetas backend y frontend, pruebas y documentación. Cambiar plataforma, migraciones o contratos de otro módulo solo si el caso de uso lo requiere y queda documentado.
+- Entre módulos, usar contratos públicos del paquete raíz. No importar clases internas de otro módulo ni introducir dependencias circulares. El test de arquitectura debe detectar exactamente cinco módulos.
+- API oficial: `/api/erp/v1`. No restaurar rutas ni reglas heredadas sin requisitos aprobados. No modificar `apps/aula/` ni `services/identidad/` en tareas exclusivas ERP.
+- Para backend ejecutar `cd apps/erp/api; mvn test` (suite completa) o `mvn -Dtest=NombreTest test` (prueba focalizada). Para Web ejecutar `cd apps/erp/web; npm run build`. Agregar pruebas unitarias, de integración y autorización por módulo al implementar casos de uso reales.
+- En `ESTADO.md`, actualizar cada una de las cinco verificaciones con estado, evidencia enlazada y pendiente concreto. Usar únicamente Pendiente, En progreso, Bloqueada o Completada; este último exige evidencia. Registrar decisiones sin resolver en la sección 8 de `ESPECIFICACION.md` del módulo propietario.

@@ -1,6 +1,2 @@
-/**
- * Límite previsto para referencias documentales institucionales.
- * No se habilitan endpoints hasta acordar requisitos de autorización, retención y estados.
- */
-@org.springframework.modulith.ApplicationModule(allowedDependencies = {"plataforma"})
+@org.springframework.modulith.ApplicationModule(allowedDependencies = {})
 package pe.boston.erp.documentos;
