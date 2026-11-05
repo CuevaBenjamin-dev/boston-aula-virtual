@@ -42,3 +42,6 @@ management:
     web:
       exposure:
         include: health,info
+springdoc:
+  api-docs:
+    path: /api/erp/v1/openapi

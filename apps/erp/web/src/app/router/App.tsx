@@ -4,6 +4,7 @@ import { ErpLayout } from '../layouts/ErpLayout'
 import { consultarSesion, type Sesion } from '../../shared/api/sesion'
 import { modulos } from '../../shared/lib/modulos'
 import { EstadoPendiente } from '../../shared/ui/EstadoPendiente'
+import { PersonasModulo } from '../../modules/personas/PersonasModulo'
 
 function Inicio() {
   return <div className="pagina">
@@ -18,7 +19,7 @@ function Inicio() {
         <span className="numero">0{indice + 1} / MÓDULO</span>
         <strong>{modulo.nombre}</strong>
         <span>{modulo.resumen}</span>
-        <small>PENDIENTE DE IMPLEMENTACIÓN <span aria-hidden="true">→</span></small>
+        <small>{modulo.ruta === 'personas' ? 'ABRIR MÓDULO' : 'PENDIENTE DE IMPLEMENTACIÓN'} <span aria-hidden="true">→</span></small>
       </Link>)}
     </div>
   </div>
@@ -45,7 +46,8 @@ export default function App() {
   return <BrowserRouter><Routes>
     <Route element={<ErpLayout sesion={sesion} />}>
       <Route index element={<Inicio />} />
-      {modulos.map(modulo => <Route key={modulo.ruta} path={modulo.ruta}
+      <Route path="personas/*" element={<PersonasModulo sesion={sesion} />} />
+      {modulos.filter(modulo => modulo.ruta !== 'personas').map(modulo => <Route key={modulo.ruta} path={modulo.ruta}
         element={<EstadoPendiente modulo={modulo} />} />)}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Route>

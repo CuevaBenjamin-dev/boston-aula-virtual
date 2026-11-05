@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "build": "tsc -b && vite build",
-    "dev": "vite --host 0.0.0.0"
+    "dev": "vite --host 0.0.0.0",
+    "test": "vitest run"
   },
   "dependencies": {
     "react": "19.3.1",
@@ -13,10 +14,15 @@
     "react-router-dom": "7.18.4"
   },
   "devDependencies": {
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.8",
     "@types/react": "19.2.7",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "6.2.1",
+    "axe-core": "^4.14.0",
+    "jsdom": "^31.0.0",
     "typescript": "7.0.2",
-    "vite": "8.3.4"
+    "vite": "8.3.4",
+    "vitest": "^5.1.0"
   }
 }

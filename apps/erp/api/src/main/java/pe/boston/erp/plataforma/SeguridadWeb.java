@@ -11,6 +11,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.authorization.AuthorizationDecision;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.client.JdbcOAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
@@ -61,6 +63,15 @@ public class SeguridadWeb {
     http.authorizeHttpRequests(reglas -> reglas
         .requestMatchers("/actuator/health", "/actuator/info", "/error", "/oauth2/**",
           "/login/**", "/api/erp/v1/sesion").permitAll()
+        .requestMatchers("/api/erp/v1/personas/**", "/api/erp/v1/personas").authenticated()
+        .requestMatchers("/api/erp/v1/openapi").access((autenticacion, contexto) -> {
+          var actual=autenticacion.get();
+          boolean autorizado=actual instanceof OAuth2AuthenticationToken token
+            && token.getPrincipal() instanceof OidcUser usuario
+            && ("ADMINISTRADOR".equals(usuario.getClaimAsString("tipo"))
+              || "DIRECCION".equals(usuario.getClaimAsString("tipo")));
+          return new AuthorizationDecision(autorizado);
+        })
         .anyRequest().denyAll())
       .exceptionHandling(errores -> errores.defaultAuthenticationEntryPointFor(
         new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),

@@ -4,7 +4,7 @@ import { cerrarSesion, type Sesion } from '../../shared/api/sesion'
 
 export function ErpLayout({ sesion }: { sesion: Sesion }) {
   const { pathname } = useLocation()
-  const actual = modulos.find(modulo => pathname === '/' + modulo.ruta)
+  const actual = modulos.find(modulo => pathname === '/' + modulo.ruta || pathname.startsWith('/' + modulo.ruta + '/'))
   return <div className="app">
     <a className="saltar" href="#contenido">Ir al contenido</a>
     <aside className="barra-lateral">

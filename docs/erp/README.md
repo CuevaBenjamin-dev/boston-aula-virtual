@@ -1,12 +1,12 @@
 # ERP institucional — base limpia
 
-El ERP se reconstruye como monolito modular. La estructura técnica está en preparación; los casos de uso se implementarán progresivamente tras aprobar sus requisitos. Ningún módulo de negocio está operativo todavía.
+El ERP se reconstruye como monolito modular. Personas tiene una implementación inicial PostgreSQL, API y Web; sus ámbitos de autorización pendientes impiden declararlo completado. Los demás módulos de negocio siguen pendientes.
 
 ## Tablero de módulos
 
 | Módulo | Requisitos | Análisis funcional | Arquitectura | Implementación | Verificación y pruebas |
 |---|---|---|---|---|---|
-| [Personas](modulos/personas/README.md) | [En progreso](modulos/personas/ESTADO.md) | En progreso | En progreso | Pendiente | Pendiente |
+| [Personas](modulos/personas/README.md) | [En progreso](modulos/personas/ESTADO.md) | En progreso | En progreso | En progreso | En progreso |
 | [Matrículas](modulos/matriculas/README.md) | [Pendiente](modulos/matriculas/ESTADO.md) | Pendiente | Pendiente | Pendiente | Pendiente |
 | [Oferta académica](modulos/oferta/README.md) | [Pendiente](modulos/oferta/ESTADO.md) | Pendiente | Pendiente | Pendiente | Pendiente |
 | [Asignaciones docentes](modulos/asignaciones/README.md) | [Pendiente](modulos/asignaciones/ESTADO.md) | Pendiente | Pendiente | Pendiente | Pendiente |
@@ -17,9 +17,9 @@ Cada fila enlaza a su documentación y a la tabla de cinco verificaciones. [Pol�
 ## Estructura y convenciones
 
 - Backend: Java 25, Spring Boot 4.1.2, Spring Modulith, PostgreSQL y Flyway. Cinco paquetes funcionales anotados; `plataforma` es soporte técnico y no un módulo funcional.
-- Web: React, TypeScript y Vite. `app` contiene rutas y layout; `modules` contiene futuras vistas por dominio; `shared` contiene piezas transversales de interfaz, API y constantes.
-- API: solo `/api/erp/v1`; actualmente responde a `GET /api/erp/v1/sesion` y a `/actuator/health` como soporte técnico.
-- Base de desarrollo: `erp_boston_nuevo`, aislada de la base ERP original. La migración V1 crea solo tablas de sesión y cliente OAuth2.
+- Web: React, TypeScript y Vite. `app` contiene rutas y layout; `modules/personas` contiene el directorio, registro y ficha; `shared` contiene piezas transversales.
+- API: solo `/api/erp/v1`; Personas publica sus endpoints bajo `/api/erp/v1/personas` y OpenAPI restringido en `/api/erp/v1/openapi`.
+- Base de desarrollo: `erp_boston_nuevo`, aislada de la base ERP original. V1 crea infraestructura de sesión y OAuth2; V2 crea Personas.
 - Pruebas: `cd apps/erp/api; mvn clean test` y `cd apps/erp/web; npm run build`. Para un módulo futuro: `mvn -Dtest=NombreTest test`.
 
 ## Recuperación
