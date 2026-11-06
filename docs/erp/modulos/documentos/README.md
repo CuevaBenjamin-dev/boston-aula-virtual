@@ -1,29 +1,15 @@
-# Documentos
+# Documentos — índice del módulo
 
-## Objetivo
+Custodia y acceso a documentos institucionales del ERP, aún sin catálogo ni flujo aprobado. No modifica Personas, Matrículas u Oferta. **Estado:** las cinco verificaciones están Pendiente; solo existe estructura de paquetes.
 
-Gestionar documentos institucionales del ERP.
+**Dependencias a evaluar:** Los módulos propietarios podrán referenciar documentos mediante contratos aún no definidos; no se presupone almacenamiento. No hay dependencias funcionales implementadas entre módulos; `plataforma` solo aporta soporte técnico.
 
-## Responsabilidades
+| Necesidad | Documento |
+|---|---|
+| Alcance, reglas y decisiones | [Especificación](ESPECIFICACION.md) |
+| Componentes y contratos propuestos | [Arquitectura](ARQUITECTURA.md) |
+| Diseño de datos y vacíos | [Modelo de datos](MODELO_DATOS.md) |
+| Cobertura y evidencia | [Pruebas](PRUEBAS.md) |
+| Cinco verificaciones | [Estado](ESTADO.md) |
 
-Metadatos, custodia y acceso documental según requisitos por aprobar. Las operaciones concretas están pendientes de especificación institucional.
-
-## Límites
-
-No modifica reglas de matrícula, personas ni oferta.
-
-## Código
-
-- Backend: [documentos](../../../../apps/erp/api/src/main/java/pe/boston/erp/documentos/package-info.java), con carpetas api, application, domain e infrastructure.
-- Frontend: [documentos](../../../../apps/erp/web/src/modules/documentos/.gitkeep).
-- Pruebas: [documentos](../../../../apps/erp/api/src/test/java/pe/boston/erp/documentos/.gitkeep).
-
-## Dependencias permitidas
-
-Contratos públicos aprobados de los módulos propietarios. La implementación actual declara cero dependencias entre módulos. La infraestructura técnica compartida reside en plataforma y no contiene reglas de negocio.
-
-## Referencias
-
-- [Especificación](ESPECIFICACION.md)
-- [Estado](ESTADO.md)
-- [Políticas transversales](../../POLITICAS_TRANSVERSALES.md)
+Código preparado: [backend](../../../../apps/erp/api/src/main/java/pe/boston/erp/documentos/package-info.java), [ERP Web](../../../../apps/erp/web/src/modules/documentos/.gitkeep), [pruebas](../../../../apps/erp/api/src/test/java/pe/boston/erp/documentos/.gitkeep). Para nueva implementación: `cd apps/erp/api; mvn test` y `cd apps/erp/web; npm run build`, según código afectado. Abrir el [índice de ingeniería](../../ingenieria/README.md) y solo los estándares relevantes.

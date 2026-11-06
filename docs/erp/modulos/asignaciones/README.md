@@ -1,29 +1,15 @@
-# Asignaciones docentes
+# Asignaciones docentes — índice del módulo
 
-## Objetivo
+Vinculación de docentes con oferta académica, pendiente de requisitos. No mantiene identidad ni la estructura ofertada. **Estado:** las cinco verificaciones están Pendiente; solo existe estructura de paquetes.
 
-Gestionar la relación entre docentes y oferta académica.
+**Dependencias a evaluar:** Personas y Oferta son fuentes potenciales; el acceso docente a alumnos en Personas depende de un contrato verificable futuro. No hay dependencias funcionales implementadas entre módulos; `plataforma` solo aporta soporte técnico.
 
-## Responsabilidades
+| Necesidad | Documento |
+|---|---|
+| Alcance, reglas y decisiones | [Especificación](ESPECIFICACION.md) |
+| Componentes y contratos propuestos | [Arquitectura](ARQUITECTURA.md) |
+| Diseño de datos y vacíos | [Modelo de datos](MODELO_DATOS.md) |
+| Cobertura y evidencia | [Pruebas](PRUEBAS.md) |
+| Cinco verificaciones | [Estado](ESTADO.md) |
 
-Asignaciones docentes según reglas institucionales por aprobar. Las operaciones concretas están pendientes de especificación institucional.
-
-## Límites
-
-No mantiene identidad de docentes ni estructura de la oferta.
-
-## Código
-
-- Backend: [asignaciones](../../../../apps/erp/api/src/main/java/pe/boston/erp/asignaciones/package-info.java), con carpetas api, application, domain e infrastructure.
-- Frontend: [asignaciones](../../../../apps/erp/web/src/modules/asignaciones/.gitkeep).
-- Pruebas: [asignaciones](../../../../apps/erp/api/src/test/java/pe/boston/erp/asignaciones/.gitkeep).
-
-## Dependencias permitidas
-
-Contratos públicos aprobados de Personas y Oferta académica. La implementación actual declara cero dependencias entre módulos. La infraestructura técnica compartida reside en plataforma y no contiene reglas de negocio.
-
-## Referencias
-
-- [Especificación](ESPECIFICACION.md)
-- [Estado](ESTADO.md)
-- [Políticas transversales](../../POLITICAS_TRANSVERSALES.md)
+Código preparado: [backend](../../../../apps/erp/api/src/main/java/pe/boston/erp/asignaciones/package-info.java), [ERP Web](../../../../apps/erp/web/src/modules/asignaciones/.gitkeep), [pruebas](../../../../apps/erp/api/src/test/java/pe/boston/erp/asignaciones/.gitkeep). Para nueva implementación: `cd apps/erp/api; mvn test` y `cd apps/erp/web; npm run build`, según código afectado. Abrir el [índice de ingeniería](../../ingenieria/README.md) y solo los estándares relevantes.

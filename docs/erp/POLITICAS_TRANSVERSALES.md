@@ -14,6 +14,6 @@ Estas decisiones están aprobadas para la nueva base. Las reglas particulares de
 | Suspensión | Una cuenta suspendida no tiene acceso operativo y conserva su historial. |
 | Matriz de permisos | Su futura interfaz será clara, accesible y enfocada en la experiencia del usuario. |
 
-La implementación de estas políticas depende de requisitos y controles todavía por aprobar. El ERP actual solo dispone de autenticación técnica; ninguna de estas operaciones de negocio está habilitada.
+La implementación de estas políticas depende de requisitos y controles todavía por aprobar. [Personas](modulos/personas/README.md) dispone de operaciones iniciales de negocio bajo permisos y límites documentados; los otros cuatro módulos aún no publican operaciones de negocio. No se presume que todas las facultades institucionales estén habilitadas.
 
 La integración previa con Aula está temporalmente no disponible. Aula e Identidad conservan su código y sus bases; ningún contrato de negocio ERP–Aula se considera vigente.

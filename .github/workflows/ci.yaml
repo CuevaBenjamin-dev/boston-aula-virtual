@@ -4,6 +4,12 @@ on:
   pull_request:
   workflow_dispatch:
 jobs:
+  docs-erp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validar estructura, reglas y enlaces documentales del ERP
+        run: python3 scripts/validar-docs-erp.py
   java:
     runs-on: ubuntu-latest
     strategy:

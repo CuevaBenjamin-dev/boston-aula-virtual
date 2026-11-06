@@ -2,6 +2,8 @@
 
 El ERP se reconstruye como monolito modular. Personas tiene una implementación inicial PostgreSQL, API y Web; sus ámbitos de autorización pendientes impiden declararlo completado. Los demás módulos de negocio siguen pendientes.
 
+El [índice de ingeniería](ingenieria/README.md) dirige al proceso, estándares y lectura selectiva. El [manual](ingenieria/MANUAL_DESARROLLO_MODULAR.md) define cuatro actividades y cinco verificaciones obligatorias. Cada módulo tiene `README.md`, `ESPECIFICACION.md`, `ARQUITECTURA.md`, `MODELO_DATOS.md`, `PRUEBAS.md` y `ESTADO.md`; abra el índice del módulo antes de profundizar.
+
 ## Tablero de módulos
 
 | Módulo | Requisitos | Análisis funcional | Arquitectura | Implementación | Verificación y pruebas |

@@ -20,14 +20,14 @@ Pendientes de definición y autorización por caso de uso.
 
 Pendientes de los requisitos aprobados.
 
-## 6. Arquitectura y modelo de datos
+## 6. Diseño técnico
 
-Estructura api/application/domain/infrastructure preparada. Sin entidades ni tablas de negocio.
+El estado de componentes y contratos se encuentra en [ARQUITECTURA.md](ARQUITECTURA.md); el diseño de datos pendiente, en [MODELO_DATOS.md](MODELO_DATOS.md).
 
-## 7. Contratos e integraciones
+## 7. Integraciones funcionales
 
-Pendientes. La API oficial futura usará el prefijo /api/erp/v1; no se publican endpoints de negocio todavía.
+Personas y Oferta son fuentes potenciales; el acceso docente a alumnos en Personas depende de un contrato verificable futuro. No hay contratos de negocio publicados; ver [ARQUITECTURA.md](ARQUITECTURA.md).
 
 ## 8. Decisiones pendientes
 
-Definir alcance funcional, invariantes, permisos, datos, contratos, migraciones y pruebas antes de implementar.
+Aprobar alcance de asignación por docente, curso, grado, sección, período y vigencia, sin asumir exclusividades. Definir actores, cambios de docente, superposiciones, permisos y efecto sobre acceso a estudiantes.

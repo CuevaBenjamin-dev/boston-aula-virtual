@@ -1,42 +1,15 @@
-# Personas
+# Personas — índice del módulo
 
-## Responsabilidad y límites
+Registro único de personas físicas, documentos, condiciones institucionales, parentescos, apoderamientos e historial técnico mínimo. No decide matrícula vigente, credenciales, oferta, asignación docente ni expedientes. Su implementación inicial está **En progreso** en las cinco verificaciones; ámbitos de autorización y revisión técnica siguen abiertos.
 
-Personas mantiene el registro único de personas físicas, identificación, condiciones institucionales, parentescos, apoderamientos e historial técnico mínimo. No determina matrícula vigente, credenciales, oferta, asignación docente ni expedientes documentales. La condición Estudiante no equivale a una matrícula confirmada.
-
-## Estructura
-
-| Ubicación | Contenido |
+| Si necesita… | Consulte |
 |---|---|
-| [api](../../../../apps/erp/api/src/main/java/pe/boston/erp/personas/api/PersonasController.java) | Endpoints `/api/erp/v1/personas`, DTO y errores HTTP. |
-| [application](../../../../apps/erp/api/src/main/java/pe/boston/erp/personas/application/PersonasServicio.java) | Siete casos de uso y autorización por recurso. |
-| [domain](../../../../apps/erp/api/src/main/java/pe/boston/erp/personas/domain/ReglasPersonas.java) | Validación de invariantes de entrada. |
-| [infrastructure](../../../../apps/erp/api/src/main/java/pe/boston/erp/personas/infrastructure/PersonasRepositorio.java) | Consultas y mutaciones PostgreSQL. |
-| [PersonasParaMatriculas.java](../../../../apps/erp/api/src/main/java/pe/boston/erp/personas/PersonasParaMatriculas.java) | Contrato público previsto para Matrículas. |
-| [V2__personas.sql](../../../../apps/erp/api/src/main/resources/db/migration/V2__personas.sql) | Modelo físico PostgreSQL 18 y restricciones. |
-| [ERP Web](../../../../apps/erp/web/src/modules/personas/PersonasModulo.tsx) | Directorio, alta contextual y ficha. |
-| [Pruebas](../../../../apps/erp/api/src/test/java/pe/boston/erp/personas/PersonasHttpTest.java) | Esquema, HTTP y rendimiento. |
+| RF, RNF, RI-PER-001–037, siete CU y decisiones | [Especificación](ESPECIFICACION.md) |
+| Capas, rutas, contratos, seguridad y UX | [Arquitectura](ARQUITECTURA.md) |
+| V2, tablas, restricciones, índices y vigencias | [Modelo de datos](MODELO_DATOS.md) |
+| Cobertura, resultados históricos y pendientes | [Pruebas](PRUEBAS.md) |
+| Cinco verificaciones y bloqueos | [Estado](ESTADO.md) |
 
-La infraestructura compartida está en `plataforma` y no contiene reglas del módulo. Spring Modulith comprueba los límites entre los cinco paquetes funcionales. Identidad solo aporta una sesión OIDC; no hay llamadas HTTP a Identidad dentro de transacciones de Personas.
+Código: [backend Personas](../../../../apps/erp/api/src/main/java/pe/boston/erp/personas/package-info.java), [contrato público actual](../../../../apps/erp/api/src/main/java/pe/boston/erp/personas/PersonasParaMatriculas.java), [migración V2](../../../../apps/erp/api/src/main/resources/db/migration/V2__personas.sql), [ERP Web](../../../../apps/erp/web/src/modules/personas/PersonasModulo.tsx). Matrículas podrá consumir contrato público, pero aún no lo hace. Identidad aporta OIDC; el ámbito de Coordinación no se emite hoy. Plataforma provee soporte técnico sin reglas de Personas.
 
-## Ejecución y pruebas locales
-
-Desde `apps/erp/api`, con Java 25, Maven y Docker Desktop:
-
-```powershell
-mvn test
-mvn '-Dtest=PersonasEsquemaTest,PersonasHttpTest,PersonasRendimientoTest' test
-```
-
-Desde `apps/erp/web`, con Node y dependencias instaladas:
-
-```powershell
-npm run build
-npm test
-```
-
-Flyway aplica la migración al arrancar la API contra la base nueva `erp_boston_nuevo`; nunca contra `erp_boston`. Las pruebas crean PostgreSQL 18.6 aislado con Testcontainers. OpenAPI: `/api/erp/v1/openapi`, accesible solo para Dirección/Administración autenticadas. La interfaz: `/personas` en ERP Web.
-
-## Estado y decisiones
-
-El acceso de Coordinación a fichas existentes exige un ámbito que Identidad todavía no emite; el acceso docente a estudiantes exige el contrato futuro de Asignaciones. Se deniegan ambos mientras no haya prueba de alcance. Ver [Especificación](ESPECIFICACION.md), [Estado](ESTADO.md), [Informe de transferencia](../../RESULTADO_PERSONAS_PARA_CHATGPT.md) y [Políticas transversales](../../POLITICAS_TRANSVERSALES.md).
+Pruebas relevantes: `cd apps/erp/api; mvn test` y `cd apps/erp/web; npm test; npm run build`; no se ejecutaron durante la reorganización documental. Consulte [proceso](../../ingenieria/README.md), [políticas](../../POLITICAS_TRANSVERSALES.md) e [informe histórico](../../RESULTADO_PERSONAS_PARA_CHATGPT.md) solo si la tarea lo exige.
