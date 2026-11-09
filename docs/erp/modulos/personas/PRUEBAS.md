@@ -23,3 +23,15 @@ Desde `apps/erp/api`: `mvn test` y, para PostgreSQL real, `mvn '-Dtest=PersonasE
 ## Defectos y bloqueos conocidos
 
 No se afirma que la suite presente tenga fallos: no se ejecutó en esta tarea. Las brechas conocidas por código son DTO HTTP usados en capas internas y ausencia de contratos de ámbito verificables para Coordinación y alumnos asignados a Docente. Auditoría WCAG 2.2 AA, recorrido autenticado y rendimiento HTTP permanecen **no ejecutados o sin evidencia suficiente** para cerrar la verificación. Ver [decisiones pendientes](ESPECIFICACION.md#8-decisiones-pendientes) y [estándar](../../ingenieria/ESTANDAR_VERIFICACION.md).
+
+## Escenarios derivados de la Verificación 1 consolidada — no implementados ni ejecutados
+
+| Área | Escenarios futuros | Reglas |
+|---|---|---|
+| Documentos e identidad | DNI de ocho dígitos con cero inicial; duplicado vigente; documento histórico ajeno sin solape rechazado; numeración igual con país emisor distinto; rectificación excepcional autorizada con motivo/evidencia; rectificación denegada; UUID e historiales conservados; ninguna fusión automática. | RI-PER-001, 012–016; RNF-PER-002–003. |
+| Solicitud preliminar e identificación | Solicitud incompleta en Matrículas sin persona ficticia; estudiante real con provisional sustentada; regularización sin nuevo UUID; ausencia de datos obligatorios impide registro definitivo; normativa de Educación Básica no aplicada por defecto a programa de idiomas. | RI-PER-006–010, 035–036; CU-PER-01. |
+| Facultades | Coordinación con permiso expreso y ámbito institucional; alta rechazada sin autorización verificable; docente con estudiante asignado recibe solo datos permitidos; no asignado denegado; identidad oficial reservada a Dirección/Administración con facultad expresa; cuenta sin permiso no hereda facultad del cargo. | RI-PER-024–025, 037; RNF-PER-001, 005. |
+| Contactos y apoderados | Contacto autorizado solo para comunicaciones; apoderado con alcance ordinario; autorización verbal comprobada; otorgante sin facultad rechazado; estudiante mayor de edad autoriza cuando corresponda; modificación y revocación con historial; operación fuera del alcance denegada; restricción judicial conocida bloquea solo facultad afectada. | RI-PER-019–023, 027–034; CU-PER-05. |
+| Catálogos y protección | CE/pasaporte legítimo admitido según formato configurado; sexo documental pendiente cuando la operación lo permita; nacionalidad desconocida/no determinada/apatridia diferenciadas; «sin parentesco» sin relación familiar ficticia; histórico con acceso restringido; trazabilidad funcional proporcional y control transversal de accesos/sesiones separado. | RI-PER-006–012, 019, 021, 026; RNF-PER-005. |
+
+La matriz compacta [RF/RI/RNF/CU](ESPECIFICACION.md#trazabilidad-compacta-de-requisitos) establece criterios; estos escenarios son cobertura planificada para Verificación 5, no resultados de pruebas. El diseño de escenarios intermodulares requiere los contratos de Identidad, Matrículas y Asignaciones docentes.
