@@ -1,20 +1,20 @@
 # Políticas transversales del ERP
 
-Estas decisiones están aprobadas para la nueva base. Las reglas particulares de cada caso de uso se definirán en su módulo.
+Estas políticas operativas reflejan decisiones del responsable funcional recibidas el 19/11/2026. Sus cambios posteriores a la revisión 532 todavía requieren el trámite formal correspondiente en MODULA. Las reglas particulares se precisan en cada módulo.
 
 | Tema | Política |
 |---|---|
 | API | El prefijo oficial es `/api/erp/v1`. No se conservan los contratos anteriores. |
-| Módulos | Personas, Matrículas, Oferta académica, Asignaciones docentes y Documentos. |
-| Permisos | Dirección y Administración gestionan permisos únicamente con facultad expresa, verificable y sin elevación indebida; el cargo por sí solo no autoriza operaciones sensibles. |
-| Solicitud de cuentas | Coordinación Académica, Dirección y Administración pueden solicitar cuentas según sus facultades. |
+| Módulos | Personas, Oferta académica, Matrículas, Asignaciones docentes, Asistencia, Documentos y Atención institucional. |
+| Permisos | Solo Dirección y Coordinación Académica tienen rol ERP. La API verifica el rol obtenido de Identidad; una condición personal no eleva permisos. No existe rol Administración ERP. |
+| Solicitud de cuentas | Dirección y Coordinación Académica pueden solicitar cuentas de Aula mediante contratos de Identidad; la emisión remota sigue pendiente de integración. |
 | Persona y cuenta | Una persona puede existir institucionalmente sin una cuenta de acceso. |
-| Acceso al ERP | El ERP será utilizado por docentes y personal institucional. Estudiantes y apoderados no tendrán acceso directo al ERP. |
+| Acceso al ERP | Solo Dirección y Coordinación Académica. Docentes y estudiantes usan Aula; apoderados no tienen cuenta autónoma en el MVP. |
 | Condiciones y roles | Las condiciones institucionales de una persona no equivalen a roles de seguridad ni conceden por sí mismas permisos de acceso. |
 | Suspensión | Una cuenta suspendida no tiene acceso operativo y conserva su historial. |
 | Matriz de permisos | Su futura interfaz será clara, accesible y enfocada en la experiencia del usuario. |
 
-La política funcional de Personas está en su [especificación](modulos/personas/ESPECIFICACION.md). Su ejecución depende de controles y contratos técnicos todavía no implementados; los otros cuatro módulos aún no publican operaciones de negocio. No se presume que todas las facultades institucionales estén habilitadas.
+La política funcional de Personas está en su [especificación](modulos/personas/ESPECIFICACION.md). La primera vertical de Oferta, Matrículas y Asignaciones está implementada parcialmente; Asistencia, Documentos y Atención institucional siguen en desarrollo. Las solicitudes de integración se registran como pendientes, sin presumir acceso externo concedido.
 
 **Protección de datos aprobada:** conservar conforme a finalidad y obligación aplicable, proteger especialmente los datos de menores, preservar historiales justificados y evidencias de autorizaciones/revocaciones, restringir el acceso cuando cese la necesidad ordinaria y admitir rectificación, supresión o anonimización cuando corresponda. No borrar automáticamente expedientes al concluir un curso ni conservar indiscriminadamente a perpetuidad. Dirección designará responsable operativo; no se crea por ello otro módulo o departamento. Antes de tratar datos reales deberán aprobarse tabla de conservación por categoría y finalidad, plazos, responsable, procedimientos de derechos y rectificación/supresión, archivo y acceso, documento de seguridad, respaldos/restauración, registro de bancos de datos, evaluación de obligaciones del Oficial de Datos Personales y revisión legal/contable aplicable. El [estándar de seguridad](ingenieria/ESTANDAR_SEGURIDAD_PRIVACIDAD.md) detalla controles transversales; el cierre funcional de Requisitos no acredita cumplimiento legal ni autoriza operación real.
 

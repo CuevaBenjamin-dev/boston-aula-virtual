@@ -12,6 +12,7 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 import pe.boston.erp.personas.api.PersonaDto;
 import pe.boston.erp.personas.api.PersonaDto.*;
+import pe.boston.erp.personas.domain.ReglasPersonas;
 
 @Repository
 public class PersonasRepositorio {
@@ -143,18 +144,32 @@ public class PersonasRepositorio {
 
   public void crearPersona(UUID id, CrearPersona p) {
     jdbc.update("INSERT INTO per_personas(id,nombres,apellidos,fecha_nacimiento,sexo,nacionalidad,telefono,correo,direccion) VALUES(?,?,?,?,?,?,?,?,?)",
-      id,p.nombres().trim(),p.apellidos().trim(),p.fechaNacimiento(),p.sexo().trim(),p.nacionalidad().trim(),
-      p.telefono(),p.correo(),p.direccion().trim());
+      id,p.nombres().trim(),p.apellidos().trim(),p.fechaNacimiento(),ReglasPersonas.opcional(p.sexo()),ReglasPersonas.opcional(p.nacionalidad()),
+      ReglasPersonas.opcional(p.telefono()),ReglasPersonas.opcional(p.correo()),ReglasPersonas.opcional(p.direccion()));
   }
 
   public void editar(UUID id, EditarPersona p) {
     jdbc.update("UPDATE per_personas SET nombres=?,apellidos=?,fecha_nacimiento=?,sexo=?,nacionalidad=?,telefono=?,correo=?,direccion=?,actualizado_en=now() WHERE id=?",
-      p.nombres(),p.apellidos(),p.fechaNacimiento(),p.sexo(),p.nacionalidad(),p.telefono(),p.correo(),p.direccion(),id);
+      p.nombres(),p.apellidos(),p.fechaNacimiento(),ReglasPersonas.opcional(p.sexo()),ReglasPersonas.opcional(p.nacionalidad()),
+      ReglasPersonas.opcional(p.telefono()),ReglasPersonas.opcional(p.correo()),ReglasPersonas.opcional(p.direccion()),id);
   }
 
   public void contacto(UUID id, Contacto p) {
-    jdbc.update("UPDATE per_personas SET telefono=?,correo=?,direccion=?,actualizado_en=now() WHERE id=?",
-      p.telefono(),p.correo(),p.direccion(),id);
+    jdbc.update("UPDATE per_personas SET telefono=?,correo=?,actualizado_en=now() WHERE id=?",
+      ReglasPersonas.opcional(p.telefono()),ReglasPersonas.opcional(p.correo()),id);
+  }
+
+  public void solicitarProvisionDocente(UUID persona) {
+    solicitud(persona,"IDENTIDAD","PROVISION_DOCENTE","docente-provision:"+persona);
+  }
+
+  public void solicitarCorreccionLogin(UUID persona) {
+    solicitud(persona,"IDENTIDAD","CORREGIR_LOGIN","persona-login:"+persona+":"+java.util.UUID.randomUUID());
+  }
+
+  private void solicitud(UUID persona,String sistema,String accion,String clave) {
+    jdbc.update("INSERT INTO erp_solicitudes_externas(id,clave_idempotencia,sistema,entidad_tipo,entidad_id,accion,motivo) VALUES(?,?,?,?,?,?,?) ON CONFLICT (clave_idempotencia) DO NOTHING",
+      UUID.randomUUID(),clave,sistema,"PERSONA",persona,accion,"Contrato remoto de negocio aún no conectado");
   }
 
   public void documento(UUID persona, DocumentoEntrada d, String normalizado, Instant desde) {

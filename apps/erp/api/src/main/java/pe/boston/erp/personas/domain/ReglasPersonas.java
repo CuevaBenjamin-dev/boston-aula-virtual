@@ -38,8 +38,8 @@ public final class ReglasPersonas {
 
   public static void contactos(String condicion, String telefono, String correo) {
     if (("DOCENTE".equals(condicion) || "PERSONAL_INSTITUCIONAL".equals(condicion))
-      && (opcional(telefono) == null || opcional(correo) == null))
-      throw new IllegalArgumentException("Esta condición requiere teléfono y correo");
+      && opcional(telefono) == null)
+      throw new IllegalArgumentException("Esta condición requiere teléfono");
     if ("APODERADO".equals(condicion) && opcional(telefono) == null)
       throw new IllegalArgumentException("El apoderado requiere teléfono");
   }

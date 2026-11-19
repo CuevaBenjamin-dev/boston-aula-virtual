@@ -14,15 +14,15 @@ El módulo usa `api/`, `application/`, `domain/` e `infrastructure/` en Java y `
 
 ## Contratos, seguridad e interfaz
 
-Todos los endpoints nuevos están bajo `/api/erp/v1/personas`; reciben/devolven JSON salvo las mutaciones que devuelven `Location` o 204. El contrato tipado se expone a Dirección/Administración en `/api/erp/v1/openapi` mediante springdoc. Los DTO están en `PersonaDto.java`; el esquema de error controlado es `{codigo,mensaje}`: 400 datos/formato, 401 sin sesión, 403 sin facultad, 404 recurso inexistente, 409 conflicto de unicidad o vigencia.
+Todos los endpoints nuevos están bajo `/api/erp/v1/personas`; reciben/devuelven JSON salvo las mutaciones que devuelven `Location` o 204. El contrato tipado se expone solo a Dirección en `/api/erp/v1/openapi` mediante springdoc. Los DTO están en `PersonaDto.java`; el esquema de error controlado es `{codigo,mensaje}`: 400 datos/formato, 401 sin sesión, 403 sin facultad, 404 recurso inexistente, 409 conflicto de unicidad o vigencia.
 
 | Método y ruta relativa a `/api/erp/v1/personas` | Contrato principal | Facultad |
 |---|---|---|
 | `GET /capacidades` | `Capacidades` de la sesión | ERP autenticado permitido. |
-| `GET /tipos-documento`, `POST /tipos-documento` | Lista y alta de `TipoDocumento` | Gestión; alta reservada a Dirección/Administración. |
+| `GET /tipos-documento`, `POST /tipos-documento` | Lista y alta de `TipoDocumento` | Gestión ERP autorizada. |
 | `GET /duplicado-documental?tipo=&pais=&numero=` | `{existe:boolean}`, sin identidad revelada | Registro. |
 | `GET /?buscar=&condicion=&vigente=&pagina=&tamano=` | `Pagina<Resumen>`, tamaño 1–50 | Gestión con ámbito. |
-| `POST /` | `CrearPersona`; 201 con `Location` | Dirección/Administración o Coordinación para alta; apoderado inicial requiere gestión con ámbito. |
+| `POST /` | `CrearPersona`; 201 con `Location` | Dirección o Coordinación; apoderado inicial requiere autorización comprobada. |
 | `GET /{id}` | `Persona` con documentos, condiciones, provisional y vínculos | Recurso autorizado. |
 | `PUT /{id}`, `PUT /{id}/contacto` | `EditarPersona`, `Contacto` | Identidad reservada; contacto según ámbito o propio docente. |
 | `POST /{id}/documentos` | `DocumentoEntrada` | Identidad reservada. |
@@ -32,7 +32,7 @@ Todos los endpoints nuevos están bajo `/api/erp/v1/personas`; reciben/devolven 
 
 La comprobación de autorización no familiar admite sustento verbal u otro tipo registrado sin imponer un catálogo institucional no aprobado. Si no se indica el tipo, el flujo actual usa `VERBAL` como valor predeterminado técnico. En todos los casos registra autorizador, verificador (sub de sesión), medio, instante y referencia. La facultad del autorizador se comprueba por el personal actuante; la forma exacta del sustento y sus pruebas institucionales permanecen pendientes.
 
-La fachada `PersonasParaMatriculas` en la raíz del módulo ofrece búsqueda por documento, alta de estudiante, comprobación de condición e identificación, apoderados vigentes y vinculación autorizada. Matrículas aún no consume la interfaz y Personas no accede a tablas de Matrículas. Las operaciones podrán participar en transacciones locales del ERP; no hacen HTTP a Identidad dentro de una transacción.
+La fachada `PersonasParaMatriculas` en la raíz del módulo ofrece búsqueda por documento, alta de estudiante, comprobación de condición e identificación, apoderados vigentes y vinculación autorizada; Matrículas la consume. `PersonasParaAsignaciones` permite comprobar condición Docente activa. Personas no accede a tablas de Matrículas o Asignaciones. Las operaciones participan en transacciones locales del ERP; no hacen HTTP a Identidad dentro de ellas.
 
 ```mermaid
 flowchart LR
@@ -40,14 +40,14 @@ flowchart LR
   A --> S[Autorización por rol y recurso]
   A --> C[Casos de uso transaccionales]
   C --> P[(PostgreSQL V2)]
-  M[Matrículas futura] -. contrato público .-> C
+  M[Matrículas y Asignaciones] -. contratos públicos .-> C
   I[Identidad OIDC] --> S
 ```
 
-Administración y Dirección gestionan la ficha; Coordinación registra y necesita una afirmación verificable de ámbito para consultar o modificar recursos existentes. El código reconoce el claim `personas_ambito=INSTITUCIONAL` solo como contrato preparatorio: Identidad todavía no lo emite, por lo que esas operaciones se deniegan hoy. Docente solo consulta/edita contacto propio si `referencia_erp` coincide con el UUID. El acceso docente a alumnos asignados permanece denegado hasta que Asignaciones provea una relación verificable. Estudiantes y apoderados no tienen acceso ERP. `SeguridadWeb` mantiene denegación por defecto y CSRF en escrituras.
+Solo Dirección y Coordinación Académica ingresan al ERP y gestionan la ficha según la política operativa posterior a MODULA 532. Docentes, estudiantes, apoderados y otro personal no ingresan al ERP. La condición personal no concede rol. `SeguridadWeb` mantiene denegación por defecto y CSRF en escrituras. El diseño más fino de facultades por operación y la reconciliación con los requisitos formales previos permanecen pendientes.
 
 El frontend contiene Directorio, Registro contextual y Ficha; usa búsqueda paginada, verificación de duplicado, campos por condición, identificación provisional, selector de personas para vínculos, estados de carga/vacío/error/éxito y acciones según capacidades. Está en `apps/erp/web/src/modules/personas/`. La cobertura y las verificaciones pendientes se documentan en [PRUEBAS.md](PRUEBAS.md).
 
 ## Decisiones técnicas pendientes
 
-Revisar separación de DTO HTTP, contrato público y dependencias declaradas; diseñar permisos expresos de Identidad/Asignaciones antes de habilitar accesos. La nueva política funcional de [ESPECIFICACION.md](ESPECIFICACION.md) exige diferenciar contacto autorizado, apoderado con alcance limitado y representante legal, con historial de modificación/revocación; el contrato y el modelo actuales no bastan automáticamente. La corrección excepcional de asociación documental histórica, los estados de información pendiente y los catálogos requieren diseño propio. El registro de Coordinación basado solo en rol y la corrección de identidad sin facultad específica son brechas de seguridad que deben resolverse antes de habilitar esas operaciones; esta descripción no modifica permisos efectivos.
+Revisar separación de DTO HTTP, contratos públicos y dependencias declaradas; definir facultades finas de Identidad compatibles con los dos roles ERP. La política funcional de [ESPECIFICACION.md](ESPECIFICACION.md) exige diferenciar contacto autorizado, apoderado con alcance limitado y representante legal, con historial de modificación/revocación; el contrato y el modelo actuales no bastan automáticamente. La corrección excepcional de asociación documental histórica, los estados de información pendiente y los catálogos requieren diseño propio. Las diferencias entre requisitos formales anteriores y las decisiones operativas del 19/11/2026 deben tramitarse en MODULA; esta descripción no equivale a aprobación formal.

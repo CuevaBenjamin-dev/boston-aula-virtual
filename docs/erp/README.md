@@ -1,31 +1,27 @@
-# ERP institucional — base limpia
+# ERP institucional — estado operativo
 
-El ERP se reconstruye como monolito modular. Personas tiene una implementación inicial PostgreSQL, API y Web; sus ámbitos de autorización pendientes impiden declararlo completado. Los demás módulos de negocio siguen pendientes.
+El ERP continúa como monolito modular con siete responsabilidades: Personas, Oferta académica, Matrículas, Asignaciones docentes, Asistencia, Documentos y Atención institucional. `plataforma` contiene soporte técnico. Solo Dirección y Coordinación Académica inician sesión en el ERP. Las condiciones de Persona no conceden acceso.
 
-El [índice de ingeniería](ingenieria/README.md) dirige al proceso, estándares y lectura selectiva. El [manual](ingenieria/MANUAL_DESARROLLO_MODULAR.md) define cuatro actividades y cinco verificaciones obligatorias. Cada módulo tiene `README.md`, `ESPECIFICACION.md`, `ARQUITECTURA.md`, `MODELO_DATOS.md`, `PRUEBAS.md` y `ESTADO.md`; abra el índice del módulo antes de profundizar.
+Esta fase implementa una primera vertical con persistencia real y muestra explícitamente lo que aún carece de integración. Las decisiones posteriores a MODULA revisión 532 provienen del paquete funcional recibido el 19/11/2026; **no constan como importadas o reaprobadas en MODULA**. La implementación y las cinco verificaciones documentales no se consideran completas por el solo hecho de compilar.
 
-## Tablero de módulos
+## Tablero
 
-| Módulo | Requisitos | Análisis funcional | Arquitectura | Implementación | Verificación y pruebas |
-|---|---|---|---|---|---|
-| [Personas](modulos/personas/README.md) | [En progreso](modulos/personas/ESTADO.md) | En progreso | En progreso | En progreso | En progreso |
-| [Matrículas](modulos/matriculas/README.md) | [Pendiente](modulos/matriculas/ESTADO.md) | Pendiente | Pendiente | Pendiente | Pendiente |
-| [Oferta académica](modulos/oferta/README.md) | [Pendiente](modulos/oferta/ESTADO.md) | Pendiente | Pendiente | Pendiente | Pendiente |
-| [Asignaciones docentes](modulos/asignaciones/README.md) | [Pendiente](modulos/asignaciones/ESTADO.md) | Pendiente | Pendiente | Pendiente | Pendiente |
-| [Documentos](modulos/documentos/README.md) | [Pendiente](modulos/documentos/ESTADO.md) | Pendiente | Pendiente | Pendiente | Pendiente |
+| Módulo | Situación ejecutable | Documento |
+|---|---|---|
+| Personas | Directorio, ficha, identificación, condiciones y vínculos; cambios de cuenta pendientes de integración | [Estado](modulos/personas/ESTADO.md) |
+| Oferta académica | Alta/consulta de año, secciones y asignaturas por año/grado | [Estado](modulos/oferta/ESTADO.md) |
+| Matrículas | Borrador, confirmación validada, retirada, reincorporación y cierre anual API; solicitudes remotas pendientes | [Estado](modulos/matriculas/ESTADO.md) |
+| Asignaciones docentes | Alta/consulta/cierre de asignación y alerta de cobertura por docente inactivo; Aula pendiente | [Estado](modulos/asignaciones/ESTADO.md) |
+| Asistencia | En desarrollo | [Incremento](INCREMENTO_MVP_2026-11-19.md) |
+| Documentos | En desarrollo | [Estado](modulos/documentos/ESTADO.md) |
+| Atención institucional | En desarrollo | [Incremento](INCREMENTO_MVP_2026-11-19.md) |
 
-Cada fila enlaza a su documentación y a la tabla de cinco verificaciones. [Políticas transversales](POLITICAS_TRANSVERSALES.md).
+El [incremento MVP](INCREMENTO_MVP_2026-11-19.md) identifica rutas de código, límites y pasos de prueba. El [índice de ingeniería](ingenieria/README.md) conduce al proceso y a los estándares. Las [políticas transversales](POLITICAS_TRANSVERSALES.md) distinguen decisiones actuales de contratos pendientes.
 
-## Estructura y convenciones
+## Ejecución local
 
-- Backend: Java 25, Spring Boot 4.1.2, Spring Modulith, PostgreSQL y Flyway. Cinco paquetes funcionales anotados; `plataforma` es soporte técnico y no un módulo funcional.
-- Web: React, TypeScript y Vite. `app` contiene rutas y layout; `modules/personas` contiene el directorio, registro y ficha; `shared` contiene piezas transversales.
-- API: solo `/api/erp/v1`; Personas publica sus endpoints bajo `/api/erp/v1/personas` y OpenAPI restringido en `/api/erp/v1/openapi`.
-- Base de desarrollo: `erp_boston_nuevo`, aislada de la base ERP original. V1 crea infraestructura de sesión y OAuth2; V2 crea Personas.
-- Pruebas: `cd apps/erp/api; mvn clean test` y `cd apps/erp/web; npm run build`. Para un módulo futuro: `mvn -Dtest=NombreTest test`.
+Desde la raíz: `docker compose up -d --build`. ERP Web: <http://127.0.0.1:8089>; Aula: <http://localhost:8088>; Identidad: <http://127.0.0.1:9000>. No se eliminan volúmenes. La cuenta local de Dirección o Coordinación se configura según el [README principal](../../README.md), sin publicar claves. La base ERP es `erp_boston_nuevo`, separada de las bases de Aula e Identidad.
 
-## Recuperación
+## Contexto histórico
 
-El estado anterior está en el tag local `backup/erp-before-restart-20261104` (commit `7b6589ac92e90aebc51fa39ebabc653c8045cb76`). La base original `erp_boston` y su volumen permanecen intactos. Se creó un dump fuera del repositorio en `C:\Valana-Pruebas\Aula Virtual Boston\erp-backups\erp_boston_before_rebuild_20261104.dump`, restaurado de prueba en `erp_verificacion_20261104` (30 tablas en origen y restauración). El dump no se debe subir a Git.
-
-La integración de negocio con Aula puede fallar mientras se reconstruyen los módulos. Esta condición es temporal y explícita.
+El estado anterior está en el tag local `backup/erp-before-restart-20261104` (commit `7b6589ac92e90aebc51fa39ebabc653c8045cb76`). La base ERP anterior y su volumen se conservan. `docs/historico/` registra la evolución, no los contratos nuevos de negocio.

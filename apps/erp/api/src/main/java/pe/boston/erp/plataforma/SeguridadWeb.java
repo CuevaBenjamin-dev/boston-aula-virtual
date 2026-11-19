@@ -63,12 +63,13 @@ public class SeguridadWeb {
     http.authorizeHttpRequests(reglas -> reglas
         .requestMatchers("/actuator/health", "/actuator/info", "/error", "/oauth2/**",
           "/login/**", "/api/erp/v1/sesion").permitAll()
-        .requestMatchers("/api/erp/v1/personas/**", "/api/erp/v1/personas").authenticated()
-        .requestMatchers("/api/erp/v1/openapi").access((autenticacion, contexto) -> {
+        .requestMatchers("/api/erp/v1/**").access((autenticacion, contexto) -> {
           var actual=autenticacion.get();
           boolean autorizado=actual instanceof OAuth2AuthenticationToken token
             && token.getPrincipal() instanceof OidcUser usuario
-            && ("ADMINISTRADOR".equals(usuario.getClaimAsString("tipo"))
+            && ("DIRECCION".equals(usuario.getClaimAsString("tipo"))
+              || "COORDINACION".equals(usuario.getClaimAsString("tipo")))
+            && (!contexto.getRequest().getRequestURI().equals("/api/erp/v1/openapi")
               || "DIRECCION".equals(usuario.getClaimAsString("tipo")));
           return new AuthorizationDecision(autorizado);
         })

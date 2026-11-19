@@ -7,7 +7,7 @@ import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.stereotype.Component;
 import pe.boston.erp.personas.api.PersonaDto.Capacidades;
 
-/** El ámbito docente de alumnos permanece cerrado hasta que Asignaciones provea un contrato comprobable. */
+/** El ERP solo admite Dirección y Coordinación; las condiciones personales no otorgan roles. */
 @Component
 public class AutorizacionPersonas {
   public record Actor(String sub, String rol, String ambito, UUID referencia) {}
@@ -16,8 +16,7 @@ public class AutorizacionPersonas {
     if (!(autenticacion instanceof OAuth2AuthenticationToken token)
         || !(token.getPrincipal() instanceof OidcUser oidc)) throw new AccesoDenegado();
     String rol = oidc.getClaimAsString("tipo");
-    if (!"ADMINISTRADOR".equals(rol) && !"DIRECCION".equals(rol)
-        && !"COORDINACION".equals(rol) && !"DOCENTE".equals(rol)) throw new AccesoDenegado();
+    if (!"DIRECCION".equals(rol) && !"COORDINACION".equals(rol)) throw new AccesoDenegado();
     String ambito = oidc.getClaimAsString("personas_ambito");
     UUID referencia = null;
     try { referencia = UUID.fromString(oidc.getClaimAsString("referencia_erp")); }
@@ -26,11 +25,11 @@ public class AutorizacionPersonas {
   }
 
   public boolean direccion(Actor actor) {
-    return "ADMINISTRADOR".equals(actor.rol()) || "DIRECCION".equals(actor.rol());
+    return "DIRECCION".equals(actor.rol());
   }
 
   public boolean coordinacionConAmbito(Actor actor) {
-    return "COORDINACION".equals(actor.rol()) && "INSTITUCIONAL".equals(actor.ambito());
+    return "COORDINACION".equals(actor.rol());
   }
 
   public void registrar(Actor actor) {
@@ -38,8 +37,7 @@ public class AutorizacionPersonas {
   }
 
   public void consultar(Actor actor, UUID persona) {
-    if (!direccion(actor) && !coordinacionConAmbito(actor)
-        && !("DOCENTE".equals(actor.rol()) && persona.equals(actor.referencia()))) throw new AccesoDenegado();
+    if (!direccion(actor) && !coordinacionConAmbito(actor)) throw new AccesoDenegado();
   }
 
   public void gestionar(Actor actor) {
@@ -47,20 +45,16 @@ public class AutorizacionPersonas {
   }
 
   public void identidad(Actor actor) {
-    if (!direccion(actor)) throw new AccesoDenegado();
+    gestionar(actor);
   }
 
   public void contacto(Actor actor, UUID persona) {
-    if (!direccion(actor) && !coordinacionConAmbito(actor)
-        && !("DOCENTE".equals(actor.rol()) && persona.equals(actor.referencia()))) throw new AccesoDenegado();
+    if (!direccion(actor) && !coordinacionConAmbito(actor)) throw new AccesoDenegado();
   }
 
   public Capacidades capacidades(Actor actor) {
     boolean gestor = direccion(actor) || coordinacionConAmbito(actor);
-    boolean registro = gestor || "COORDINACION".equals(actor.rol());
-    boolean docente = "DOCENTE".equals(actor.rol());
-    return new Capacidades(registro,gestor,gestor || (docente && actor.referencia()!=null),
-      direccion(actor),gestor,gestor,docente,docente ? actor.referencia() : null);
+    return new Capacidades(gestor,gestor,gestor,gestor,gestor,gestor,false,null);
   }
 
   public static final class AccesoDenegado extends RuntimeException {}

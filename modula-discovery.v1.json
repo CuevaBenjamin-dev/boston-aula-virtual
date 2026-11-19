@@ -1,0 +1,3853 @@
+{
+  "schema_version": "1.0",
+  "kind": "modula.system_discovery",
+  "package_id": "4b7e6896-71f8-454f-82ab-dc66dfef09b4",
+  "generated_at": "2026-11-11T10:00:11-05:00",
+  "source_system": {
+    "source_id": "sistema-bbs",
+    "name": "Sistema BBS",
+    "description": "ERP institucional, Aula Virtual e Identidad en un repositorio de desarrollo local.",
+    "scope": "Descubrimiento documental y estático del código y pruebas versionados; sin verificación de ejecución actual.",
+    "system_type": "Sistema escolar modular",
+    "development_state": "partial",
+    "modular_state": "partial",
+    "git_reference": "c6dece0b6b30fcc6cd9a3361e202e5388508238c",
+    "discovered_at": "2026-11-11T10:00:11-05:00"
+  },
+  "inventory": {
+    "summary": "Tres servicios Java/Spring Boot, dos interfaces React/TypeScript y cinco módulos ERP definidos; Personas parcialmente implementado, cuatro módulos ERP preparados, Aula e Identidad con código operativo histórico.",
+    "technologies": [
+      "Java 25",
+      "Spring Boot 4.1.2",
+      "Spring Modulith 2.1.2 (ERP)",
+      "React 19",
+      "TypeScript",
+      "Vite",
+      "PostgreSQL 18",
+      "Flyway",
+      "Docker Compose",
+      "SeaweedFS S3 compatible",
+      "OAuth2/OIDC"
+    ],
+    "documentation": [
+      "AGENTS.md",
+      "docs/erp/README.md",
+      "docs/erp/POLITICAS_TRANSVERSALES.md",
+      "docs/erp/modulos/personas/ESPECIFICACION.md",
+      "docs/erp/modulos/personas/ESTADO.md",
+      "docs/arquitectura/README.md",
+      "docs/aula/README.md",
+      "docs/identidad/README.md",
+      "tests/README.md"
+    ],
+    "notes": "La documentación histórica y algunos índices generales reflejan versiones anteriores. No se inspeccionaron datos personales ni credenciales. Los resultados de pruebas citados son históricos; no se ejecutó la suite en este descubrimiento."
+  },
+  "modules": [
+    {
+      "source_key": "erp.personas",
+      "provenance": "approved_document",
+      "documentation_status": "partial",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Fuente del límite o capacidad del módulo.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L1"
+        }
+      ],
+      "needs_review": false,
+      "name": "Personas",
+      "status": "existing",
+      "responsibility": "Registro único de personas, documentos, condiciones y vínculos; no posee credenciales ni matrículas."
+    },
+    {
+      "source_key": "erp.matriculas",
+      "provenance": "documented",
+      "documentation_status": "partial",
+      "implementation_status": "not_evidenced",
+      "evidence": [
+        {
+          "description": "Fuente del límite o capacidad del módulo.",
+          "reference": "docs/erp/modulos/matriculas/ESPECIFICACION.md#L1"
+        }
+      ],
+      "needs_review": true,
+      "name": "Matrículas",
+      "status": "documented",
+      "responsibility": "Proceso de matrícula y solicitudes preliminares; modalidades, confirmación y reversión aún requieren aprobación."
+    },
+    {
+      "source_key": "erp.oferta",
+      "provenance": "documented",
+      "documentation_status": "partial",
+      "implementation_status": "not_evidenced",
+      "evidence": [
+        {
+          "description": "Fuente del límite o capacidad del módulo.",
+          "reference": "docs/erp/modulos/oferta/ESPECIFICACION.md#L1"
+        }
+      ],
+      "needs_review": true,
+      "name": "Oferta académica",
+      "status": "documented",
+      "responsibility": "Períodos, grados, secciones y asignaturas ofertadas; reglas de publicación pendientes."
+    },
+    {
+      "source_key": "erp.asignaciones",
+      "provenance": "documented",
+      "documentation_status": "partial",
+      "implementation_status": "not_evidenced",
+      "evidence": [
+        {
+          "description": "Fuente del límite o capacidad del módulo.",
+          "reference": "docs/erp/modulos/asignaciones/ESPECIFICACION.md#L1"
+        }
+      ],
+      "needs_review": true,
+      "name": "Asignaciones docentes",
+      "status": "documented",
+      "responsibility": "Vínculo docente con oferta académica; contrato de acceso docente a alumnos no implementado."
+    },
+    {
+      "source_key": "erp.documentos",
+      "provenance": "documented",
+      "documentation_status": "partial",
+      "implementation_status": "not_evidenced",
+      "evidence": [
+        {
+          "description": "Fuente del límite o capacidad del módulo.",
+          "reference": "docs/erp/modulos/documentos/ESPECIFICACION.md#L1"
+        }
+      ],
+      "needs_review": true,
+      "name": "Documentos",
+      "status": "documented",
+      "responsibility": "Custodia documental ERP; catálogo, acceso, versiones y retención pendientes."
+    },
+    {
+      "source_key": "identidad.acceso",
+      "provenance": "inferred_code",
+      "documentation_status": "partial",
+      "implementation_status": "evidenced",
+      "evidence": [
+        {
+          "description": "Fuente del límite o capacidad del módulo.",
+          "reference": "services/identidad/src/main/java/pe/boston/identidad/AccesoController.java#L47"
+        }
+      ],
+      "needs_review": true,
+      "name": "Acceso institucional",
+      "status": "existing",
+      "responsibility": "Inicio de sesión, OIDC y recuperación de acceso, compartido por ERP y Aula."
+    },
+    {
+      "source_key": "identidad.cuentas",
+      "provenance": "inferred_code",
+      "documentation_status": "partial",
+      "implementation_status": "evidenced",
+      "evidence": [
+        {
+          "description": "Fuente del límite o capacidad del módulo.",
+          "reference": "services/identidad/src/main/java/pe/boston/identidad/CuentasController.java#L18"
+        }
+      ],
+      "needs_review": true,
+      "name": "Cuentas institucionales",
+      "status": "existing",
+      "responsibility": "Registro, suspensión, directorio y recuperación de cuentas. No almacena personas del ERP."
+    },
+    {
+      "source_key": "aula.cursos",
+      "provenance": "inferred_code",
+      "documentation_status": "partial",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Fuente del límite o capacidad del módulo.",
+          "reference": "apps/aula/api/src/main/java/pe/boston/aula/CursosController.java#L11"
+        }
+      ],
+      "needs_review": true,
+      "name": "Cursos del Aula",
+      "status": "existing",
+      "responsibility": "Consulta cursos y actividad académica sincronizados desde la fuente institucional."
+    },
+    {
+      "source_key": "aula.materiales",
+      "provenance": "inferred_code",
+      "documentation_status": "partial",
+      "implementation_status": "evidenced",
+      "evidence": [
+        {
+          "description": "Fuente del límite o capacidad del módulo.",
+          "reference": "apps/aula/api/src/main/java/pe/boston/aula/MaterialesController.java#L14"
+        }
+      ],
+      "needs_review": true,
+      "name": "Materiales",
+      "status": "existing",
+      "responsibility": "Gestión y consulta de materiales de curso, publicación y ocultamiento."
+    },
+    {
+      "source_key": "aula.clases",
+      "provenance": "inferred_code",
+      "documentation_status": "partial",
+      "implementation_status": "evidenced",
+      "evidence": [
+        {
+          "description": "Fuente del límite o capacidad del módulo.",
+          "reference": "apps/aula/api/src/main/java/pe/boston/aula/OperacionesController.java#L38"
+        }
+      ],
+      "needs_review": true,
+      "name": "Clases virtuales",
+      "status": "existing",
+      "responsibility": "Programación, consulta, modificación y cierre de clases y enlaces externos."
+    },
+    {
+      "source_key": "aula.grabaciones",
+      "provenance": "inferred_code",
+      "documentation_status": "partial",
+      "implementation_status": "evidenced",
+      "evidence": [
+        {
+          "description": "Fuente del límite o capacidad del módulo.",
+          "reference": "apps/aula/api/src/main/java/pe/boston/aula/GrabacionesController.java#L9"
+        }
+      ],
+      "needs_review": true,
+      "name": "Grabaciones",
+      "status": "existing",
+      "responsibility": "Referencias a videos externos y gestión de su publicación."
+    },
+    {
+      "source_key": "aula.tareas",
+      "provenance": "inferred_code",
+      "documentation_status": "partial",
+      "implementation_status": "evidenced",
+      "evidence": [
+        {
+          "description": "Fuente del límite o capacidad del módulo.",
+          "reference": "apps/aula/api/src/main/java/pe/boston/aula/CursosController.java#L24"
+        }
+      ],
+      "needs_review": true,
+      "name": "Tareas y entregas",
+      "status": "existing",
+      "responsibility": "Publicación de tareas, entrega y seguimiento de actividades."
+    },
+    {
+      "source_key": "aula.notas",
+      "provenance": "inferred_code",
+      "documentation_status": "partial",
+      "implementation_status": "evidenced",
+      "evidence": [
+        {
+          "description": "Fuente del límite o capacidad del módulo.",
+          "reference": "apps/aula/api/src/main/java/pe/boston/aula/CursosController.java#L44"
+        }
+      ],
+      "needs_review": true,
+      "name": "Calificaciones del Aula",
+      "status": "existing",
+      "responsibility": "Calificaciones de actividades del Aula; no equivale a notas oficiales ERP."
+    },
+    {
+      "source_key": "aula.mensajeria",
+      "provenance": "inferred_code",
+      "documentation_status": "partial",
+      "implementation_status": "evidenced",
+      "evidence": [
+        {
+          "description": "Fuente del límite o capacidad del módulo.",
+          "reference": "apps/aula/api/src/main/java/pe/boston/aula/MensajesController.java#L26"
+        }
+      ],
+      "needs_review": true,
+      "name": "Mensajes y notificaciones",
+      "status": "existing",
+      "responsibility": "Mensajes entre cuentas y avisos internos del Aula."
+    },
+    {
+      "source_key": "aula.supervision",
+      "provenance": "inferred_code",
+      "documentation_status": "partial",
+      "implementation_status": "evidenced",
+      "evidence": [
+        {
+          "description": "Fuente del límite o capacidad del módulo.",
+          "reference": "apps/aula/api/src/main/java/pe/boston/aula/SupervisionController.java#L18"
+        }
+      ],
+      "needs_review": true,
+      "name": "Supervisión académica",
+      "status": "existing",
+      "responsibility": "Consultas de coordinación y administración para seguimiento y auditoría local."
+    },
+    {
+      "source_key": "aula.perfil",
+      "provenance": "inferred_code",
+      "documentation_status": "partial",
+      "implementation_status": "evidenced",
+      "evidence": [
+        {
+          "description": "Fuente del límite o capacidad del módulo.",
+          "reference": "apps/aula/api/src/main/java/pe/boston/aula/PerfilController.java#L20"
+        }
+      ],
+      "needs_review": true,
+      "name": "Perfil del Aula",
+      "status": "existing",
+      "responsibility": "Consulta de perfil y foto de cuenta del Aula."
+    },
+    {
+      "source_key": "aula.pagos",
+      "provenance": "inferred_code",
+      "documentation_status": "partial",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Fuente del límite o capacidad del módulo.",
+          "reference": "apps/aula/api/src/main/java/pe/boston/aula/OperacionesController.java#L64"
+        }
+      ],
+      "needs_review": true,
+      "name": "Consulta de pagos",
+      "status": "existing",
+      "responsibility": "Interfaz de consulta de pagos dependiente de ERP; disponibilidad actual del contrato no acreditada."
+    }
+  ],
+  "actors": [
+    {
+      "source_key": "actor.direccion",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Actor o condición institucional descritos en la especificación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L67"
+        }
+      ],
+      "needs_review": false,
+      "name": "Dirección",
+      "module_keys": [
+        "erp.personas"
+      ]
+    },
+    {
+      "source_key": "actor.administracion",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "unchecked",
+      "evidence": [
+        {
+          "description": "Actor o condición institucional descritos en la especificación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L67"
+        }
+      ],
+      "needs_review": false,
+      "name": "Administración",
+      "module_keys": [
+        "erp.personas"
+      ]
+    },
+    {
+      "source_key": "actor.coordinacion",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Actor o condición institucional descritos en la especificación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L95"
+        }
+      ],
+      "needs_review": true,
+      "name": "Coordinación Académica",
+      "module_keys": [
+        "erp.personas"
+      ]
+    },
+    {
+      "source_key": "actor.docente",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Actor o condición institucional descritos en la especificación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L74"
+        }
+      ],
+      "needs_review": true,
+      "name": "Docente",
+      "module_keys": [
+        "erp.personas"
+      ]
+    },
+    {
+      "source_key": "actor.estudiante",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "unchecked",
+      "evidence": [
+        {
+          "description": "Actor o condición institucional descritos en la especificación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L54"
+        }
+      ],
+      "needs_review": false,
+      "name": "Estudiante",
+      "module_keys": [
+        "erp.personas"
+      ]
+    },
+    {
+      "source_key": "actor.apoderado",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "unchecked",
+      "evidence": [
+        {
+          "description": "Actor o condición institucional descritos en la especificación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L56"
+        }
+      ],
+      "needs_review": false,
+      "name": "Apoderado",
+      "module_keys": [
+        "erp.personas"
+      ]
+    }
+  ],
+  "requirements": [
+    {
+      "source_key": "bbs.erp.personas.RF-PER-001",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L9"
+        }
+      ],
+      "needs_review": false,
+      "original_code": "RF-PER-001",
+      "title": "Registrar una persona con datos identificativos.",
+      "description": "Registrar una persona con datos identificativos.",
+      "type": "functional",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RF-PER-002",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L10"
+        }
+      ],
+      "needs_review": false,
+      "original_code": "RF-PER-002",
+      "title": "Buscar personas por nombre o documento.",
+      "description": "Buscar personas por nombre o documento.",
+      "type": "functional",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RF-PER-003",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L11"
+        }
+      ],
+      "needs_review": false,
+      "original_code": "RF-PER-003",
+      "title": "Detectar posibles duplicados antes del registro.",
+      "description": "Detectar posibles duplicados antes del registro.",
+      "type": "functional",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RF-PER-004",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L12"
+        }
+      ],
+      "needs_review": false,
+      "original_code": "RF-PER-004",
+      "title": "Consultar y actualizar información personal.",
+      "description": "Consultar y actualizar información personal.",
+      "type": "functional",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RF-PER-005",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L13"
+        }
+      ],
+      "needs_review": false,
+      "original_code": "RF-PER-005",
+      "title": "Asignar múltiples condiciones institucionales a una persona.",
+      "description": "Asignar múltiples condiciones institucionales a una persona.",
+      "type": "functional",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RF-PER-006",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L14"
+        }
+      ],
+      "needs_review": false,
+      "original_code": "RF-PER-006",
+      "title": "Registrar relaciones entre estudiantes, familiares y responsables.",
+      "description": "Registrar relaciones entre estudiantes, familiares y responsables.",
+      "type": "functional",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RF-PER-007",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L15"
+        }
+      ],
+      "needs_review": false,
+      "original_code": "RF-PER-007",
+      "title": "Consultar una ficha personal con condiciones y relaciones.",
+      "description": "Consultar una ficha personal con condiciones y relaciones.",
+      "type": "functional",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RF-PER-008",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L16"
+        }
+      ],
+      "needs_review": false,
+      "original_code": "RF-PER-008",
+      "title": "Activar y desactivar condiciones institucionales conservando el historial.",
+      "description": "Activar y desactivar condiciones institucionales conservando el historial.",
+      "type": "functional",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RF-PER-009",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L17"
+        }
+      ],
+      "needs_review": false,
+      "original_code": "RF-PER-009",
+      "title": "Registrar automáticamente la trazabilidad técnica de modificaciones relevantes, sin exigir aprobaciones manuales ni una pantalla de auditoría.",
+      "description": "Registrar automáticamente la trazabilidad técnica de modificaciones relevantes, sin exigir aprobaciones manuales ni una pantalla de auditoría.",
+      "type": "functional",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RNF-PER-001",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L25"
+        }
+      ],
+      "needs_review": true,
+      "original_code": "RNF-PER-001",
+      "title": "Cada operación comprueba permiso expreso, operación, recurso y ámbito; sin sesión responde 401 y sin facultad 403; CSRF protege escrituras. Se deniega por defecto cuando falta a...",
+      "description": "Cada operación comprueba permiso expreso, operación, recurso y ámbito; sin sesión responde 401 y sin facultad 403; CSRF protege escrituras. Se deniega por defecto cuando falta autorización verificable.",
+      "type": "nonfunctional",
+      "scope_kind": "intermodule",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RNF-PER-002",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L26"
+        }
+      ],
+      "needs_review": true,
+      "original_code": "RNF-PER-002",
+      "title": "Ningún commit puede dejar persona definitiva sin condición/identificación, asignar ordinariamente a otra identidad un documento vigente o histórico, mantener principal simultáne...",
+      "description": "Ningún commit puede dejar persona definitiva sin condición/identificación, asignar ordinariamente a otra identidad un documento vigente o histórico, mantener principal simultáneo ni superponer vigencias; la concurrencia no lo elude. La solicitud preliminar incompleta de Matrículas no constituye persona definitiva.",
+      "type": "nonfunctional",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RNF-PER-003",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L27"
+        }
+      ],
+      "needs_review": false,
+      "original_code": "RNF-PER-003",
+      "title": "Crear, corregir, activar y desactivar escribe actor, acción, recurso y fecha sin copiar valores personales; la operación y evento comparten transacción.",
+      "description": "Crear, corregir, activar y desactivar escribe actor, acción, recurso y fecha sin copiar valores personales; la operación y evento comparten transacción.",
+      "type": "nonfunctional",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RNF-PER-004",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "unchecked",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L28"
+        }
+      ],
+      "needs_review": false,
+      "original_code": "RNF-PER-004",
+      "title": "Con 30 000 personas y 30 usuarios concurrentes, búsquedas p95 ≤ 2 s y guardados habituales p95 ≤ 3 s.",
+      "description": "Con 30 000 personas y 30 usuarios concurrentes, búsquedas p95 ≤ 2 s y guardados habituales p95 ≤ 3 s.",
+      "type": "nonfunctional",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RNF-PER-005",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L29"
+        }
+      ],
+      "needs_review": true,
+      "original_code": "RNF-PER-005",
+      "title": "El API solo devuelve datos necesarios para operaciones y recursos autorizados; ninguna contraseña ni valor anterior de identidad se guarda en auditoría. Personas conserva histor...",
+      "description": "El API solo devuelve datos necesarios para operaciones y recursos autorizados; ninguna contraseña ni valor anterior de identidad se guarda en auditoría. Personas conserva historial y constancias de autorizaciones/revocaciones según finalidad y obligación aplicable, restringe el acceso cuando cesa su necesidad ordinaria y permite rectificación, supresión o anonimización cuando corresponda. Los plazos y procedimientos por categoría requieren aprobación operativa antes de tratar datos reales; no hay borrado automático al terminar un curso ni conservación perpetua indiscriminada.",
+      "type": "nonfunctional",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RNF-PER-006",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "unchecked",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L30"
+        }
+      ],
+      "needs_review": false,
+      "original_code": "RNF-PER-006",
+      "title": "Objetivo WCAG 2.2 AA: campos etiquetados, foco y teclado utilizables, estados de carga/error/éxito anunciados y contraste verificable.",
+      "description": "Objetivo WCAG 2.2 AA: campos etiquetados, foco y teclado utilizables, estados de carga/error/éxito anunciados y contraste verificable.",
+      "type": "nonfunctional",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RI-PER-001",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L38"
+        }
+      ],
+      "needs_review": false,
+      "original_code": "RI-PER-001",
+      "title": "Cada persona tendrá un único registro personal institucional.",
+      "description": "Cada persona tendrá un único registro personal institucional.",
+      "type": "business",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RI-PER-002",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L39"
+        }
+      ],
+      "needs_review": false,
+      "original_code": "RI-PER-002",
+      "title": "Una persona podrá tener múltiples condiciones institucionales simultáneamente.",
+      "description": "Una persona podrá tener múltiples condiciones institucionales simultáneamente.",
+      "type": "business",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RI-PER-003",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L40"
+        }
+      ],
+      "needs_review": false,
+      "original_code": "RI-PER-003",
+      "title": "Cada condición institucional tendrá un estado independiente.",
+      "description": "Cada condición institucional tendrá un estado independiente.",
+      "type": "business",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RI-PER-004",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L41"
+        }
+      ],
+      "needs_review": false,
+      "original_code": "RI-PER-004",
+      "title": "Desactivar una condición no desactivará las demás condiciones y relaciones que continúen siendo válidas.",
+      "description": "Desactivar una condición no desactivará las demás condiciones y relaciones que continúen siendo válidas.",
+      "type": "business",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RI-PER-005",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L42"
+        }
+      ],
+      "needs_review": false,
+      "original_code": "RI-PER-005",
+      "title": "La desactivación no eliminará datos ni historiales personales.",
+      "description": "La desactivación no eliminará datos ni historiales personales.",
+      "type": "business",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RI-PER-006",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L43"
+        }
+      ],
+      "needs_review": false,
+      "original_code": "RI-PER-006",
+      "title": "La obligatoriedad de datos dependerá de la condición institucional y de la operación: una solicitud preliminar incompleta pertenece a Matrículas y no equivale al registro defini...",
+      "description": "La obligatoriedad de datos dependerá de la condición institucional y de la operación: una solicitud preliminar incompleta pertenece a Matrículas y no equivale al registro definitivo de una persona en Personas.",
+      "type": "business",
+      "scope_kind": "intermodule",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        },
+        {
+          "module_key": "erp.matriculas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RI-PER-007",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L44"
+        }
+      ],
+      "needs_review": false,
+      "original_code": "RI-PER-007",
+      "title": "Toda persona registrada definitivamente deberá contar con documento de identidad, salvo la excepción sustentada para estudiantes de RI-PER-036.",
+      "description": "Toda persona registrada definitivamente deberá contar con documento de identidad, salvo la excepción sustentada para estudiantes de RI-PER-036.",
+      "type": "business",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RI-PER-008",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L45"
+        }
+      ],
+      "needs_review": false,
+      "original_code": "RI-PER-008",
+      "title": "Para estudiantes, teléfono y correo electrónico serán opcionales. Los demás datos de la matriz serán obligatorios al crear una persona definitiva, salvo la identificación provis...",
+      "description": "Para estudiantes, teléfono y correo electrónico serán opcionales. Los demás datos de la matriz serán obligatorios al crear una persona definitiva, salvo la identificación provisional sustentada de RI-PER-036. Los datos aún pendientes de acreditación permanecen en el proceso preliminar que los admita; nunca se inventarán valores para registrar a la persona.",
+      "type": "business",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RI-PER-009",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L46"
+        }
+      ],
+      "needs_review": false,
+      "original_code": "RI-PER-009",
+      "title": "Para apoderados, el correo electrónico será opcional y los demás datos definidos serán obligatorios.",
+      "description": "Para apoderados, el correo electrónico será opcional y los demás datos definidos serán obligatorios.",
+      "type": "business",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RI-PER-010",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L47"
+        }
+      ],
+      "needs_review": false,
+      "original_code": "RI-PER-010",
+      "title": "Para docentes y personal institucional, todos los datos definidos en la matriz serán obligatorios.",
+      "description": "Para docentes y personal institucional, todos los datos definidos en la matriz serán obligatorios.",
+      "type": "business",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RI-PER-011",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L48"
+        }
+      ],
+      "needs_review": false,
+      "original_code": "RI-PER-011",
+      "title": "Si una persona adquiere otra condición institucional, deberá completar los datos adicionales necesarios sin crear otro registro personal.",
+      "description": "Si una persona adquiere otra condición institucional, deberá completar los datos adicionales necesarios sin crear otro registro personal.",
+      "type": "business",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RI-PER-012",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L49"
+        }
+      ],
+      "needs_review": false,
+      "original_code": "RI-PER-012",
+      "title": "Los tipos de documento inicialmente admitidos serán DNI peruano, carné de extranjería y pasaporte. El catálogo será extensible mediante administración controlada. DNI peruano: e...",
+      "description": "Los tipos de documento inicialmente admitidos serán DNI peruano, carné de extranjería y pasaporte. El catálogo será extensible mediante administración controlada. DNI peruano: exactamente ocho dígitos, incluidos ceros iniciales; CE: formatos oficiales válidos con validaciones configurables y sin longitud universal arbitraria; pasaporte: número y país emisor con validación conservadora y configurable. Validar formato no acredita autenticidad oficial.",
+      "type": "business",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RI-PER-013",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L50"
+        }
+      ],
+      "needs_review": true,
+      "original_code": "RI-PER-013",
+      "title": "La clave documental es tipo, país emisor y número normalizado, independientes de la nacionalidad. Una persona puede conservar varios documentos y su historial bajo UUID estable....",
+      "description": "La clave documental es tipo, país emisor y número normalizado, independientes de la nacionalidad. Una persona puede conservar varios documentos y su historial bajo UUID estable. No se asignará ordinariamente el mismo documento a identidades distintas aunque una asociación anterior ya no esté vigente. La normalización conservadora no eliminará ceros iniciales ni caracteres internos significativos; las validaciones específicas dependerán del tipo.",
+      "type": "business",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RI-PER-014",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L51"
+        }
+      ],
+      "needs_review": false,
+      "original_code": "RI-PER-014",
+      "title": "Si el documento ya está registrado, se permitirá consultar la ficha existente según los permisos aplicables y se incorporará cualquier nueva condición a esa persona, sin crear o...",
+      "description": "Si el documento ya está registrado, se permitirá consultar la ficha existente según los permisos aplicables y se incorporará cualquier nueva condición a esa persona, sin crear otro registro.",
+      "type": "business",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RI-PER-015",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L52"
+        }
+      ],
+      "needs_review": false,
+      "original_code": "RI-PER-015",
+      "title": "La similitud de nombres nunca provocará una fusión automática de personas.",
+      "description": "La similitud de nombres nunca provocará una fusión automática de personas.",
+      "type": "business",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RI-PER-016",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L53"
+        }
+      ],
+      "needs_review": false,
+      "original_code": "RI-PER-016",
+      "title": "Dirección o Administración con facultad expresa y verificable podrán corregir documentos y datos de identidad conservando UUID e historiales, sin aprobación adicional. La reasoc...",
+      "description": "Dirección o Administración con facultad expresa y verificable podrán corregir documentos y datos de identidad conservando UUID e historiales, sin aprobación adicional. La reasociación excepcional de un documento atribuido por error a otra identidad exige responsable, fecha, motivo y evidencia necesaria; no fusiona personas ni altera historiales académicos, financieros o administrativos de la identidad correcta.",
+      "type": "business",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RI-PER-017",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L54"
+        }
+      ],
+      "needs_review": false,
+      "original_code": "RI-PER-017",
+      "title": "Las condiciones institucionales iniciales serán Estudiante, Docente, Personal institucional y Apoderado.",
+      "description": "Las condiciones institucionales iniciales serán Estudiante, Docente, Personal institucional y Apoderado.",
+      "type": "business",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RI-PER-018",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L55"
+        }
+      ],
+      "needs_review": false,
+      "original_code": "RI-PER-018",
+      "title": "Cada condición tendrá estado Activa o Inactiva, vigencia y motivo de desactivación cuando corresponda. Sus estados y vigencias serán independientes y podrán coexistir varias con...",
+      "description": "Cada condición tendrá estado Activa o Inactiva, vigencia y motivo de desactivación cuando corresponda. Sus estados y vigencias serán independientes y podrán coexistir varias condiciones por persona.",
+      "type": "business",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RI-PER-019",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L56"
+        }
+      ],
+      "needs_review": true,
+      "original_code": "RI-PER-019",
+      "title": "Apoderado para gestiones ordinarias será una condición institucional de la persona y requerirá vínculos explícitos, alcance autorizado y vigencia por estudiante. El contacto aut...",
+      "description": "Apoderado para gestiones ordinarias será una condición institucional de la persona y requerirá vínculos explícitos, alcance autorizado y vigencia por estudiante. El contacto autorizado, limitado a comunicaciones pertinentes según lo permitido, es un alcance independiente; ambos se distinguen de parentesco y representación legal y conservan modificaciones y revocaciones.",
+      "type": "business",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RI-PER-020",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L57"
+        }
+      ],
+      "needs_review": false,
+      "original_code": "RI-PER-020",
+      "title": "Un estudiante podrá tener varios apoderados simultáneamente, sin categorías de apoderado principal o secundario.",
+      "description": "Un estudiante podrá tener varios apoderados simultáneamente, sin categorías de apoderado principal o secundario.",
+      "type": "business",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RI-PER-021",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L58"
+        }
+      ],
+      "needs_review": false,
+      "original_code": "RI-PER-021",
+      "title": "La condición de Apoderado es independiente del parentesco; este no confiere por sí solo contacto autorizado, apoderamiento ni representación legal.",
+      "description": "La condición de Apoderado es independiente del parentesco; este no confiere por sí solo contacto autorizado, apoderamiento ni representación legal.",
+      "type": "business",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RI-PER-022",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L59"
+        }
+      ],
+      "needs_review": false,
+      "original_code": "RI-PER-022",
+      "title": "Los vínculos entre personas conservarán su historial y vigencia.",
+      "description": "Los vínculos entre personas conservarán su historial y vigencia.",
+      "type": "business",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RI-PER-023",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L60"
+        }
+      ],
+      "needs_review": false,
+      "original_code": "RI-PER-023",
+      "title": "La autorización o el control operativo de recojo de estudiantes no forman parte de Personas.",
+      "description": "La autorización o el control operativo de recojo de estudiantes no forman parte de Personas.",
+      "type": "business",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RI-PER-024",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L61"
+        }
+      ],
+      "needs_review": true,
+      "original_code": "RI-PER-024",
+      "title": "Coordinación Académica podrá registrar, buscar, consultar, actualizar contactos y gestionar condiciones y vínculos de Personas en toda la institución BBS, actualmente una sola i...",
+      "description": "Coordinación Académica podrá registrar, buscar, consultar, actualizar contactos y gestionar condiciones y vínculos de Personas en toda la institución BBS, actualmente una sola institución, solo con permiso expreso y verificable para cada operación. No podrá corregir identidad oficial ni administrar permisos; el cargo por sí solo no autoriza.",
+      "type": "business",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RI-PER-025",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L62"
+        }
+      ],
+      "needs_review": false,
+      "original_code": "RI-PER-025",
+      "title": "El personal autorizado podrá actualizar inmediatamente teléfono, correo y demás datos de contacto cotidianos, sin solicitudes de aprobación. Las correcciones sensibles quedarán ...",
+      "description": "El personal autorizado podrá actualizar inmediatamente teléfono, correo y demás datos de contacto cotidianos, sin solicitudes de aprobación. Las correcciones sensibles quedarán reservadas a los perfiles autorizados.",
+      "type": "business",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RI-PER-026",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L63"
+        }
+      ],
+      "needs_review": false,
+      "original_code": "RI-PER-026",
+      "title": "Las operaciones sensibles tendrán trazabilidad técnica automática y proporcional, sin conservar innecesariamente valores personales ni requerir una pantalla de auditoría.",
+      "description": "Las operaciones sensibles tendrán trazabilidad técnica automática y proporcional, sin conservar innecesariamente valores personales ni requerir una pantalla de auditoría.",
+      "type": "business",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RI-PER-027",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "not_evidenced",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L64"
+        }
+      ],
+      "needs_review": false,
+      "original_code": "RI-PER-027",
+      "title": "Una persona podrá ser apoderada de varios estudiantes. Si no tiene parentesco familiar con alguno, el vínculo requerirá autorización institucional válida otorgada por persona fa...",
+      "description": "Una persona podrá ser apoderada de varios estudiantes. Si no tiene parentesco familiar con alguno, el vínculo requerirá autorización institucional válida otorgada por persona facultada e identificada razonablemente; el estudiante mayor de edad podrá autorizar directamente a terceros cuando tenga capacidad legal para ese acto. El vínculo no acredita por sí solo representación legal para todos los trámites.",
+      "type": "business",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RI-PER-028",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "not_evidenced",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L65"
+        }
+      ],
+      "needs_review": true,
+      "original_code": "RI-PER-028",
+      "title": "Cada vínculo estudiante–apoderado tendrá estado Activo o Inactivo, facultades expresas y vigencia propia, sin afectar los demás vínculos. Su alcance podrá modificarse o revocars...",
+      "description": "Cada vínculo estudiante–apoderado tendrá estado Activo o Inactivo, facultades expresas y vigencia propia, sin afectar los demás vínculos. Su alcance podrá modificarse o revocarse inmediatamente con historial y trazabilidad. Restricciones judiciales o conflictos de representación conocidos suspenderán únicamente las operaciones afectadas hasta aclarar facultades.",
+      "type": "business",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RI-PER-029",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L66"
+        }
+      ],
+      "needs_review": false,
+      "original_code": "RI-PER-029",
+      "title": "La condición institucional Apoderado permanecerá Activa mientras exista al menos un vínculo de apoderado vigente y Activo. Si no existe ninguno, quedará Inactiva y conservará su...",
+      "description": "La condición institucional Apoderado permanecerá Activa mientras exista al menos un vínculo de apoderado vigente y Activo. Si no existe ninguno, quedará Inactiva y conservará su historial, sin afectar las demás condiciones institucionales de la persona.",
+      "type": "business",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RI-PER-030",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L67"
+        }
+      ],
+      "needs_review": false,
+      "original_code": "RI-PER-030",
+      "title": "Coordinación Académica, Dirección y Administración podrán registrar vínculos de apoderados dentro de sus facultades expresamente autorizadas. Para una persona sin parentesco com...",
+      "description": "Coordinación Académica, Dirección y Administración podrán registrar vínculos de apoderados dentro de sus facultades expresamente autorizadas. Para una persona sin parentesco comprobarán la autorización y registrarán el vínculo en la misma operación, sin aprobación adicional. Si no se acredita facultad suficiente, no activarán la autorización.",
+      "type": "business",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RI-PER-031",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "not_evidenced",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L68"
+        }
+      ],
+      "needs_review": false,
+      "original_code": "RI-PER-031",
+      "title": "La constancia de autorización registrará estudiante, persona autorizada, otorgante, medio, fecha y hora, trabajador verificador, alcance y vínculo; referencia de sustento cuando...",
+      "description": "La constancia de autorización registrará estudiante, persona autorizada, otorgante, medio, fecha y hora, trabajador verificador, alcance y vínculo; referencia de sustento cuando corresponda. Se conservarán las constancias de modificación y revocación sin datos adicionales innecesarios.",
+      "type": "business",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RI-PER-032",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L69"
+        }
+      ],
+      "needs_review": false,
+      "original_code": "RI-PER-032",
+      "title": "Finalizar o desactivar un vínculo estudiante–apoderado no afectará los demás vínculos vigentes de la persona.",
+      "description": "Finalizar o desactivar un vínculo estudiante–apoderado no afectará los demás vínculos vigentes de la persona.",
+      "type": "business",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RI-PER-033",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "not_evidenced",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L70"
+        }
+      ],
+      "needs_review": false,
+      "original_code": "RI-PER-033",
+      "title": "Según su alcance expreso, el apoderado podrá recibir comunicaciones, consultar asuntos operativos, coordinar horarios o reprogramaciones y justificar inasistencias. Ni el contac...",
+      "description": "Según su alcance expreso, el apoderado podrá recibir comunicaciones, consultar asuntos operativos, coordinar horarios o reprogramaciones y justificar inasistencias. Ni el contacto autorizado ni el apoderamiento conceden automáticamente representación legal, acceso familiar o académico irrestricto, facultades financieras ni firma de actos formales. El módulo dueño de cada trámite comprobará sus facultades adicionales.",
+      "type": "business",
+      "scope_kind": "intermodule",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        },
+        {
+          "module_key": "erp.documentos"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RI-PER-034",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "not_evidenced",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L71"
+        }
+      ],
+      "needs_review": false,
+      "original_code": "RI-PER-034",
+      "title": "Se admite autorización verbal comprobable para vincular como apoderado a una persona sin parentesco. Coordinación Académica, Dirección o Administración verificará directamente a...",
+      "description": "Se admite autorización verbal comprobable para vincular como apoderado a una persona sin parentesco. Coordinación Académica, Dirección o Administración verificará directamente al otorgante facultado, presencialmente, por teléfono u otro medio verificable. Por teléfono se preferirán contactos ya comprobados; en un primer registro se admiten comprobaciones presenciales o sustentos verificables. No se exigen grabaciones, documentos nuevos por cada gestión ordinaria ni aprobación adicional.",
+      "type": "business",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RI-PER-035",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L72"
+        }
+      ],
+      "needs_review": false,
+      "original_code": "RI-PER-035",
+      "title": "Toda persona nueva se registra en una operación atómica con al menos una condición institucional válida; un apoderado como única condición inicial requiere un vínculo válido en ...",
+      "description": "Toda persona nueva se registra en una operación atómica con al menos una condición institucional válida; un apoderado como única condición inicial requiere un vínculo válido en la misma operación.",
+      "type": "business",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RI-PER-036",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "not_evidenced",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L73"
+        }
+      ],
+      "needs_review": false,
+      "original_code": "RI-PER-036",
+      "title": "Un estudiante real sin documento oficial puede identificarse provisionalmente solo en un supuesto funcional y legal admitido, con motivo, tipo y referencia del sustento y regula...",
+      "description": "Un estudiante real sin documento oficial puede identificarse provisionalmente solo en un supuesto funcional y legal admitido, con motivo, tipo y referencia del sustento y regularización pendiente. Conserva UUID e historial al regularizarse; no se inventarán DNI, fecha de nacimiento, nacionalidad ni otros valores. No habilita automáticamente personas ficticias o incompletas ni se extiende a docentes o personal.",
+      "type": "business",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.RI-PER-037",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "not_evidenced",
+      "evidence": [
+        {
+          "description": "Regla aprobada en la tabla normativa; la aprobación no certifica implementación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L74"
+        }
+      ],
+      "needs_review": true,
+      "original_code": "RI-PER-037",
+      "title": "Matriz de acceso funcional: Dirección y Administración gestionan Personas solo con facultades expresas; corregir identidad oficial es una facultad reservada y verificable. Coord...",
+      "description": "Matriz de acceso funcional: Dirección y Administración gestionan Personas solo con facultades expresas; corregir identidad oficial es una facultad reservada y verificable. Coordinación actúa en toda BBS solo con permisos expresos por operación, sin corregir identidad ni administrar permisos. Docentes consultan únicamente datos necesarios de estudiantes efectivamente asignados y contactos autorizados para sus funciones, sin acceso general a fichas completas ni modificación de datos familiares; sus datos propios también requieren autorización expresa. Estudiantes y Apoderados no acceden directamente al ERP. Se comprueban operación, recurso y ámbito, se deniega por defecto y ninguna condición institucional concede un rol de seguridad.",
+      "type": "business",
+      "scope_kind": "intermodule",
+      "module_participation": [
+        {
+          "module_key": "erp.personas"
+        },
+        {
+          "module_key": "erp.asignaciones"
+        }
+      ]
+    },
+    {
+      "source_key": "bbs.erp.politica.api",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Política transversal expresamente aprobada.",
+          "reference": "docs/erp/POLITICAS_TRANSVERSALES.md#L7"
+        }
+      ],
+      "needs_review": true,
+      "title": "API",
+      "description": "El prefijo oficial es `/api/erp/v1`. No se conservan los contratos anteriores.",
+      "type": "nonfunctional",
+      "scope_kind": "global"
+    },
+    {
+      "source_key": "bbs.erp.politica.modulos",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Política transversal expresamente aprobada.",
+          "reference": "docs/erp/POLITICAS_TRANSVERSALES.md#L8"
+        }
+      ],
+      "needs_review": true,
+      "title": "Módulos",
+      "description": "Personas, Matrículas, Oferta académica, Asignaciones docentes y Documentos.",
+      "type": "nonfunctional",
+      "scope_kind": "global"
+    },
+    {
+      "source_key": "bbs.erp.politica.permisos",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "unchecked",
+      "evidence": [
+        {
+          "description": "Política transversal expresamente aprobada.",
+          "reference": "docs/erp/POLITICAS_TRANSVERSALES.md#L9"
+        }
+      ],
+      "needs_review": true,
+      "title": "Permisos",
+      "description": "Dirección y Administración gestionan permisos únicamente con facultad expresa, verificable y sin elevación indebida; el cargo por sí solo no autoriza operaciones sensibles.",
+      "type": "business",
+      "scope_kind": "global"
+    },
+    {
+      "source_key": "bbs.erp.politica.solicitud-cuentas",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "unchecked",
+      "evidence": [
+        {
+          "description": "Política transversal expresamente aprobada.",
+          "reference": "docs/erp/POLITICAS_TRANSVERSALES.md#L10"
+        }
+      ],
+      "needs_review": true,
+      "title": "Solicitud de cuentas",
+      "description": "Coordinación Académica, Dirección y Administración pueden solicitar cuentas según sus facultades.",
+      "type": "business",
+      "scope_kind": "global"
+    },
+    {
+      "source_key": "bbs.erp.politica.persona-cuenta",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "unchecked",
+      "evidence": [
+        {
+          "description": "Política transversal expresamente aprobada.",
+          "reference": "docs/erp/POLITICAS_TRANSVERSALES.md#L11"
+        }
+      ],
+      "needs_review": true,
+      "title": "Persona y cuenta",
+      "description": "Una persona puede existir institucionalmente sin una cuenta de acceso.",
+      "type": "business",
+      "scope_kind": "global"
+    },
+    {
+      "source_key": "bbs.erp.politica.acceso-erp",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "unchecked",
+      "evidence": [
+        {
+          "description": "Política transversal expresamente aprobada.",
+          "reference": "docs/erp/POLITICAS_TRANSVERSALES.md#L12"
+        }
+      ],
+      "needs_review": true,
+      "title": "Acceso al ERP",
+      "description": "El ERP será utilizado por docentes y personal institucional. Estudiantes y apoderados no tendrán acceso directo al ERP.",
+      "type": "business",
+      "scope_kind": "global"
+    },
+    {
+      "source_key": "bbs.erp.politica.condiciones-roles",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "unchecked",
+      "evidence": [
+        {
+          "description": "Política transversal expresamente aprobada.",
+          "reference": "docs/erp/POLITICAS_TRANSVERSALES.md#L13"
+        }
+      ],
+      "needs_review": true,
+      "title": "Condiciones y roles",
+      "description": "Las condiciones institucionales de una persona no equivalen a roles de seguridad ni conceden por sí mismas permisos de acceso.",
+      "type": "business",
+      "scope_kind": "global"
+    },
+    {
+      "source_key": "bbs.erp.politica.suspension",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Política transversal expresamente aprobada.",
+          "reference": "docs/erp/POLITICAS_TRANSVERSALES.md#L14"
+        }
+      ],
+      "needs_review": true,
+      "title": "Suspensión",
+      "description": "Una cuenta suspendida no tiene acceso operativo y conserva su historial.",
+      "type": "business",
+      "scope_kind": "global"
+    },
+    {
+      "source_key": "bbs.erp.politica.matriz-permisos",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "unchecked",
+      "evidence": [
+        {
+          "description": "Política transversal expresamente aprobada.",
+          "reference": "docs/erp/POLITICAS_TRANSVERSALES.md#L15"
+        }
+      ],
+      "needs_review": true,
+      "title": "Matriz de permisos",
+      "description": "Su futura interfaz será clara, accesible y enfocada en la experiencia del usuario.",
+      "type": "business",
+      "scope_kind": "global"
+    },
+    {
+      "source_key": "bbs.behavior.identidad.autenticacion",
+      "provenance": "inferred_code",
+      "documentation_status": "missing",
+      "implementation_status": "evidenced",
+      "evidence": [
+        {
+          "description": "Comportamiento inferido de ruta o controlador; no acredita aprobación funcional.",
+          "reference": "services/identidad/src/main/java/pe/boston/identidad/AccesoController.java#L47"
+        }
+      ],
+      "needs_review": true,
+      "title": "Autenticación institucional",
+      "type": "functional",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "identidad.acceso"
+        }
+      ],
+      "description": "Capacidad observada en código; su política funcional vigente requiere revisión."
+    },
+    {
+      "source_key": "bbs.behavior.identidad.cuentas",
+      "provenance": "inferred_code",
+      "documentation_status": "missing",
+      "implementation_status": "evidenced",
+      "evidence": [
+        {
+          "description": "Comportamiento inferido de ruta o controlador; no acredita aprobación funcional.",
+          "reference": "services/identidad/src/main/java/pe/boston/identidad/CuentasController.java#L45"
+        }
+      ],
+      "needs_review": true,
+      "title": "Administración de cuentas",
+      "type": "functional",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "identidad.cuentas"
+        }
+      ],
+      "description": "Capacidad observada en código; su política funcional vigente requiere revisión."
+    },
+    {
+      "source_key": "bbs.behavior.aula.cursos",
+      "provenance": "inferred_code",
+      "documentation_status": "missing",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Comportamiento inferido de ruta o controlador; no acredita aprobación funcional.",
+          "reference": "apps/aula/api/src/main/java/pe/boston/aula/CursosController.java#L11"
+        }
+      ],
+      "needs_review": true,
+      "title": "Consultar cursos del Aula",
+      "type": "functional",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "aula.cursos"
+        }
+      ],
+      "description": "Capacidad observada en código; su política funcional vigente requiere revisión."
+    },
+    {
+      "source_key": "bbs.behavior.aula.materiales",
+      "provenance": "inferred_code",
+      "documentation_status": "missing",
+      "implementation_status": "evidenced",
+      "evidence": [
+        {
+          "description": "Comportamiento inferido de ruta o controlador; no acredita aprobación funcional.",
+          "reference": "apps/aula/api/src/main/java/pe/boston/aula/MaterialesController.java#L44"
+        }
+      ],
+      "needs_review": true,
+      "title": "Publicar material",
+      "type": "functional",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "aula.materiales"
+        }
+      ],
+      "description": "Capacidad observada en código; su política funcional vigente requiere revisión."
+    },
+    {
+      "source_key": "bbs.behavior.aula.clases",
+      "provenance": "inferred_code",
+      "documentation_status": "missing",
+      "implementation_status": "evidenced",
+      "evidence": [
+        {
+          "description": "Comportamiento inferido de ruta o controlador; no acredita aprobación funcional.",
+          "reference": "apps/aula/api/src/main/java/pe/boston/aula/OperacionesController.java#L38"
+        }
+      ],
+      "needs_review": true,
+      "title": "Programar clase virtual",
+      "type": "functional",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "aula.clases"
+        }
+      ],
+      "description": "Capacidad observada en código; su política funcional vigente requiere revisión."
+    },
+    {
+      "source_key": "bbs.behavior.aula.grabaciones",
+      "provenance": "inferred_code",
+      "documentation_status": "missing",
+      "implementation_status": "evidenced",
+      "evidence": [
+        {
+          "description": "Comportamiento inferido de ruta o controlador; no acredita aprobación funcional.",
+          "reference": "apps/aula/api/src/main/java/pe/boston/aula/GrabacionesController.java#L9"
+        }
+      ],
+      "needs_review": true,
+      "title": "Gestionar grabación externa",
+      "type": "functional",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "aula.grabaciones"
+        }
+      ],
+      "description": "Capacidad observada en código; su política funcional vigente requiere revisión."
+    },
+    {
+      "source_key": "bbs.behavior.aula.tareas",
+      "provenance": "inferred_code",
+      "documentation_status": "missing",
+      "implementation_status": "evidenced",
+      "evidence": [
+        {
+          "description": "Comportamiento inferido de ruta o controlador; no acredita aprobación funcional.",
+          "reference": "apps/aula/api/src/main/java/pe/boston/aula/CursosController.java#L24"
+        }
+      ],
+      "needs_review": true,
+      "title": "Publicar tarea",
+      "type": "functional",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "aula.tareas"
+        }
+      ],
+      "description": "Capacidad observada en código; su política funcional vigente requiere revisión."
+    },
+    {
+      "source_key": "bbs.behavior.aula.entregas",
+      "provenance": "inferred_code",
+      "documentation_status": "missing",
+      "implementation_status": "evidenced",
+      "evidence": [
+        {
+          "description": "Comportamiento inferido de ruta o controlador; no acredita aprobación funcional.",
+          "reference": "apps/aula/api/src/main/java/pe/boston/aula/CursosController.java#L34"
+        }
+      ],
+      "needs_review": true,
+      "title": "Registrar entrega de tarea",
+      "type": "functional",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "aula.tareas"
+        }
+      ],
+      "description": "Capacidad observada en código; su política funcional vigente requiere revisión."
+    },
+    {
+      "source_key": "bbs.behavior.aula.notas",
+      "provenance": "inferred_code",
+      "documentation_status": "missing",
+      "implementation_status": "evidenced",
+      "evidence": [
+        {
+          "description": "Comportamiento inferido de ruta o controlador; no acredita aprobación funcional.",
+          "reference": "apps/aula/api/src/main/java/pe/boston/aula/CursosController.java#L42"
+        }
+      ],
+      "needs_review": true,
+      "title": "Publicar calificación de actividad",
+      "type": "functional",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "aula.notas"
+        }
+      ],
+      "description": "Capacidad observada en código; su política funcional vigente requiere revisión."
+    },
+    {
+      "source_key": "bbs.behavior.aula.mensajes",
+      "provenance": "inferred_code",
+      "documentation_status": "missing",
+      "implementation_status": "evidenced",
+      "evidence": [
+        {
+          "description": "Comportamiento inferido de ruta o controlador; no acredita aprobación funcional.",
+          "reference": "apps/aula/api/src/main/java/pe/boston/aula/MensajesController.java#L91"
+        }
+      ],
+      "needs_review": true,
+      "title": "Enviar mensaje",
+      "type": "functional",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "aula.mensajeria"
+        }
+      ],
+      "description": "Capacidad observada en código; su política funcional vigente requiere revisión."
+    },
+    {
+      "source_key": "bbs.behavior.aula.pagos",
+      "provenance": "inferred_code",
+      "documentation_status": "missing",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Comportamiento inferido de ruta o controlador; no acredita aprobación funcional.",
+          "reference": "apps/aula/api/src/main/java/pe/boston/aula/OperacionesController.java#L64"
+        }
+      ],
+      "needs_review": true,
+      "title": "Consultar pagos en Aula",
+      "type": "functional",
+      "scope_kind": "module",
+      "module_participation": [
+        {
+          "module_key": "aula.pagos"
+        }
+      ],
+      "description": "Capacidad observada en código; su política funcional vigente requiere revisión."
+    }
+  ],
+  "use_cases": [
+    {
+      "source_key": "bbs.erp.personas.CU-PER-01",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Caso de uso aprobado; flujo y criterios se detallan en la misma especificación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L99"
+        },
+        {
+          "description": "Flujo y criterio de aceptación documentados.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L111"
+        }
+      ],
+      "needs_review": true,
+      "original_code": "CU-PER-01",
+      "name": "Registrar persona.",
+      "primary_actor_key": "actor.direccion",
+      "module_keys": [
+        "erp.personas"
+      ],
+      "secondary_actor_keys": [
+        "actor.administracion",
+        "actor.coordinacion"
+      ],
+      "main_flow": [
+        "Elegir condición, completar datos exigibles y documento; alternativamente, estudiante real con sustento provisional admitido. Apoderado inicial exige vínculo válido en el mismo commit. Una solicitud preliminar incompleta queda en Matrículas."
+      ],
+      "acceptance": [
+        "Falta de condición, identificación o contacto exigido: error y rollback. Documento asociado vigente o históricamente a otra identidad: conflicto, sin nueva persona. El UUID puede generarse antes; el registro solo queda persistido tras commit correcto."
+      ],
+      "requirement_keys": [
+        "bbs.erp.personas.RF-PER-001",
+        "bbs.erp.personas.RF-PER-003",
+        "bbs.erp.personas.RI-PER-001",
+        "bbs.erp.personas.RI-PER-007",
+        "bbs.erp.personas.RI-PER-013",
+        "bbs.erp.personas.RI-PER-035",
+        "bbs.erp.personas.RI-PER-036"
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.CU-PER-02",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Caso de uso aprobado; flujo y criterios se detallan en la misma especificación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L100"
+        },
+        {
+          "description": "Flujo y criterio de aceptación documentados.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L112"
+        }
+      ],
+      "needs_review": true,
+      "original_code": "CU-PER-02",
+      "name": "Buscar persona.",
+      "primary_actor_key": "actor.coordinacion",
+      "module_keys": [
+        "erp.personas"
+      ],
+      "main_flow": [
+        "Buscar por nombre, apellido o documento, filtrar condición y vigencia, paginar."
+      ],
+      "acceptance": [
+        "Sin ámbito: 403. No coincidentes: lista vacía. La similitud no fusiona ni altera registros."
+      ],
+      "requirement_keys": [
+        "bbs.erp.personas.RF-PER-002",
+        "bbs.erp.personas.RI-PER-014",
+        "bbs.erp.personas.RI-PER-015",
+        "bbs.erp.personas.RI-PER-024",
+        "bbs.erp.personas.RI-PER-037"
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.CU-PER-03",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Caso de uso aprobado; flujo y criterios se detallan en la misma especificación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L101"
+        },
+        {
+          "description": "Flujo y criterio de aceptación documentados.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L113"
+        }
+      ],
+      "needs_review": true,
+      "original_code": "CU-PER-03",
+      "name": "Editar persona.",
+      "primary_actor_key": "actor.direccion",
+      "module_keys": [
+        "erp.personas"
+      ],
+      "secondary_actor_keys": [
+        "actor.administracion",
+        "actor.coordinacion"
+      ],
+      "main_flow": [
+        "Corregir datos comunes o contacto; documento nuevo cierra principal anterior, regulariza provisional y conserva UUID. Rectificar excepcionalmente una asociación documental errónea con responsable, fecha, motivo y evidencia, sin fusionar personas."
+      ],
+      "acceptance": [
+        "Solo Dirección/Administración con facultad expresa corrige identidad; Docente propio y Coordinación con permiso pueden editar contacto dentro de su alcance. Un documento asociado a otra identidad se rechaza ordinariamente, incluso si es histórico."
+      ],
+      "requirement_keys": [
+        "bbs.erp.personas.RF-PER-004",
+        "bbs.erp.personas.RI-PER-011",
+        "bbs.erp.personas.RI-PER-013",
+        "bbs.erp.personas.RI-PER-016",
+        "bbs.erp.personas.RI-PER-025"
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.CU-PER-04",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Caso de uso aprobado; flujo y criterios se detallan en la misma especificación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L102"
+        },
+        {
+          "description": "Flujo y criterio de aceptación documentados.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L114"
+        }
+      ],
+      "needs_review": true,
+      "original_code": "CU-PER-04",
+      "name": "Incorporar condición institucional.",
+      "primary_actor_key": "actor.direccion",
+      "module_keys": [
+        "erp.personas"
+      ],
+      "secondary_actor_keys": [
+        "actor.administracion",
+        "actor.coordinacion"
+      ],
+      "main_flow": [
+        "Añadir condición a persona existente y comprobar datos adicionales; APODERADO se deriva de vínculos."
+      ],
+      "acceptance": [
+        "Condición ya activa: 409. Contacto insuficiente: 400. Histórico anterior permanece al reactivar."
+      ],
+      "requirement_keys": [
+        "bbs.erp.personas.RF-PER-005",
+        "bbs.erp.personas.RF-PER-008",
+        "bbs.erp.personas.RI-PER-002",
+        "bbs.erp.personas.RI-PER-003",
+        "bbs.erp.personas.RI-PER-018",
+        "bbs.erp.personas.RI-PER-029"
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.CU-PER-05",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Caso de uso aprobado; flujo y criterios se detallan en la misma especificación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L103"
+        },
+        {
+          "description": "Flujo y criterio de aceptación documentados.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L115"
+        }
+      ],
+      "needs_review": true,
+      "original_code": "CU-PER-05",
+      "name": "Vincular familiar o responsable.",
+      "primary_actor_key": "actor.coordinacion",
+      "module_keys": [
+        "erp.personas"
+      ],
+      "secondary_actor_keys": [
+        "actor.direccion",
+        "actor.administracion"
+      ],
+      "main_flow": [
+        "Registrar parentesco, contacto autorizado o apoderamiento según alcance expreso; para no familiar, comprobar autorización verbal o por otro medio verificable y guardar otorgante, medio, fecha/hora, verificador, alcance, vínculo y referencia cuando corresponda. Modificar o revocar cada autorización con historial."
+      ],
+      "acceptance": [
+        "Duplicado vigente: conflicto. Falta de facultad comprobada: no activar. No inferir representación legal ni permitir gestiones fuera del alcance; varios apoderados pueden coexistir y cerrar uno no afecta otros."
+      ],
+      "requirement_keys": [
+        "bbs.erp.personas.RF-PER-006",
+        "bbs.erp.personas.RI-PER-019",
+        "bbs.erp.personas.RI-PER-020",
+        "bbs.erp.personas.RI-PER-027",
+        "bbs.erp.personas.RI-PER-028",
+        "bbs.erp.personas.RI-PER-031",
+        "bbs.erp.personas.RI-PER-034"
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.CU-PER-06",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Caso de uso aprobado; flujo y criterios se detallan en la misma especificación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L104"
+        },
+        {
+          "description": "Flujo y criterio de aceptación documentados.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L116"
+        }
+      ],
+      "needs_review": true,
+      "original_code": "CU-PER-06",
+      "name": "Consultar ficha personal.",
+      "primary_actor_key": "actor.coordinacion",
+      "module_keys": [
+        "erp.personas"
+      ],
+      "main_flow": [
+        "Abrir ficha con identidad, documentos, condiciones, parentescos y apoderamientos históricos."
+      ],
+      "acceptance": [
+        "Sin permiso sobre recurso: 403; UUID inexistente: 404. No se muestra historial de valores personales en eventos."
+      ],
+      "requirement_keys": [
+        "bbs.erp.personas.RF-PER-007",
+        "bbs.erp.personas.RI-PER-001",
+        "bbs.erp.personas.RI-PER-022",
+        "bbs.erp.personas.RI-PER-037"
+      ]
+    },
+    {
+      "source_key": "bbs.erp.personas.CU-PER-07",
+      "provenance": "approved_document",
+      "documentation_status": "complete",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Caso de uso aprobado; flujo y criterios se detallan en la misma especificación.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L105"
+        },
+        {
+          "description": "Flujo y criterio de aceptación documentados.",
+          "reference": "docs/erp/modulos/personas/ESPECIFICACION.md#L117"
+        }
+      ],
+      "needs_review": true,
+      "original_code": "CU-PER-07",
+      "name": "Desactivar o reactivar condición institucional.",
+      "primary_actor_key": "actor.direccion",
+      "module_keys": [
+        "erp.personas"
+      ],
+      "secondary_actor_keys": [
+        "actor.administracion",
+        "actor.coordinacion"
+      ],
+      "main_flow": [
+        "Desactivar condición con motivo o reactivar creando un nuevo período; apoderamiento se cierra de forma independiente."
+      ],
+      "acceptance": [
+        "Períodos no se superponen; cierre con apoderamiento incompatible se rechaza y hace rollback."
+      ],
+      "requirement_keys": [
+        "bbs.erp.personas.RF-PER-008",
+        "bbs.erp.personas.RI-PER-003",
+        "bbs.erp.personas.RI-PER-004",
+        "bbs.erp.personas.RI-PER-005",
+        "bbs.erp.personas.RI-PER-018",
+        "bbs.erp.personas.RI-PER-032"
+      ]
+    },
+    {
+      "source_key": "bbs.use_case.identidad.autenticacion",
+      "provenance": "inferred_code",
+      "documentation_status": "missing",
+      "implementation_status": "evidenced",
+      "evidence": [
+        {
+          "description": "Comportamiento inferido de ruta o controlador; no acredita aprobación funcional.",
+          "reference": "services/identidad/src/main/java/pe/boston/identidad/AccesoController.java#L47"
+        }
+      ],
+      "needs_review": true,
+      "name": "Autenticación institucional",
+      "primary_actor_key": "actor.direccion",
+      "module_keys": [
+        "identidad.acceso"
+      ],
+      "requirement_keys": [
+        "bbs.behavior.identidad.autenticacion"
+      ]
+    },
+    {
+      "source_key": "bbs.use_case.identidad.cuentas",
+      "provenance": "inferred_code",
+      "documentation_status": "missing",
+      "implementation_status": "evidenced",
+      "evidence": [
+        {
+          "description": "Comportamiento inferido de ruta o controlador; no acredita aprobación funcional.",
+          "reference": "services/identidad/src/main/java/pe/boston/identidad/CuentasController.java#L45"
+        }
+      ],
+      "needs_review": true,
+      "name": "Administración de cuentas",
+      "primary_actor_key": "actor.administracion",
+      "module_keys": [
+        "identidad.cuentas"
+      ],
+      "requirement_keys": [
+        "bbs.behavior.identidad.cuentas"
+      ]
+    },
+    {
+      "source_key": "bbs.use_case.aula.cursos",
+      "provenance": "inferred_code",
+      "documentation_status": "missing",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Comportamiento inferido de ruta o controlador; no acredita aprobación funcional.",
+          "reference": "apps/aula/api/src/main/java/pe/boston/aula/CursosController.java#L11"
+        }
+      ],
+      "needs_review": true,
+      "name": "Consultar cursos del Aula",
+      "primary_actor_key": "actor.estudiante",
+      "module_keys": [
+        "aula.cursos"
+      ],
+      "requirement_keys": [
+        "bbs.behavior.aula.cursos"
+      ]
+    },
+    {
+      "source_key": "bbs.use_case.aula.materiales",
+      "provenance": "inferred_code",
+      "documentation_status": "missing",
+      "implementation_status": "evidenced",
+      "evidence": [
+        {
+          "description": "Comportamiento inferido de ruta o controlador; no acredita aprobación funcional.",
+          "reference": "apps/aula/api/src/main/java/pe/boston/aula/MaterialesController.java#L44"
+        }
+      ],
+      "needs_review": true,
+      "name": "Publicar material",
+      "primary_actor_key": "actor.docente",
+      "module_keys": [
+        "aula.materiales"
+      ],
+      "requirement_keys": [
+        "bbs.behavior.aula.materiales"
+      ]
+    },
+    {
+      "source_key": "bbs.use_case.aula.clases",
+      "provenance": "inferred_code",
+      "documentation_status": "missing",
+      "implementation_status": "evidenced",
+      "evidence": [
+        {
+          "description": "Comportamiento inferido de ruta o controlador; no acredita aprobación funcional.",
+          "reference": "apps/aula/api/src/main/java/pe/boston/aula/OperacionesController.java#L38"
+        }
+      ],
+      "needs_review": true,
+      "name": "Programar clase virtual",
+      "primary_actor_key": "actor.docente",
+      "module_keys": [
+        "aula.clases"
+      ],
+      "requirement_keys": [
+        "bbs.behavior.aula.clases"
+      ]
+    },
+    {
+      "source_key": "bbs.use_case.aula.grabaciones",
+      "provenance": "inferred_code",
+      "documentation_status": "missing",
+      "implementation_status": "evidenced",
+      "evidence": [
+        {
+          "description": "Comportamiento inferido de ruta o controlador; no acredita aprobación funcional.",
+          "reference": "apps/aula/api/src/main/java/pe/boston/aula/GrabacionesController.java#L9"
+        }
+      ],
+      "needs_review": true,
+      "name": "Gestionar grabación externa",
+      "primary_actor_key": "actor.docente",
+      "module_keys": [
+        "aula.grabaciones"
+      ],
+      "requirement_keys": [
+        "bbs.behavior.aula.grabaciones"
+      ]
+    },
+    {
+      "source_key": "bbs.use_case.aula.tareas",
+      "provenance": "inferred_code",
+      "documentation_status": "missing",
+      "implementation_status": "evidenced",
+      "evidence": [
+        {
+          "description": "Comportamiento inferido de ruta o controlador; no acredita aprobación funcional.",
+          "reference": "apps/aula/api/src/main/java/pe/boston/aula/CursosController.java#L24"
+        }
+      ],
+      "needs_review": true,
+      "name": "Publicar tarea",
+      "primary_actor_key": "actor.docente",
+      "module_keys": [
+        "aula.tareas"
+      ],
+      "requirement_keys": [
+        "bbs.behavior.aula.tareas"
+      ]
+    },
+    {
+      "source_key": "bbs.use_case.aula.entregas",
+      "provenance": "inferred_code",
+      "documentation_status": "missing",
+      "implementation_status": "evidenced",
+      "evidence": [
+        {
+          "description": "Comportamiento inferido de ruta o controlador; no acredita aprobación funcional.",
+          "reference": "apps/aula/api/src/main/java/pe/boston/aula/CursosController.java#L34"
+        }
+      ],
+      "needs_review": true,
+      "name": "Registrar entrega de tarea",
+      "primary_actor_key": "actor.estudiante",
+      "module_keys": [
+        "aula.tareas"
+      ],
+      "requirement_keys": [
+        "bbs.behavior.aula.entregas"
+      ]
+    },
+    {
+      "source_key": "bbs.use_case.aula.notas",
+      "provenance": "inferred_code",
+      "documentation_status": "missing",
+      "implementation_status": "evidenced",
+      "evidence": [
+        {
+          "description": "Comportamiento inferido de ruta o controlador; no acredita aprobación funcional.",
+          "reference": "apps/aula/api/src/main/java/pe/boston/aula/CursosController.java#L42"
+        }
+      ],
+      "needs_review": true,
+      "name": "Publicar calificación de actividad",
+      "primary_actor_key": "actor.docente",
+      "module_keys": [
+        "aula.notas"
+      ],
+      "requirement_keys": [
+        "bbs.behavior.aula.notas"
+      ]
+    },
+    {
+      "source_key": "bbs.use_case.aula.mensajes",
+      "provenance": "inferred_code",
+      "documentation_status": "missing",
+      "implementation_status": "evidenced",
+      "evidence": [
+        {
+          "description": "Comportamiento inferido de ruta o controlador; no acredita aprobación funcional.",
+          "reference": "apps/aula/api/src/main/java/pe/boston/aula/MensajesController.java#L91"
+        }
+      ],
+      "needs_review": true,
+      "name": "Enviar mensaje",
+      "primary_actor_key": "actor.docente",
+      "module_keys": [
+        "aula.mensajeria"
+      ],
+      "requirement_keys": [
+        "bbs.behavior.aula.mensajes"
+      ]
+    },
+    {
+      "source_key": "bbs.use_case.aula.pagos",
+      "provenance": "inferred_code",
+      "documentation_status": "missing",
+      "implementation_status": "partial",
+      "evidence": [
+        {
+          "description": "Comportamiento inferido de ruta o controlador; no acredita aprobación funcional.",
+          "reference": "apps/aula/api/src/main/java/pe/boston/aula/OperacionesController.java#L64"
+        }
+      ],
+      "needs_review": true,
+      "name": "Consultar pagos en Aula",
+      "primary_actor_key": "actor.estudiante",
+      "module_keys": [
+        "aula.pagos"
+      ],
+      "requirement_keys": [
+        "bbs.behavior.aula.pagos"
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RF-PER-001",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RF-PER-002",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RF-PER-003",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RF-PER-004",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RF-PER-005",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RF-PER-006",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RF-PER-007",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RF-PER-008",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RF-PER-009",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RNF-PER-001",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RNF-PER-002",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RNF-PER-003",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RNF-PER-004",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RNF-PER-005",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RNF-PER-006",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RI-PER-001",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RI-PER-002",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RI-PER-003",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RI-PER-004",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RI-PER-005",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RI-PER-006",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RI-PER-006",
+      "to_type": "module",
+      "to_key": "erp.matriculas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RI-PER-007",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RI-PER-008",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RI-PER-009",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RI-PER-010",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RI-PER-011",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RI-PER-012",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RI-PER-013",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RI-PER-014",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RI-PER-015",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RI-PER-016",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RI-PER-017",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RI-PER-018",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RI-PER-019",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RI-PER-020",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RI-PER-021",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RI-PER-022",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RI-PER-023",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RI-PER-024",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RI-PER-025",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RI-PER-026",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RI-PER-027",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RI-PER-028",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RI-PER-029",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RI-PER-030",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RI-PER-031",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RI-PER-032",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RI-PER-033",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RI-PER-033",
+      "to_type": "module",
+      "to_key": "erp.documentos",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RI-PER-034",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RI-PER-035",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RI-PER-036",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RI-PER-037",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.erp.personas.RI-PER-037",
+      "to_type": "module",
+      "to_key": "erp.asignaciones",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.behavior.identidad.autenticacion",
+      "to_type": "module",
+      "to_key": "identidad.acceso",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.behavior.identidad.cuentas",
+      "to_type": "module",
+      "to_key": "identidad.cuentas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.behavior.aula.cursos",
+      "to_type": "module",
+      "to_key": "aula.cursos",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.behavior.aula.materiales",
+      "to_type": "module",
+      "to_key": "aula.materiales",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.behavior.aula.clases",
+      "to_type": "module",
+      "to_key": "aula.clases",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.behavior.aula.grabaciones",
+      "to_type": "module",
+      "to_key": "aula.grabaciones",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.behavior.aula.tareas",
+      "to_type": "module",
+      "to_key": "aula.tareas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.behavior.aula.entregas",
+      "to_type": "module",
+      "to_key": "aula.tareas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.behavior.aula.notas",
+      "to_type": "module",
+      "to_key": "aula.notas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.behavior.aula.mensajes",
+      "to_type": "module",
+      "to_key": "aula.mensajeria",
+      "kind": "participates"
+    },
+    {
+      "from_type": "requirement",
+      "from_key": "bbs.behavior.aula.pagos",
+      "to_type": "module",
+      "to_key": "aula.pagos",
+      "kind": "participates"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.erp.personas.CU-PER-01",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.erp.personas.CU-PER-01",
+      "to_type": "requirement",
+      "to_key": "bbs.erp.personas.RF-PER-001",
+      "kind": "covers"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.erp.personas.CU-PER-01",
+      "to_type": "requirement",
+      "to_key": "bbs.erp.personas.RF-PER-003",
+      "kind": "covers"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.erp.personas.CU-PER-01",
+      "to_type": "requirement",
+      "to_key": "bbs.erp.personas.RI-PER-001",
+      "kind": "covers"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.erp.personas.CU-PER-01",
+      "to_type": "requirement",
+      "to_key": "bbs.erp.personas.RI-PER-007",
+      "kind": "covers"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.erp.personas.CU-PER-01",
+      "to_type": "requirement",
+      "to_key": "bbs.erp.personas.RI-PER-013",
+      "kind": "covers"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.erp.personas.CU-PER-01",
+      "to_type": "requirement",
+      "to_key": "bbs.erp.personas.RI-PER-035",
+      "kind": "covers"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.erp.personas.CU-PER-01",
+      "to_type": "requirement",
+      "to_key": "bbs.erp.personas.RI-PER-036",
+      "kind": "covers"
+    },
+    {
+      "from_type": "actor",
+      "from_key": "actor.direccion",
+      "to_type": "use_case",
+      "to_key": "bbs.erp.personas.CU-PER-01",
+      "kind": "participates"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.erp.personas.CU-PER-02",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.erp.personas.CU-PER-02",
+      "to_type": "requirement",
+      "to_key": "bbs.erp.personas.RF-PER-002",
+      "kind": "covers"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.erp.personas.CU-PER-02",
+      "to_type": "requirement",
+      "to_key": "bbs.erp.personas.RI-PER-014",
+      "kind": "covers"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.erp.personas.CU-PER-02",
+      "to_type": "requirement",
+      "to_key": "bbs.erp.personas.RI-PER-015",
+      "kind": "covers"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.erp.personas.CU-PER-02",
+      "to_type": "requirement",
+      "to_key": "bbs.erp.personas.RI-PER-024",
+      "kind": "covers"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.erp.personas.CU-PER-02",
+      "to_type": "requirement",
+      "to_key": "bbs.erp.personas.RI-PER-037",
+      "kind": "covers"
+    },
+    {
+      "from_type": "actor",
+      "from_key": "actor.coordinacion",
+      "to_type": "use_case",
+      "to_key": "bbs.erp.personas.CU-PER-02",
+      "kind": "participates"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.erp.personas.CU-PER-03",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.erp.personas.CU-PER-03",
+      "to_type": "requirement",
+      "to_key": "bbs.erp.personas.RF-PER-004",
+      "kind": "covers"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.erp.personas.CU-PER-03",
+      "to_type": "requirement",
+      "to_key": "bbs.erp.personas.RI-PER-011",
+      "kind": "covers"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.erp.personas.CU-PER-03",
+      "to_type": "requirement",
+      "to_key": "bbs.erp.personas.RI-PER-013",
+      "kind": "covers"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.erp.personas.CU-PER-03",
+      "to_type": "requirement",
+      "to_key": "bbs.erp.personas.RI-PER-016",
+      "kind": "covers"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.erp.personas.CU-PER-03",
+      "to_type": "requirement",
+      "to_key": "bbs.erp.personas.RI-PER-025",
+      "kind": "covers"
+    },
+    {
+      "from_type": "actor",
+      "from_key": "actor.direccion",
+      "to_type": "use_case",
+      "to_key": "bbs.erp.personas.CU-PER-03",
+      "kind": "participates"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.erp.personas.CU-PER-04",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.erp.personas.CU-PER-04",
+      "to_type": "requirement",
+      "to_key": "bbs.erp.personas.RF-PER-005",
+      "kind": "covers"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.erp.personas.CU-PER-04",
+      "to_type": "requirement",
+      "to_key": "bbs.erp.personas.RF-PER-008",
+      "kind": "covers"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.erp.personas.CU-PER-04",
+      "to_type": "requirement",
+      "to_key": "bbs.erp.personas.RI-PER-002",
+      "kind": "covers"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.erp.personas.CU-PER-04",
+      "to_type": "requirement",
+      "to_key": "bbs.erp.personas.RI-PER-003",
+      "kind": "covers"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.erp.personas.CU-PER-04",
+      "to_type": "requirement",
+      "to_key": "bbs.erp.personas.RI-PER-018",
+      "kind": "covers"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.erp.personas.CU-PER-04",
+      "to_type": "requirement",
+      "to_key": "bbs.erp.personas.RI-PER-029",
+      "kind": "covers"
+    },
+    {
+      "from_type": "actor",
+      "from_key": "actor.direccion",
+      "to_type": "use_case",
+      "to_key": "bbs.erp.personas.CU-PER-04",
+      "kind": "participates"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.erp.personas.CU-PER-05",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.erp.personas.CU-PER-05",
+      "to_type": "requirement",
+      "to_key": "bbs.erp.personas.RF-PER-006",
+      "kind": "covers"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.erp.personas.CU-PER-05",
+      "to_type": "requirement",
+      "to_key": "bbs.erp.personas.RI-PER-019",
+      "kind": "covers"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.erp.personas.CU-PER-05",
+      "to_type": "requirement",
+      "to_key": "bbs.erp.personas.RI-PER-020",
+      "kind": "covers"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.erp.personas.CU-PER-05",
+      "to_type": "requirement",
+      "to_key": "bbs.erp.personas.RI-PER-027",
+      "kind": "covers"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.erp.personas.CU-PER-05",
+      "to_type": "requirement",
+      "to_key": "bbs.erp.personas.RI-PER-028",
+      "kind": "covers"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.erp.personas.CU-PER-05",
+      "to_type": "requirement",
+      "to_key": "bbs.erp.personas.RI-PER-031",
+      "kind": "covers"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.erp.personas.CU-PER-05",
+      "to_type": "requirement",
+      "to_key": "bbs.erp.personas.RI-PER-034",
+      "kind": "covers"
+    },
+    {
+      "from_type": "actor",
+      "from_key": "actor.coordinacion",
+      "to_type": "use_case",
+      "to_key": "bbs.erp.personas.CU-PER-05",
+      "kind": "participates"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.erp.personas.CU-PER-06",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.erp.personas.CU-PER-06",
+      "to_type": "requirement",
+      "to_key": "bbs.erp.personas.RF-PER-007",
+      "kind": "covers"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.erp.personas.CU-PER-06",
+      "to_type": "requirement",
+      "to_key": "bbs.erp.personas.RI-PER-001",
+      "kind": "covers"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.erp.personas.CU-PER-06",
+      "to_type": "requirement",
+      "to_key": "bbs.erp.personas.RI-PER-022",
+      "kind": "covers"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.erp.personas.CU-PER-06",
+      "to_type": "requirement",
+      "to_key": "bbs.erp.personas.RI-PER-037",
+      "kind": "covers"
+    },
+    {
+      "from_type": "actor",
+      "from_key": "actor.coordinacion",
+      "to_type": "use_case",
+      "to_key": "bbs.erp.personas.CU-PER-06",
+      "kind": "participates"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.erp.personas.CU-PER-07",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.erp.personas.CU-PER-07",
+      "to_type": "requirement",
+      "to_key": "bbs.erp.personas.RF-PER-008",
+      "kind": "covers"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.erp.personas.CU-PER-07",
+      "to_type": "requirement",
+      "to_key": "bbs.erp.personas.RI-PER-003",
+      "kind": "covers"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.erp.personas.CU-PER-07",
+      "to_type": "requirement",
+      "to_key": "bbs.erp.personas.RI-PER-004",
+      "kind": "covers"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.erp.personas.CU-PER-07",
+      "to_type": "requirement",
+      "to_key": "bbs.erp.personas.RI-PER-005",
+      "kind": "covers"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.erp.personas.CU-PER-07",
+      "to_type": "requirement",
+      "to_key": "bbs.erp.personas.RI-PER-018",
+      "kind": "covers"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.erp.personas.CU-PER-07",
+      "to_type": "requirement",
+      "to_key": "bbs.erp.personas.RI-PER-032",
+      "kind": "covers"
+    },
+    {
+      "from_type": "actor",
+      "from_key": "actor.direccion",
+      "to_type": "use_case",
+      "to_key": "bbs.erp.personas.CU-PER-07",
+      "kind": "participates"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.use_case.identidad.autenticacion",
+      "to_type": "module",
+      "to_key": "identidad.acceso",
+      "kind": "participates"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.use_case.identidad.autenticacion",
+      "to_type": "requirement",
+      "to_key": "bbs.behavior.identidad.autenticacion",
+      "kind": "covers"
+    },
+    {
+      "from_type": "actor",
+      "from_key": "actor.direccion",
+      "to_type": "use_case",
+      "to_key": "bbs.use_case.identidad.autenticacion",
+      "kind": "participates"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.use_case.identidad.cuentas",
+      "to_type": "module",
+      "to_key": "identidad.cuentas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.use_case.identidad.cuentas",
+      "to_type": "requirement",
+      "to_key": "bbs.behavior.identidad.cuentas",
+      "kind": "covers"
+    },
+    {
+      "from_type": "actor",
+      "from_key": "actor.administracion",
+      "to_type": "use_case",
+      "to_key": "bbs.use_case.identidad.cuentas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.use_case.aula.cursos",
+      "to_type": "module",
+      "to_key": "aula.cursos",
+      "kind": "participates"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.use_case.aula.cursos",
+      "to_type": "requirement",
+      "to_key": "bbs.behavior.aula.cursos",
+      "kind": "covers"
+    },
+    {
+      "from_type": "actor",
+      "from_key": "actor.estudiante",
+      "to_type": "use_case",
+      "to_key": "bbs.use_case.aula.cursos",
+      "kind": "participates"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.use_case.aula.materiales",
+      "to_type": "module",
+      "to_key": "aula.materiales",
+      "kind": "participates"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.use_case.aula.materiales",
+      "to_type": "requirement",
+      "to_key": "bbs.behavior.aula.materiales",
+      "kind": "covers"
+    },
+    {
+      "from_type": "actor",
+      "from_key": "actor.docente",
+      "to_type": "use_case",
+      "to_key": "bbs.use_case.aula.materiales",
+      "kind": "participates"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.use_case.aula.clases",
+      "to_type": "module",
+      "to_key": "aula.clases",
+      "kind": "participates"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.use_case.aula.clases",
+      "to_type": "requirement",
+      "to_key": "bbs.behavior.aula.clases",
+      "kind": "covers"
+    },
+    {
+      "from_type": "actor",
+      "from_key": "actor.docente",
+      "to_type": "use_case",
+      "to_key": "bbs.use_case.aula.clases",
+      "kind": "participates"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.use_case.aula.grabaciones",
+      "to_type": "module",
+      "to_key": "aula.grabaciones",
+      "kind": "participates"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.use_case.aula.grabaciones",
+      "to_type": "requirement",
+      "to_key": "bbs.behavior.aula.grabaciones",
+      "kind": "covers"
+    },
+    {
+      "from_type": "actor",
+      "from_key": "actor.docente",
+      "to_type": "use_case",
+      "to_key": "bbs.use_case.aula.grabaciones",
+      "kind": "participates"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.use_case.aula.tareas",
+      "to_type": "module",
+      "to_key": "aula.tareas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.use_case.aula.tareas",
+      "to_type": "requirement",
+      "to_key": "bbs.behavior.aula.tareas",
+      "kind": "covers"
+    },
+    {
+      "from_type": "actor",
+      "from_key": "actor.docente",
+      "to_type": "use_case",
+      "to_key": "bbs.use_case.aula.tareas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.use_case.aula.entregas",
+      "to_type": "module",
+      "to_key": "aula.tareas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.use_case.aula.entregas",
+      "to_type": "requirement",
+      "to_key": "bbs.behavior.aula.entregas",
+      "kind": "covers"
+    },
+    {
+      "from_type": "actor",
+      "from_key": "actor.estudiante",
+      "to_type": "use_case",
+      "to_key": "bbs.use_case.aula.entregas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.use_case.aula.notas",
+      "to_type": "module",
+      "to_key": "aula.notas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.use_case.aula.notas",
+      "to_type": "requirement",
+      "to_key": "bbs.behavior.aula.notas",
+      "kind": "covers"
+    },
+    {
+      "from_type": "actor",
+      "from_key": "actor.docente",
+      "to_type": "use_case",
+      "to_key": "bbs.use_case.aula.notas",
+      "kind": "participates"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.use_case.aula.mensajes",
+      "to_type": "module",
+      "to_key": "aula.mensajeria",
+      "kind": "participates"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.use_case.aula.mensajes",
+      "to_type": "requirement",
+      "to_key": "bbs.behavior.aula.mensajes",
+      "kind": "covers"
+    },
+    {
+      "from_type": "actor",
+      "from_key": "actor.docente",
+      "to_type": "use_case",
+      "to_key": "bbs.use_case.aula.mensajes",
+      "kind": "participates"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.use_case.aula.pagos",
+      "to_type": "module",
+      "to_key": "aula.pagos",
+      "kind": "participates"
+    },
+    {
+      "from_type": "use_case",
+      "from_key": "bbs.use_case.aula.pagos",
+      "to_type": "requirement",
+      "to_key": "bbs.behavior.aula.pagos",
+      "kind": "covers"
+    },
+    {
+      "from_type": "actor",
+      "from_key": "actor.estudiante",
+      "to_type": "use_case",
+      "to_key": "bbs.use_case.aula.pagos",
+      "kind": "participates"
+    },
+    {
+      "from_type": "module",
+      "from_key": "erp.matriculas",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "depends",
+      "description": "Dependencia documentada o inferida; contrato funcional vigente por verificar."
+    },
+    {
+      "from_type": "module",
+      "from_key": "erp.matriculas",
+      "to_type": "module",
+      "to_key": "erp.oferta",
+      "kind": "depends",
+      "description": "Dependencia documentada o inferida; contrato funcional vigente por verificar."
+    },
+    {
+      "from_type": "module",
+      "from_key": "erp.asignaciones",
+      "to_type": "module",
+      "to_key": "erp.personas",
+      "kind": "depends",
+      "description": "Dependencia documentada o inferida; contrato funcional vigente por verificar."
+    },
+    {
+      "from_type": "module",
+      "from_key": "erp.asignaciones",
+      "to_type": "module",
+      "to_key": "erp.oferta",
+      "kind": "depends",
+      "description": "Dependencia documentada o inferida; contrato funcional vigente por verificar."
+    },
+    {
+      "from_type": "module",
+      "from_key": "aula.cursos",
+      "to_type": "module",
+      "to_key": "identidad.acceso",
+      "kind": "depends",
+      "description": "Dependencia documentada o inferida; contrato funcional vigente por verificar."
+    },
+    {
+      "from_type": "module",
+      "from_key": "aula.cursos",
+      "to_type": "module",
+      "to_key": "erp.oferta",
+      "kind": "depends",
+      "description": "Dependencia documentada o inferida; contrato funcional vigente por verificar."
+    },
+    {
+      "from_type": "module",
+      "from_key": "aula.pagos",
+      "to_type": "module",
+      "to_key": "erp.matriculas",
+      "kind": "depends",
+      "description": "Dependencia documentada o inferida; contrato funcional vigente por verificar."
+    },
+    {
+      "from_type": "module",
+      "from_key": "aula.mensajeria",
+      "to_type": "module",
+      "to_key": "identidad.cuentas",
+      "kind": "depends",
+      "description": "Dependencia documentada o inferida; contrato funcional vigente por verificar."
+    }
+  ],
+  "external_dependencies": [
+    {
+      "name": "PostgreSQL",
+      "status": "evidenced",
+      "description": "Tres bases lógicas separadas para ERP, Aula e Identidad.",
+      "evidence": [
+        {
+          "description": "Infraestructura de bases en el entorno local.",
+          "reference": "compose.yaml#L4"
+        }
+      ]
+    },
+    {
+      "name": "SeaweedFS S3 compatible",
+      "status": "evidenced",
+      "description": "Almacenamiento local de objetos utilizado por Aula.",
+      "evidence": [
+        {
+          "description": "Contenedor de almacenamiento de objetos local.",
+          "reference": "compose.yaml#L17"
+        }
+      ]
+    },
+    {
+      "name": "Enlaces HTTP(S) externos de clases y grabaciones",
+      "status": "inferred",
+      "description": "Los docentes registran referencias externas; no se acredita integración de Zoom o YouTube API.",
+      "evidence": [
+        {
+          "description": "Clase recibe enlace proporcionado por el usuario.",
+          "reference": "apps/aula/api/src/main/java/pe/boston/aula/OperacionesController.java#L38"
+        }
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "severity": "conflict",
+      "description": "El índice de Personas dice que las cinco verificaciones están En progreso, mientras ESTADO marca Requisitos Completada. ESTADO es la fuente de seguimiento más específica.",
+      "evidence": [
+        {
+          "description": "Fuente del hallazgo.",
+          "reference": "docs/erp/modulos/personas/README.md#L3"
+        }
+      ],
+      "entity_type": "module",
+      "source_key": "erp.personas"
+    },
+    {
+      "severity": "conflict",
+      "description": "La arquitectura general y el README raíz describen contratos ERP previos y sincronización ERP–Aula, mientras la base ERP actual solo publica /api/erp/v1 y declara la integración de negocio temporalmente no disponible.",
+      "evidence": [
+        {
+          "description": "Fuente del hallazgo.",
+          "reference": "docs/arquitectura/README.md#L74"
+        }
+      ],
+      "entity_type": "module",
+      "source_key": "erp.oferta"
+    },
+    {
+      "severity": "review",
+      "description": "Cuatro módulos ERP tienen especificaciones sin requisitos aprobados y paquetes vacíos; sus operaciones no deben inferirse de documentos históricos.",
+      "evidence": [
+        {
+          "description": "Fuente del hallazgo.",
+          "reference": "docs/erp/modulos/matriculas/ESPECIFICACION.md#L5"
+        }
+      ],
+      "entity_type": "module",
+      "source_key": "erp.matriculas"
+    },
+    {
+      "severity": "conflict",
+      "description": "La política RI-PER-013 impide reasignar ordinariamente documentos históricos; la restricción temporal V2 evita solapes pero permite periodos distintos entre identidades.",
+      "evidence": [
+        {
+          "description": "Fuente del hallazgo.",
+          "reference": "apps/erp/api/src/main/resources/db/migration/V2__personas.sql#L47"
+        }
+      ],
+      "entity_type": "requirement",
+      "source_key": "bbs.erp.personas.RI-PER-013"
+    },
+    {
+      "severity": "conflict",
+      "description": "El alta de Personas permite Coordinación por rol sin verificar el ámbito institucional exigido por RI-PER-024/037.",
+      "evidence": [
+        {
+          "description": "Fuente del hallazgo.",
+          "reference": "apps/erp/api/src/main/java/pe/boston/erp/personas/application/AutorizacionPersonas.java#L37"
+        }
+      ],
+      "entity_type": "requirement",
+      "source_key": "bbs.erp.personas.RI-PER-024"
+    },
+    {
+      "severity": "review",
+      "description": "La corrección de identidad se autoriza por rol de Dirección/Administración; falta facultad expresa verificable por operación.",
+      "evidence": [
+        {
+          "description": "Fuente del hallazgo.",
+          "reference": "apps/erp/api/src/main/java/pe/boston/erp/personas/application/AutorizacionPersonas.java#L50"
+        }
+      ],
+      "entity_type": "requirement",
+      "source_key": "bbs.erp.personas.RI-PER-016"
+    },
+    {
+      "severity": "review",
+      "description": "El vínculo docente–alumno y los permisos expresos no están disponibles para abrir acceso docente a fichas de alumnos asignados.",
+      "evidence": [
+        {
+          "description": "Fuente del hallazgo.",
+          "reference": "docs/erp/modulos/personas/ESTADO.md#L6"
+        }
+      ],
+      "entity_type": "requirement",
+      "source_key": "bbs.erp.personas.RI-PER-037"
+    },
+    {
+      "severity": "review",
+      "description": "Los DTO y la migración actuales no representan todos los alcances independientes, revocaciones y restricciones de contactos/apoderamientos aprobados.",
+      "evidence": [
+        {
+          "description": "Fuente del hallazgo.",
+          "reference": "docs/erp/modulos/personas/ESTADO.md#L7"
+        }
+      ],
+      "entity_type": "requirement",
+      "source_key": "bbs.erp.personas.RI-PER-019"
+    },
+    {
+      "severity": "review",
+      "description": "Las cifras de pruebas de Personas son históricas; esta extracción documental no ejecutó Maven, React, Docker ni pruebas de extremo a extremo.",
+      "evidence": [
+        {
+          "description": "Fuente del hallazgo.",
+          "reference": "docs/erp/modulos/personas/PRUEBAS.md#L5"
+        }
+      ],
+      "entity_type": "module",
+      "source_key": "erp.personas"
+    },
+    {
+      "severity": "review",
+      "description": "La consulta de pagos del Aula depende de un contrato ERP de negocio no confirmado como vigente en la base reconstruida.",
+      "evidence": [
+        {
+          "description": "Fuente del hallazgo.",
+          "reference": "docs/erp/POLITICAS_TRANSVERSALES.md#L21"
+        }
+      ],
+      "entity_type": "module",
+      "source_key": "aula.pagos"
+    },
+    {
+      "severity": "info",
+      "description": "El código de Aula y el de Identidad evidencian capacidades locales, pero su documentación de negocio detallada está en docs/historico y no equivale por sí sola a aprobación vigente.",
+      "evidence": [
+        {
+          "description": "Fuente del hallazgo.",
+          "reference": "docs/aula/README.md#L3"
+        }
+      ],
+      "entity_type": "module",
+      "source_key": "aula.cursos"
+    },
+    {
+      "severity": "review",
+      "description": "Conservación y operación de datos personales reales requieren decisiones y controles operativos adicionales antes de tratar datos reales.",
+      "evidence": [
+        {
+          "description": "Fuente del hallazgo.",
+          "reference": "docs/erp/POLITICAS_TRANSVERSALES.md#L19"
+        }
+      ],
+      "entity_type": "module",
+      "source_key": "erp.personas"
+    }
+  ]
+}

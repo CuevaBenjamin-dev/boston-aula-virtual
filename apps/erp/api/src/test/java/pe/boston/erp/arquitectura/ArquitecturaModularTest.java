@@ -10,12 +10,12 @@ import pe.boston.erp.ErpApplication;
 
 class ArquitecturaModularTest {
   @Test
-  void detectaSoloCincoModulosYVerificaSusLimites() {
+  void detectaSieteModulosYVerificaSusLimites() {
     System.setProperty("spring.modulith.detection-strategy", "explicitly-annotated");
     var modulos = ApplicationModules.of(ErpApplication.class).verify();
     Set<String> nombres = modulos.stream()
       .map(modulo -> modulo.getIdentifier().toString())
       .collect(Collectors.toSet());
-    assertEquals(Set.of("personas", "matriculas", "oferta", "asignaciones", "documentos"), nombres);
+    assertEquals(Set.of("personas", "matriculas", "oferta", "asignaciones", "asistencia", "documentos", "atencion"), nombres);
   }
 }

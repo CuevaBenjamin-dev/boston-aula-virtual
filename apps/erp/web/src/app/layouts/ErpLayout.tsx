@@ -27,7 +27,7 @@ export function ErpLayout({ sesion }: { sesion: Sesion }) {
       <header className="barra-superior">
         <div className="ruta">Boston Bilingual School <span>/ ERP</span></div>
         <h1>{actual?.nombre ?? 'ERP institucional'}<span className="punto">.</span></h1>
-        <span className="fase">BASE TÉCNICA</span>
+        <span className="fase">{sesion.rol === 'DIRECCION' ? 'DIRECCIÓN' : 'COORDINACIÓN'} · {new Date().getFullYear()}</span>
       </header>
       <main id="contenido"><Outlet /></main>
     </div>

@@ -8,7 +8,7 @@ export type Documento = { id: string; tipo: string; pais: string; numero: string
 export type CondicionRegistro = { id: string; tipo: Condicion; vigenteDesde: string; vigenteHasta: string | null; motivoDesactivacion: string | null }
 export type Parentesco = { id: string; estudianteId: string; familiarId: string; tipo: string; vigenteDesde: string; vigenteHasta: string | null }
 export type Apoderamiento = { id: string; estudianteId: string; apoderadoId: string; sinParentesco: boolean; autorizador: string | null; medio: string | null; verificadoEn: string | null; vigenteDesde: string; vigenteHasta: string | null }
-export type Persona = { id: string; nombres: string; apellidos: string; fechaNacimiento: string; sexo: string; nacionalidad: string; telefono: string | null; correo: string | null; direccion: string; documentos: Documento[]; condiciones: CondicionRegistro[]; provisional: { motivo: string; sustentoTipo: string; sustentoReferencia: string; registradaEn: string; regularizadaEn: string | null } | null; parentescos: Parentesco[]; apoderamientos: Apoderamiento[] }
+export type Persona = { id: string; nombres: string; apellidos: string; fechaNacimiento: string | null; sexo: string | null; nacionalidad: string | null; telefono: string | null; correo: string | null; direccion: string | null; documentos: Documento[]; condiciones: CondicionRegistro[]; provisional: { motivo: string; sustentoTipo: string; sustentoReferencia: string; registradaEn: string; regularizadaEn: string | null } | null; parentescos: Parentesco[]; apoderamientos: Apoderamiento[] }
 export type TipoDocumento = { codigo: string; nombre: string; patron: string | null; activo: boolean }
 
 export class ErrorApi extends Error {

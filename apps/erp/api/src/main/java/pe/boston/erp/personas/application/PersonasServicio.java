@@ -13,7 +13,7 @@ import pe.boston.erp.personas.domain.ReglasPersonas;
 import pe.boston.erp.personas.infrastructure.PersonasRepositorio;
 
 @Service
-public class PersonasServicio implements PersonasParaMatriculas {
+public class PersonasServicio implements PersonasParaMatriculas, pe.boston.erp.personas.PersonasParaAsignaciones {
   private final PersonasRepositorio repositorio;
   private final AutorizacionPersonas permisos;
   public PersonasServicio(PersonasRepositorio repositorio, AutorizacionPersonas permisos) {
@@ -40,10 +40,8 @@ public class PersonasServicio implements PersonasParaMatriculas {
     if (p == null) throw new IllegalArgumentException("Datos de persona requeridos");
     ReglasPersonas.requerido(p.nombres(),"Nombres");
     ReglasPersonas.requerido(p.apellidos(),"Apellidos");
-    ReglasPersonas.nacimiento(p.fechaNacimiento());
-    ReglasPersonas.requerido(p.sexo(),"Sexo");
-    ReglasPersonas.requerido(p.nacionalidad(),"Nacionalidad");
-    ReglasPersonas.requerido(p.direccion(),"Dirección");
+    if ("ESTUDIANTE".equals(p.condicion())) ReglasPersonas.nacimiento(p.fechaNacimiento());
+    else if (p.fechaNacimiento()!=null) ReglasPersonas.nacimiento(p.fechaNacimiento());
     ReglasPersonas.condicion(p.condicion());
     ReglasPersonas.contactos(p.condicion(),p.telefono(),p.correo());
     if ((p.documento()==null) == (p.provisional()==null))
@@ -85,6 +83,7 @@ public class PersonasServicio implements PersonasParaMatriculas {
         new ParentescoEntrada(a.estudianteId(),id,p.parentescoInicialTipo().trim()),ahora);
       vincularApoderado(new ApoderamientoEntrada(a.estudianteId(),id,a.sinParentesco(),a.autorizacion()),actor,ahora);
     } else repositorio.condicion(id,p.condicion(),ahora);
+    if ("DOCENTE".equals(p.condicion())) repositorio.solicitarProvisionDocente(id);
     repositorio.evento(id,id,"PERSONA_CREADA",actor.sub());
     return id;
   }
@@ -111,10 +110,8 @@ public class PersonasServicio implements PersonasParaMatriculas {
     if (p==null) throw new IllegalArgumentException("Datos de persona requeridos");
     ReglasPersonas.requerido(p.nombres(),"Nombres");
     ReglasPersonas.requerido(p.apellidos(),"Apellidos");
-    ReglasPersonas.nacimiento(p.fechaNacimiento());
-    ReglasPersonas.requerido(p.sexo(),"Sexo");
-    ReglasPersonas.requerido(p.nacionalidad(),"Nacionalidad");
-    ReglasPersonas.requerido(p.direccion(),"Dirección");
+    if (repositorio.condicionActiva(id,"ESTUDIANTE")) ReglasPersonas.nacimiento(p.fechaNacimiento());
+    else if (p.fechaNacimiento()!=null) ReglasPersonas.nacimiento(p.fechaNacimiento());
     repositorio.bloquear(id); repositorio.editar(id,p);
     repositorio.evento(id,id,"IDENTIDAD_CORREGIDA",actor.sub());
   }
@@ -124,7 +121,6 @@ public class PersonasServicio implements PersonasParaMatriculas {
     var actor=permisos.actor(autenticacion); permisos.contacto(actor,id);
     existe(repositorio.existe(id),"Persona no encontrada");
     if (p==null) throw new IllegalArgumentException("Datos de contacto requeridos");
-    ReglasPersonas.requerido(p.direccion(),"Dirección");
     repositorio.bloquear(id); repositorio.contacto(id,p);
     repositorio.evento(id,id,"CONTACTO_ACTUALIZADO",actor.sub());
   }
@@ -141,6 +137,7 @@ public class PersonasServicio implements PersonasParaMatriculas {
     repositorio.cerrarDocumentoPrincipal(id,ahora);
     repositorio.regularizar(id,ahora);
     repositorio.documento(id,d,numero,ahora);
+    repositorio.solicitarCorreccionLogin(id);
     repositorio.evento(id,id,"DOCUMENTO_CORREGIDO",actor.sub());
   }
 
@@ -155,6 +152,7 @@ public class PersonasServicio implements PersonasParaMatriculas {
     var ficha=repositorio.ficha(id);
     ReglasPersonas.contactos(p.tipo(),ficha.telefono(),ficha.correo());
     repositorio.condicion(id,p.tipo(),repositorio.momento());
+    if ("DOCENTE".equals(p.tipo())) repositorio.solicitarProvisionDocente(id);
     repositorio.evento(id,id,"CONDICION_ACTIVADA",actor.sub());
   }
 
@@ -313,12 +311,42 @@ public class PersonasServicio implements PersonasParaMatriculas {
     return repositorio.identificacionValida(persona);
   }
 
+  @Override @Transactional(readOnly=true)
+  public java.time.LocalDate fechaNacimiento(UUID persona, Authentication actor) {
+    permisos.gestionar(permisos.actor(actor));
+    var ficha=repositorio.ficha(persona);
+    if (ficha==null) throw new NoEncontrado("Persona no encontrada");
+    return ficha.fechaNacimiento();
+  }
+
+  @Override @Transactional(readOnly=true)
+  public boolean docenteActivo(UUID persona, Authentication actor) {
+    permisos.gestionar(permisos.actor(actor));
+    existe(repositorio.existe(persona),"Persona no encontrada");
+    return repositorio.condicionActiva(persona,"DOCENTE");
+  }
+
   @Override @Transactional
   public UUID vincularApoderado(UUID estudiante,UUID apoderado,boolean sinParentesco,
       Autorizacion autorizacion,Authentication actor) {
     var a=autorizacion==null?null:new AutorizacionEntrada(autorizacion.autorizador(),
       autorizacion.medio(),autorizacion.fecha(),"VERBAL",autorizacion.referencia());
     return apoderamiento(new ApoderamientoEntrada(estudiante,apoderado,sinParentesco,a),actor);
+  }
+
+  @Override @Transactional
+  public UUID registrarApoderado(UUID estudiante, NuevoApoderado p, Authentication actor) {
+    if (p==null) throw new IllegalArgumentException("Datos del apoderado requeridos");
+    var a=p.autorizacion()==null?null:new AutorizacionEntrada(p.autorizacion().autorizador(),
+      p.autorizacion().medio(),p.autorizacion().fecha(),"VERBAL",p.autorizacion().referencia());
+    return registrar(new CrearPersona(p.nombres(),p.apellidos(),null,null,null,p.telefono(),p.correo(),null,
+      "APODERADO",new DocumentoEntrada(p.tipoDocumento(),p.paisEmisor(),p.numeroDocumento()),null,
+      new ApoderamientoEntrada(estudiante,null,p.sinParentesco(),a),p.parentesco()),actor);
+  }
+
+  @Override @Transactional
+  public void registrarParentesco(UUID estudiante, UUID familiar, String tipo, Authentication actor) {
+    parentesco(new ParentescoEntrada(estudiante,familiar,tipo),actor);
   }
 
   public static final class NoEncontrado extends RuntimeException { public NoEncontrado(String m) { super(m); } }

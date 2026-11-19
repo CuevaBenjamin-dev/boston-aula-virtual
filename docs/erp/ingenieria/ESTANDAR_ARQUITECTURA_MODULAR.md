@@ -2,7 +2,7 @@
 
 ## Límite y propiedad
 
-El ERP es un monolito Spring Boot/Spring Modulith con **exactamente cinco módulos funcionales**: `personas`, `matriculas`, `oferta`, `asignaciones`, `documentos`. `plataforma` contiene seguridad e infraestructura técnica común, sin reglas de negocio. El test [ArquitecturaModularTest](../../../apps/erp/api/src/test/java/pe/boston/erp/arquitectura/ArquitecturaModularTest.java) verifica el conjunto y los límites que Spring Modulith conoce; se complementará con reglas de capas.
+El ERP es un monolito Spring Boot/Spring Modulith con **exactamente siete módulos funcionales**: `personas`, `oferta`, `matriculas`, `asignaciones`, `asistencia`, `documentos`, `atencion`. `plataforma` contiene seguridad e infraestructura técnica común, sin reglas de negocio. El test [ArquitecturaModularTest](../../../apps/erp/api/src/test/java/pe/boston/erp/arquitectura/ArquitecturaModularTest.java) verifica el conjunto y los límites que Spring Modulith conoce; se complementará con reglas de capas. Esta ampliación responde al paquete funcional del 19/11/2026 posterior a MODULA 532; no representa una importación formal.
 
 ```mermaid
 flowchart LR

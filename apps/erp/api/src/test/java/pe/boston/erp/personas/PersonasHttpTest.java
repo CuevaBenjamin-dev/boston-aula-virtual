@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.oidc.OidcIdToken;
@@ -36,6 +37,7 @@ class PersonasHttpTest {
     r.add("spring.security.oauth2.client.registration.boston-erp.client-secret", ()->"prueba-local");
   }
   @Autowired MockMvc mvc;
+  @Autowired JdbcTemplate jdbc;
   ObjectMapper json = new ObjectMapper();
 
   private UUID crearPersona(String condicion, boolean provisional, String telefono, String correo) throws Exception {
@@ -71,13 +73,11 @@ class PersonasHttpTest {
     UUID fichaDocente=UUID.randomUUID();
     mvc.perform(get("/api/erp/v1/personas/capacidades")
         .with(authentication(actor("DOCENTE",fichaDocente))))
-      .andExpect(status().isOk()).andExpect(jsonPath("$.consultar").value(false))
-      .andExpect(jsonPath("$.editarContacto").value(true))
-      .andExpect(jsonPath("$.personaPropiaId").value(fichaDocente.toString()));
+      .andExpect(status().isForbidden());
     mvc.perform(get("/api/erp/v1/personas").with(authentication(actor("ESTUDIANTE",null))))
       .andExpect(status().isForbidden());
     mvc.perform(get("/api/erp/v1/personas").with(authentication(actor("COORDINACION",null))))
-      .andExpect(status().isForbidden());
+      .andExpect(status().isOk());
     mvc.perform(get("/api/erp/v1/personas/tipos-documento").with(authentication(actor("COORDINACION",null))))
       .andExpect(status().isOk()).andExpect(jsonPath("$[0].codigo").exists());
     mvc.perform(get("/api/erp/v1/personas").with(authentication(actor("DIRECCION",null))))
@@ -106,14 +106,11 @@ class PersonasHttpTest {
     mvc.perform(get(ubicacion).with(authentication(actor("DOCENTE",UUID.randomUUID()))))
       .andExpect(status().isForbidden());
     mvc.perform(get(ubicacion).with(authentication(actor("DOCENTE",id))))
-      .andExpect(status().isOk());
+      .andExpect(status().isForbidden());
     mvc.perform(post("/api/erp/v1/personas").with(authentication(actor("DIRECCION",null))).with(csrf())
       .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsBytes(cuerpo)))
       .andExpect(status().isConflict());
     mvc.perform(post(ubicacion+"/documentos").with(authentication(actor("COORDINACION",null))).with(csrf())
-      .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsBytes(Map.of("tipo","CE","pais","PE","numero","ABC123"))))
-      .andExpect(status().isForbidden());
-    mvc.perform(post(ubicacion+"/documentos").with(authentication(actor("DIRECCION",null))).with(csrf())
       .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsBytes(Map.of("tipo","CE","pais","PE","numero","ABC123"))))
       .andExpect(status().isNoContent());
     mvc.perform(get(ubicacion).with(authentication(actor("DIRECCION",null))))
@@ -172,8 +169,7 @@ class PersonasHttpTest {
       .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsBytes(Map.of("tipo","DOCENTE"))))
       .andExpect(status().isBadRequest());
     mvc.perform(put(base+estudiante+"/contacto").with(authentication(actor("DIRECCION",null))).with(csrf())
-      .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsBytes(Map.of("telefono","987654323",
-        "correo","estudiante@prueba.local","direccion","Calle de prueba"))))
+      .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsBytes(Map.of("telefono","987654323"))))
       .andExpect(status().isNoContent());
     mvc.perform(post(base+estudiante+"/condiciones").with(authentication(actor("DIRECCION",null))).with(csrf())
       .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsBytes(Map.of("tipo","DOCENTE"))))
@@ -191,5 +187,71 @@ class PersonasHttpTest {
     mvc.perform(post(base+estudiante+"/condiciones").with(authentication(actor("DIRECCION",null))).with(csrf())
       .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsBytes(Map.of("tipo","DOCENTE"))))
       .andExpect(status().isNoContent());
+  }
+
+  @Test void ofertaYMatriculaNuevaConBorradorYApoderado() throws Exception {
+    var auth=authentication(actor("COORDINACION",null));
+    int anio=2026;
+    mvc.perform(post("/api/erp/v1/oferta/anios").with(auth).with(csrf())
+      .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsBytes(Map.of("anio",anio))))
+      .andExpect(status().isOk());
+    String seccionJson=mvc.perform(post("/api/erp/v1/oferta/secciones").with(auth).with(csrf())
+      .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsBytes(
+        Map.of("anio",anio,"nivel","PRIMARIA","grado",1,"nombre","A"))))
+      .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+    String seccion=json.readTree(seccionJson).path("id").asText();
+    String asignaturaJson=mvc.perform(post("/api/erp/v1/oferta/asignaturas").with(auth).with(csrf())
+      .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsBytes(
+        Map.of("anio",anio,"nivel","PRIMARIA","grado",1,"codigo","PRI-01-MAT","nombre","Matemática"))))
+      .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+    String asignatura=json.readTree(asignaturaJson).path("id").asText();
+    String numero=String.format("%08d",Math.abs(UUID.randomUUID().hashCode())%100000000);
+    long personasAntes=jdbc.queryForObject("SELECT count(*) FROM per_personas",Long.class);
+    var datos=Map.of("nombres","Alumno","apellidos","Integración","fechaNacimiento","2016-03-04",
+      "tipoDocumento","DNI","paisEmisor","PE","numeroDocumento",numero,"seccionId",seccion,
+      "apoderado",Map.of("nombres","Madre","apellidos","Integración","telefono","987654321",
+        "tipoDocumento","DNI","paisEmisor","PE","numeroDocumento",
+        String.format("%08d",Math.abs(UUID.randomUUID().hashCode())%100000000),"parentesco","MADRE"));
+    String borradorJson=mvc.perform(post("/api/erp/v1/matriculas").with(auth).with(csrf())
+      .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsBytes(Map.of("datos",datos))))
+      .andExpect(status().isOk()).andExpect(jsonPath("$.estado").value("BORRADOR"))
+      .andReturn().getResponse().getContentAsString();
+    String id=json.readTree(borradorJson).path("id").asText();
+    assertEquals(personasAntes,jdbc.queryForObject("SELECT count(*) FROM per_personas",Long.class));
+    var incompleto=new java.util.HashMap<String,Object>(datos);
+    incompleto.remove("apoderado");
+    mvc.perform(put("/api/erp/v1/matriculas/"+id).with(auth).with(csrf())
+      .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsBytes(Map.of("datos",incompleto))))
+      .andExpect(status().isOk());
+    mvc.perform(post("/api/erp/v1/matriculas/"+id+"/confirmar").with(auth).with(csrf()))
+      .andExpect(status().isBadRequest());
+    assertEquals(personasAntes,jdbc.queryForObject("SELECT count(*) FROM per_personas",Long.class));
+    mvc.perform(put("/api/erp/v1/matriculas/"+id).with(auth).with(csrf())
+      .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsBytes(Map.of("datos",datos))))
+      .andExpect(status().isOk());
+    mvc.perform(post("/api/erp/v1/matriculas/"+id+"/confirmar").with(auth).with(csrf()))
+      .andExpect(status().isOk()).andExpect(jsonPath("$.estado").value("VIGENTE"))
+      .andExpect(jsonPath("$.personaId").isNotEmpty());
+    assertEquals(personasAntes+2,jdbc.queryForObject("SELECT count(*) FROM per_personas",Long.class));
+    assertEquals(2L,jdbc.queryForObject("SELECT count(*) FROM erp_solicitudes_externas WHERE entidad_id=?",Long.class,UUID.fromString(id)));
+    mvc.perform(get("/api/erp/v1/matriculas/"+id).with(auth))
+      .andExpect(status().isOk()).andExpect(jsonPath("$.borrador.nombres").value("Alumno"));
+    mvc.perform(post("/api/erp/v1/matriculas/"+id+"/retirar").with(auth).with(csrf()))
+      .andExpect(status().isOk()).andExpect(jsonPath("$.estado").value("RETIRADA"));
+    mvc.perform(post("/api/erp/v1/matriculas/"+id+"/reincorporar").with(auth).with(csrf()))
+      .andExpect(status().isOk()).andExpect(jsonPath("$.estado").value("VIGENTE"));
+
+    UUID docente=crearPersona("DOCENTE",false,"987654323",null);
+    String asignacionJson=mvc.perform(post("/api/erp/v1/asignaciones").with(auth).with(csrf())
+      .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsBytes(Map.of(
+        "docenteId",docente,"seccionId",seccion,"asignaturaId",asignatura,
+        "tipo","TITULAR","desde","2026-03-01"))))
+      .andExpect(status().isOk()).andExpect(jsonPath("$.estado").value("ACTIVA"))
+      .andReturn().getResponse().getContentAsString();
+    String asignacionId=json.readTree(asignacionJson).path("id").asText();
+    mvc.perform(get("/api/erp/v1/asignaciones?anio=2026").with(auth))
+      .andExpect(status().isOk()).andExpect(jsonPath("$[0].asignatura").value("Matemática"));
+    mvc.perform(post("/api/erp/v1/asignaciones/"+asignacionId+"/cerrar").with(auth).with(csrf()))
+      .andExpect(status().isOk()).andExpect(jsonPath("$.estado").value("CERRADA"));
   }
 }

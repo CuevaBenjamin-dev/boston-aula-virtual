@@ -1,6 +1,6 @@
 # Ingeniería del ERP — índice de consulta
 
-Este índice dirige al [proceso obligatorio](MANUAL_DESARROLLO_MODULAR.md). Los cinco módulos funcionales y las decisiones institucionales vigentes se localizan en el [tablero ERP](../README.md) y las [políticas transversales](../POLITICAS_TRANSVERSALES.md). No sustituye las reglas de negocio del módulo.
+Este índice dirige al [proceso obligatorio](MANUAL_DESARROLLO_MODULAR.md). Los siete módulos funcionales vigentes y las decisiones institucionales se localizan en el [tablero ERP](../README.md) y las [políticas transversales](../POLITICAS_TRANSVERSALES.md). No sustituye las reglas de negocio del módulo.
 
 ## Ruta de lectura selectiva
 

@@ -13,12 +13,18 @@ public interface PersonasParaMatriculas {
     String paisEmisor, String numeroDocumento, String motivoProvisional,
     String sustentoTipo, String sustentoReferencia) {}
   record Autorizacion(String autorizador, String medio, Instant fecha, String referencia) {}
+  record NuevoApoderado(String nombres, String apellidos, String telefono, String correo,
+    String tipoDocumento, String paisEmisor, String numeroDocumento, boolean sinParentesco,
+    String parentesco, Autorizacion autorizacion) {}
 
   UUID buscarPorDocumento(String tipo, String pais, String numero, Authentication actor);
   UUID registrarEstudiante(NuevaPersona persona, Authentication actor);
   boolean esEstudianteActivo(UUID persona, Authentication actor);
   List<UUID> apoderadosVigentes(UUID estudiante, Authentication actor);
   boolean tieneIdentificacionValida(UUID persona, Authentication actor);
+  LocalDate fechaNacimiento(UUID persona, Authentication actor);
   UUID vincularApoderado(UUID estudiante, UUID apoderado, boolean sinParentesco,
     Autorizacion autorizacion, Authentication actor);
+  UUID registrarApoderado(UUID estudiante, NuevoApoderado apoderado, Authentication actor);
+  void registrarParentesco(UUID estudiante, UUID familiar, String tipo, Authentication actor);
 }

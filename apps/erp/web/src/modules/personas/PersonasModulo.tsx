@@ -137,7 +137,7 @@ function Registro({ sesion, capacidades }: { sesion: Sesion; capacidades: Capaci
     if (!provisional && valor('tipo') === 'DNI' && !/^\d{8}$/.test(valor('numero').trim())) { setError('El DNI peruano debe tener ocho dígitos.'); return }
     if (condicion === 'APODERADO' && !valor('estudianteId')) { setError('Selecciona el estudiante vinculado.'); return }
     const cuerpo = {
-      nombres: valor('nombres'), apellidos: valor('apellidos'), fechaNacimiento: valor('fechaNacimiento'),
+      nombres: valor('nombres'), apellidos: valor('apellidos'), fechaNacimiento: valor('fechaNacimiento') || null,
       sexo: valor('sexo'), nacionalidad: valor('nacionalidad'), telefono: valor('telefono') || null,
       correo: valor('correo') || null, direccion: valor('direccion'), condicion,
       documento: provisional ? null : { tipo: valor('tipo'), pais: valor('pais'), numero: valor('numero') },
@@ -166,12 +166,9 @@ function Registro({ sesion, capacidades }: { sesion: Sesion; capacidades: Capaci
           {tiposCondicion.filter(t => t.valor !== 'APODERADO' || capacidades.gestionarVinculos).map(t => <option key={t.valor} value={t.valor}>{t.texto}</option>)}</select></Campo>
         <Campo titulo="Nombres"><input required value={valor('nombres')} onChange={e => actualizar('nombres', e.target.value)} /></Campo>
         <Campo titulo="Apellidos"><input required value={valor('apellidos')} onChange={e => actualizar('apellidos', e.target.value)} /></Campo>
-        <Campo titulo="Fecha de nacimiento"><input type="date" required value={valor('fechaNacimiento')} onChange={e => actualizar('fechaNacimiento', e.target.value)} /></Campo>
-        <Campo titulo="Sexo"><select required value={valor('sexo')} onChange={e => actualizar('sexo', e.target.value)}><option value="">Seleccionar</option><option value="F">Femenino</option><option value="M">Masculino</option><option value="OTRO">Otro</option></select></Campo>
-        <Campo titulo="Nacionalidad"><input required value={valor('nacionalidad')} onChange={e => actualizar('nacionalidad', e.target.value)} /></Campo>
-        <Campo titulo="Dirección"><input required value={valor('direccion')} onChange={e => actualizar('direccion', e.target.value)} /></Campo>
+        {condicion === 'ESTUDIANTE' && <Campo titulo="Fecha de nacimiento"><input type="date" required value={valor('fechaNacimiento')} onChange={e => actualizar('fechaNacimiento', e.target.value)} /></Campo>}
         <Campo titulo="Teléfono"><input required={condicion !== 'ESTUDIANTE'} value={valor('telefono')} onChange={e => actualizar('telefono', e.target.value)} /></Campo>
-        <Campo titulo="Correo"><input type="email" required={condicion === 'DOCENTE' || condicion === 'PERSONAL_INSTITUCIONAL'} value={valor('correo')} onChange={e => actualizar('correo', e.target.value)} /></Campo>
+        <Campo titulo="Correo (opcional)"><input type="email" value={valor('correo')} onChange={e => actualizar('correo', e.target.value)} /></Campo>
       </div>
       <div className="per-panel-cabecera"><h3>Identificación</h3></div>
       <div className="per-formulario">
@@ -230,9 +227,9 @@ function Ficha({ sesion, capacidades }: { sesion: Sesion; capacidades: Capacidad
     <div className="per-titulo"><div><p className="etiqueta">FICHA INSTITUCIONAL</p><h2>{persona.nombres} {persona.apellidos}</h2><p>UUID {persona.id}</p></div></div>
     <Aviso mensaje={error} /><Aviso mensaje={exito} tipo="exito" />
     <div className="per-dos-columnas"><section className="per-panel"><div className="per-panel-cabecera"><h3>Datos personales</h3></div>
-      <dl className="per-datos"><dt>Nacimiento</dt><dd>{persona.fechaNacimiento}</dd><dt>Sexo</dt><dd>{persona.sexo}</dd><dt>Nacionalidad</dt><dd>{persona.nacionalidad}</dd><dt>Teléfono</dt><dd>{persona.telefono || '—'}</dd><dt>Correo</dt><dd>{persona.correo || '—'}</dd><dt>Dirección</dt><dd>{persona.direccion}</dd></dl>
-      {capacidades.editarContacto && <button className="per-secundario" onClick={() => { setAccion('contacto'); setCampos({ telefono: persona.telefono ?? '', correo: persona.correo ?? '', direccion: persona.direccion }) }}>Editar contacto</button>}
-      {capacidades.corregirIdentidad && <button className="per-secundario" onClick={() => { setAccion('identidad'); setCampos({ nombres: persona.nombres, apellidos: persona.apellidos, fechaNacimiento: persona.fechaNacimiento, sexo: persona.sexo, nacionalidad: persona.nacionalidad, telefono: persona.telefono ?? '', correo: persona.correo ?? '', direccion: persona.direccion }) }}>Corregir identidad</button>}
+      <dl className="per-datos"><dt>Nacimiento</dt><dd>{persona.fechaNacimiento || '—'}</dd><dt>Teléfono</dt><dd>{persona.telefono || '—'}</dd><dt>Correo</dt><dd>{persona.correo || '—'}</dd></dl>
+      {capacidades.editarContacto && <button className="per-secundario" onClick={() => { setAccion('contacto'); setCampos({ telefono: persona.telefono ?? '', correo: persona.correo ?? '', direccion: persona.direccion ?? '' }) }}>Editar contacto</button>}
+      {capacidades.corregirIdentidad && <button className="per-secundario" onClick={() => { setAccion('identidad'); setCampos({ nombres: persona.nombres, apellidos: persona.apellidos, fechaNacimiento: persona.fechaNacimiento ?? '', sexo: persona.sexo ?? '', nacionalidad: persona.nacionalidad ?? '', telefono: persona.telefono ?? '', correo: persona.correo ?? '', direccion: persona.direccion ?? '' }) }}>Corregir identidad</button>}
     </section><section className="per-panel"><div className="per-panel-cabecera"><h3>Identificación</h3></div>
       {persona.documentos.map(d => <div className="per-fila" key={d.id}><div><strong>{d.tipo} · {d.pais} · {d.numero}</strong><small><Fecha valor={d.vigenteDesde} /> — <Fecha valor={d.vigenteHasta} /></small></div>{d.principal && !d.vigenteHasta && <span className="per-chip">Principal</span>}</div>)}
       {persona.provisional && <p className="per-texto">Identificación provisional: {persona.provisional.motivo} · {persona.provisional.sustentoReferencia} {persona.provisional.regularizadaEn && '(regularizada)'}</p>}
@@ -257,7 +254,7 @@ function Ficha({ sesion, capacidades }: { sesion: Sesion; capacidades: Capacidad
         setError('Selecciona las dos personas del vínculo.'); return
       }
       if (accion === 'contacto') void operar(base + '/contacto', 'PUT', campos, 'Contacto actualizado')
-      else if (accion === 'identidad') void operar(base, 'PUT', campos, 'Identidad corregida')
+      else if (accion === 'identidad') void operar(base, 'PUT', { ...campos, fechaNacimiento: valor('fechaNacimiento') || null }, 'Identidad corregida')
       else if (accion === 'documento') void operar(base + '/documentos', 'POST', { tipo: valor('tipo'), pais: valor('pais'), numero: valor('numero') }, 'Documento actualizado')
       else if (accion === 'condicion') void operar(base + '/condiciones', 'POST', { tipo: valor('tipo') }, 'Condición incorporada')
       else if (accion === 'parentesco') void operar('/parentescos', 'POST', { estudianteId: valor('estudianteId'), familiarId: valor('familiarId'), tipo: valor('tipo') }, 'Parentesco registrado')
@@ -265,8 +262,8 @@ function Ficha({ sesion, capacidades }: { sesion: Sesion; capacidades: Capacidad
       else if (accion.startsWith('desactivar-condicion:')) void operar(base + '/condiciones/' + accion.split(':')[1] + '/desactivar', 'POST', { motivo: valor('motivo') }, 'Condición desactivada')
       else if (accion.startsWith('desactivar-apoderamiento:')) void operar(base + '/apoderamientos/' + accion.split(':')[1] + '/desactivar', 'POST', { motivo: valor('motivo') }, 'Vínculo desactivado')
     }}><div className="per-panel-cabecera"><h3>{accion.startsWith('desactivar') ? 'Confirmar desactivación' : 'Actualizar ficha'}</h3></div><div className="per-formulario">
-      {accion === 'contacto' && <><Campo titulo="Teléfono"><input value={valor('telefono')} onChange={e => cambiar('telefono', e.target.value)} /></Campo><Campo titulo="Correo"><input type="email" value={valor('correo')} onChange={e => cambiar('correo', e.target.value)} /></Campo><Campo titulo="Dirección"><input required value={valor('direccion')} onChange={e => cambiar('direccion', e.target.value)} /></Campo></>}
-      {accion === 'identidad' && <>{['nombres','apellidos','sexo','nacionalidad','telefono','correo','direccion'].map(c => <Campo key={c} titulo={c}><input required={!['telefono','correo'].includes(c)} value={valor(c)} onChange={e => cambiar(c,e.target.value)} /></Campo>)}<Campo titulo="Nacimiento"><input type="date" required value={valor('fechaNacimiento')} onChange={e => cambiar('fechaNacimiento', e.target.value)} /></Campo></>}
+      {accion === 'contacto' && <><Campo titulo="Teléfono"><input value={valor('telefono')} onChange={e => cambiar('telefono', e.target.value)} /></Campo><Campo titulo="Correo"><input type="email" value={valor('correo')} onChange={e => cambiar('correo', e.target.value)} /></Campo></>}
+      {accion === 'identidad' && <><Campo titulo="Nombres"><input required value={valor('nombres')} onChange={e => cambiar('nombres',e.target.value)} /></Campo><Campo titulo="Apellidos"><input required value={valor('apellidos')} onChange={e => cambiar('apellidos',e.target.value)} /></Campo><Campo titulo="Nacimiento"><input type="date" required={persona.condiciones.some(c=>c.tipo==='ESTUDIANTE' && !c.vigenteHasta)} value={valor('fechaNacimiento')} onChange={e => cambiar('fechaNacimiento', e.target.value)} /></Campo></>}
       {accion === 'documento' && <><Campo titulo="Tipo"><select required value={valor('tipo')} onChange={e => cambiar('tipo',e.target.value)}><option value="">Seleccionar</option><option>DNI</option><option>CE</option><option>PASAPORTE</option></select></Campo><Campo titulo="País ISO 2"><input required maxLength={2} value={valor('pais')} onChange={e => cambiar('pais',e.target.value.toUpperCase())} /></Campo><Campo titulo="Número"><input required value={valor('numero')} onChange={e => cambiar('numero',e.target.value)} /></Campo></>}
       {accion === 'condicion' && <Campo titulo="Condición"><select required value={valor('tipo')} onChange={e => cambiar('tipo',e.target.value)}><option value="">Seleccionar</option>{tiposCondicion.filter(t => t.valor !== 'APODERADO').map(t => <option value={t.valor} key={t.valor}>{t.texto}</option>)}</select></Campo>}
       {(accion === 'parentesco' || accion === 'apoderamiento') && <><SelectorPersona sesion={sesion} titulo="Estudiante" condicion="ESTUDIANTE" valor={valor('estudianteId')} alElegir={id => cambiar('estudianteId',id)} /><SelectorPersona sesion={sesion} titulo={accion === 'parentesco' ? 'Familiar' : 'Apoderado'} valor={valor(accion === 'parentesco' ? 'familiarId' : 'apoderadoId')} alElegir={id => cambiar(accion === 'parentesco' ? 'familiarId' : 'apoderadoId',id)} /></>}

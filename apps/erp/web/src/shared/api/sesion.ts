@@ -1,6 +1,7 @@
 export interface Sesion {
   autenticado: boolean
   usuario: string | null
+  rol: string | null
   csrf: string
 }
 

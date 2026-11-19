@@ -1,5 +1,7 @@
 # Especificación — Personas
 
+> **Nota de alcance (19/11/2026):** las reglas RI-PER y el cierre de su Verificación 1 reflejan la revisión formal anterior. El responsable funcional decidió posteriormente siete módulos ERP, acceso solo para Dirección/Coordinación y cambios en campos mínimos. El [incremento operativo](../../INCREMENTO_MVP_2026-11-19.md) implementa una parte de esas decisiones sin afirmar que este texto formal haya sido reimportado en MODULA. Las referencias antiguas a Administración o acceso docente ERP quedan registradas como diferencias pendientes de reconciliación formal.
+
 ## 1. Requisitos funcionales
 
 Los nueve objetivos funcionales están aprobados. La implementación actual y sus límites se describen en las secciones siguientes; los aspectos institucionales no resueltos permanecen explícitos en la sección 8. Ninguna regla se hereda automáticamente del ERP anterior.

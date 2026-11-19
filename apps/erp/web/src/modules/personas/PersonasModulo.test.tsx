@@ -7,7 +7,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { PersonasModulo } from './PersonasModulo'
 import type { Sesion } from '../../shared/api/sesion'
 
-const sesion: Sesion = { autenticado: true, usuario: 'prueba', csrf: 'csrf-test' }
+const sesion: Sesion = { autenticado: true, usuario: 'prueba', rol: 'COORDINACION', csrf: 'csrf-test' }
 const capacidades = { registrar: true, consultar: true, editarContacto: true,
   corregirIdentidad: true, gestionarVinculos: true, gestionarCondiciones: true,
   accesoDocentePendiente: false, personaPropiaId: null }
@@ -76,7 +76,7 @@ describe('Personas ERP Web', () => {
     expect(screen.getByRole('textbox', { name: 'Referencia de sustento' })).toBeTruthy()
     await userEvent.selectOptions(condicion, 'DOCENTE')
     expect(screen.queryByRole('checkbox', { name: /sin documento oficial/i })).toBeNull()
-    expect(screen.getByRole('textbox', { name: 'Correo' })).toHaveProperty('required', true)
+    expect(screen.getByRole('textbox', { name: 'Correo (opcional)' })).toHaveProperty('required', false)
   })
 
   it('no presenta infracciones automáticas de etiquetas y atributos ARIA en el registro', async () => {
