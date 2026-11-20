@@ -24,6 +24,17 @@ public class PersonasServicio implements PersonasParaMatriculas, pe.boston.erp.p
     if (!valor) throw new NoEncontrado(mensaje);
   }
 
+  @Transactional
+  public void eliminarRegistroIncorrecto(UUID id, Authentication autenticacion) {
+    var actor = permisos.actor(autenticacion);
+    permisos.eliminarRegistroIncorrecto(actor);
+    existe(repositorio.existe(id), "Persona no encontrada");
+    repositorio.bloquear(id);
+    if (!repositorio.eliminablePorError(id))
+      throw new Conflicto("Solo se puede eliminar una persona recién registrada, sin matrículas, vínculos, asignaciones ni cambios posteriores.");
+    repositorio.eliminarRegistroIncorrecto(id, actor.sub());
+  }
+
   private void validarDocumento(DocumentoEntrada d) {
     if (d == null) throw new IllegalArgumentException("Documento requerido");
     ReglasPersonas.requerido(d.tipo(),"Tipo de documento");

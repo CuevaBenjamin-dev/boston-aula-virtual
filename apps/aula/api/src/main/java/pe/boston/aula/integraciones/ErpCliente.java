@@ -1,4 +1,4 @@
-package pe.boston.aula;
+package pe.boston.aula.integraciones;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

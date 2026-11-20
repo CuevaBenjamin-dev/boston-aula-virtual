@@ -37,6 +37,10 @@ public class PersonasController {
   @GetMapping("/{id}") public Persona ficha(@PathVariable UUID id, Authentication actor) {
     return servicio.ficha(id,actor);
   }
+  @DeleteMapping("/{id}") public ResponseEntity<Void> eliminarRegistroIncorrecto(
+      @PathVariable UUID id, Authentication actor) {
+    servicio.eliminarRegistroIncorrecto(id,actor); return ResponseEntity.noContent().build();
+  }
   @PutMapping("/{id}") public ResponseEntity<Void> editar(@PathVariable UUID id,
       @RequestBody EditarPersona p, Authentication actor) {
     servicio.editar(id,p,actor); return ResponseEntity.noContent().build();

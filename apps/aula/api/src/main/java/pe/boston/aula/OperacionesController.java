@@ -1,4 +1,6 @@
 package pe.boston.aula;
+import pe.boston.aula.integraciones.ErpCliente;
+import pe.boston.aula.integraciones.Sincronizacion;
 
 import java.time.OffsetDateTime;
 import java.util.HashMap;
@@ -23,6 +25,13 @@ import org.springframework.web.bind.annotation.*;
   @GetMapping("/modulos") public Map<String,Boolean> modulos() { return Map.of("clasesYGrabaciones",clases.habilitado()); }
   @GetMapping("/sincronizacion/estado") public Map<String,Object> estadoSincronizacion(Authentication a) {
     usuario.oidc(a);
+    if (!sync.legadoHabilitado()) {
+      var respuesta=new java.util.LinkedHashMap<String,Object>();
+      respuesta.put("modo","PROYECCION_ERP");
+      respuesta.put("sincronizadoEn",null);
+      respuesta.put("pendiente",false);
+      return respuesta;
+    }
     var estado=db.queryForMap("SELECT ultimo_exito,ultimo_error FROM estado_sincronizacion WHERE id=1");
     var respuesta=new java.util.LinkedHashMap<String,Object>();
     respuesta.put("sincronizadoEn",estado.get("ultimo_exito"));

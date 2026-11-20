@@ -54,8 +54,8 @@ export function OfertaModulo({ sesion }: { sesion: Sesion }) {
     {aviso && <p className="per-aviso exito" role="status">{aviso}</p>}
     <div className="per-dos-columnas">
       <section className="per-panel"><div className="per-panel-cabecera"><h3>Año escolar</h3></div>
-        <label className="per-campo">Consultar año<select value={anio} onChange={e => setAnio(Number(e.target.value))}>
-          {anios.length ? anios.map(y => <option key={y}>{y}</option>) : <option value={anio}>{anio}</option>}</select></label>
+        <label className="per-campo">Consultar año<select value={anio} disabled={!anios.length} onChange={e => setAnio(Number(e.target.value))}>
+          {anios.length ? anios.map(y => <option key={y}>{y}</option>) : <option value={anio}>Aún no hay años registrados</option>}</select></label>
         <form className="erp-inline" onSubmit={(e: FormEvent) => { e.preventDefault(); void accion<{ anio: number }>('/oferta/anios', { anio: Number(nuevoAnio) },
           y => { setAnio(y.anio); void recargar(y.anio) }, 'Año escolar creado. Configura sus secciones y asignaturas.') }}>
           <label className="per-campo">Nuevo año<input type="number" min="2000" max="2100" value={nuevoAnio} onChange={e => setNuevoAnio(e.target.value)} /></label>

@@ -37,6 +37,31 @@ public class PersonasRepositorio {
 
   public void bloquear(UUID id) { jdbc.queryForObject("SELECT id FROM per_personas WHERE id=? FOR UPDATE", UUID.class, id); }
 
+  public boolean eliminablePorError(UUID id) {
+    return Boolean.TRUE.equals(jdbc.queryForObject("""
+      SELECT (SELECT count(*) = 1 AND bool_and(accion = 'PERSONA_CREADA') FROM per_eventos WHERE persona_id = ?)
+        AND NOT EXISTS (SELECT 1 FROM per_eventos WHERE recurso_id = ? AND persona_id <> ?)
+        AND NOT EXISTS (SELECT 1 FROM per_parentescos WHERE estudiante_id = ? OR familiar_id = ?)
+        AND NOT EXISTS (SELECT 1 FROM per_apoderamientos WHERE estudiante_id = ? OR apoderado_id = ?)
+        AND NOT EXISTS (SELECT 1 FROM asi_asignaciones WHERE docente_id = ?)
+        AND NOT EXISTS (SELECT 1 FROM mat_matriculas WHERE persona_id = ?
+          OR borrador->>'personaId' = ? OR borrador->'apoderado'->>'personaId' = ?)
+        AND NOT EXISTS (SELECT 1 FROM erp_solicitudes_externas
+          WHERE entidad_tipo = 'PERSONA' AND entidad_id = ? AND estado <> 'PENDIENTE_NO_CONECTADO')
+      """, Boolean.class, id, id, id, id, id, id, id, id, id,
+      id.toString(), id.toString(), id));
+  }
+
+  public void eliminarRegistroIncorrecto(UUID id, String actor) {
+    jdbc.update("INSERT INTO per_eliminaciones(persona_id,actor_sub) VALUES(?,?)", id, actor);
+    jdbc.update("DELETE FROM erp_solicitudes_externas WHERE entidad_tipo='PERSONA' AND entidad_id=?", id);
+    jdbc.update("DELETE FROM per_eventos WHERE persona_id=?", id);
+    jdbc.update("DELETE FROM per_documentos WHERE persona_id=?", id);
+    jdbc.update("DELETE FROM per_identificaciones_provisionales WHERE persona_id=?", id);
+    jdbc.update("DELETE FROM per_condiciones WHERE persona_id=?", id);
+    jdbc.update("DELETE FROM per_personas WHERE id=?", id);
+  }
+
   public boolean documentoExiste(String tipo, String pais, String numero) {
     return Boolean.TRUE.equals(jdbc.queryForObject(
       "SELECT EXISTS(SELECT 1 FROM per_documentos WHERE tipo_codigo=? AND pais_emisor=? AND numero_normalizado=? AND vigente_hasta IS NULL)",
@@ -137,9 +162,29 @@ public class PersonasRepositorio {
         rs.getObject("apoderado_id",UUID.class),rs.getBoolean("sin_parentesco"),rs.getString("autorizador"),
         rs.getString("medio_verificacion"),instante(rs,"verificado_en"),
         instante(rs,"vigente_desde"),instante(rs,"vigente_hasta")), id,id);
+    var relacionados = new java.util.LinkedHashSet<UUID>();
+    parentescos.forEach(v -> { relacionados.add(v.estudianteId()); relacionados.add(v.familiarId()); });
+    apoderamientos.forEach(v -> { relacionados.add(v.estudianteId()); relacionados.add(v.apoderadoId()); });
+    var referencias = new java.util.HashMap<UUID, ReferenciaPersona>();
+    if (!relacionados.isEmpty()) {
+      String lugares = String.join(",", java.util.Collections.nCopies(relacionados.size(), "?"));
+      var filasRelacionadas = jdbc.query("""
+        SELECT p.id, p.nombres, p.apellidos, d.tipo_codigo, d.numero
+        FROM per_personas p
+        LEFT JOIN LATERAL (
+          SELECT tipo_codigo, numero FROM per_documentos
+          WHERE persona_id=p.id
+          ORDER BY (vigente_hasta IS NULL) DESC, principal DESC, vigente_desde DESC LIMIT 1
+        ) d ON true
+        WHERE p.id IN (
+        """ + lugares + ")", (rs,n) -> java.util.Map.entry(rs.getObject("id",UUID.class),
+          new ReferenciaPersona(rs.getString("nombres"),rs.getString("apellidos"),
+            rs.getString("tipo_codigo"),rs.getString("numero"))), relacionados.toArray());
+      filasRelacionadas.forEach(v -> referencias.put(v.getKey(),v.getValue()));
+    }
     return new Persona(id,(String)p[0],(String)p[1],(LocalDate)p[2],(String)p[3],(String)p[4],
       (String)p[5],(String)p[6],(String)p[7],docs,condiciones,
-      provisionales.isEmpty()?null:provisionales.getFirst(),parentescos,apoderamientos);
+      provisionales.isEmpty()?null:provisionales.getFirst(),parentescos,apoderamientos,referencias);
   }
 
   public void crearPersona(UUID id, CrearPersona p) {

@@ -3,6 +3,7 @@ package pe.boston.erp.personas.api;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public final class PersonaDto {
@@ -34,14 +35,17 @@ public final class PersonaDto {
     String autorizador, String medio, Instant verificadoEn, Instant vigenteDesde, Instant vigenteHasta) {}
   public record Provisional(String motivo, String sustentoTipo, String sustentoReferencia,
     Instant registradaEn, Instant regularizadaEn) {}
+  public record ReferenciaPersona(String nombres, String apellidos, String tipoDocumento, String numeroDocumento) {}
   public record Persona(UUID id, String nombres, String apellidos, LocalDate fechaNacimiento,
     String sexo, String nacionalidad, String telefono, String correo, String direccion,
     List<Documento> documentos, List<Condicion> condiciones, Provisional provisional,
-    List<Parentesco> parentescos, List<Apoderamiento> apoderamientos) {}
+    List<Parentesco> parentescos, List<Apoderamiento> apoderamientos,
+    Map<UUID, ReferenciaPersona> referencias) {}
   public record Resumen(UUID id, String nombres, String apellidos, String documento,
     List<String> condiciones) {}
   public record Pagina(List<Resumen> resultados, long total, int pagina, int tamano) {}
   public record Capacidades(boolean registrar, boolean consultar, boolean editarContacto,
     boolean corregirIdentidad, boolean gestionarVinculos, boolean gestionarCondiciones,
+    boolean eliminarRegistroIncorrecto,
     boolean accesoDocentePendiente, UUID personaPropiaId) {}
 }

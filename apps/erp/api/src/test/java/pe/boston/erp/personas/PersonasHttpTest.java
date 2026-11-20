@@ -66,6 +66,37 @@ class PersonasHttpTest {
     return new OAuth2AuthenticationToken(usuario,usuario.getAuthorities(),"boston-erp");
   }
 
+  @Test void eliminaSoloRegistroIncorrectoSinUsoYLiberarDocumento() throws Exception {
+    UUID persona=crearPersona("ESTUDIANTE",false,null,null);
+    String ruta="/api/erp/v1/personas/"+persona;
+    String numero=jdbc.queryForObject("SELECT numero FROM per_documentos WHERE persona_id=?",String.class,persona);
+    mvc.perform(delete(ruta).with(authentication(actor("DIRECCION",null))))
+      .andExpect(status().isForbidden());
+    mvc.perform(delete(ruta).with(authentication(actor("DOCENTE",null))).with(csrf()))
+      .andExpect(status().isForbidden());
+    mvc.perform(delete(ruta).with(authentication(actor("COORDINACION",null))).with(csrf()))
+      .andExpect(status().isNoContent());
+    mvc.perform(get(ruta).with(authentication(actor("DIRECCION",null))))
+      .andExpect(status().isNotFound());
+    assertEquals(1, jdbc.queryForObject("SELECT count(*) FROM per_eliminaciones WHERE persona_id=?",Integer.class,persona));
+    var cuerpo=Map.of("nombres","Persona","apellidos","Correcta","fechaNacimiento","2012-02-10",
+      "condicion","ESTUDIANTE","documento",Map.of("tipo","DNI","pais","PE","numero",numero));
+    mvc.perform(post("/api/erp/v1/personas").with(authentication(actor("DIRECCION",null))).with(csrf())
+      .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsBytes(cuerpo)))
+      .andExpect(status().isCreated());
+
+    UUID vinculada=crearPersona("ESTUDIANTE",true,null,null);
+    UUID familiar=crearPersona("PERSONAL_INSTITUCIONAL",false,"987654321","familiar@prueba.local");
+    mvc.perform(post("/api/erp/v1/personas/parentescos").with(authentication(actor("DIRECCION",null))).with(csrf())
+      .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsBytes(
+        Map.of("estudianteId",vinculada.toString(),"familiarId",familiar.toString(),"tipo","MADRE"))))
+      .andExpect(status().isCreated());
+    mvc.perform(delete("/api/erp/v1/personas/"+vinculada)
+      .with(authentication(actor("DIRECCION",null))).with(csrf()))
+      .andExpect(status().isConflict());
+    assertEquals(1,jdbc.queryForObject("SELECT count(*) FROM per_personas WHERE id=?",Integer.class,vinculada));
+  }
+
   @Test void autenticacionYPermisosPorOperacionYRecurso() throws Exception {
     mvc.perform(get("/api/erp/v1/personas")).andExpect(status().isUnauthorized());
     mvc.perform(get("/api/erp/v1/personas").with(authentication(actor("DOCENTE",null))))
@@ -151,6 +182,12 @@ class PersonasHttpTest {
       .andExpect(status().isCreated());
     mvc.perform(get(base+estudiante).with(authentication(actor("DIRECCION",null))))
       .andExpect(status().isOk()).andExpect(jsonPath("$.apoderamientos.length()").value(2));
+    var respuestaVinculos=mvc.perform(get(base+estudiante).with(authentication(actor("DIRECCION",null))))
+      .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+    var referencia=json.readTree(respuestaVinculos).path("referencias").path(familiar.toString());
+    assertEquals("Persona",referencia.path("nombres").asText());
+    assertEquals("DNI",referencia.path("tipoDocumento").asText());
+    assertFalse(referencia.path("numeroDocumento").asText().isBlank());
 
     mvc.perform(post(base+estudiante+"/apoderamientos/"+vinculoFamiliar+"/desactivar")
       .with(authentication(actor("DIRECCION",null))).with(csrf())

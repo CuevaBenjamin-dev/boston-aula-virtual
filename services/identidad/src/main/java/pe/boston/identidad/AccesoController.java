@@ -67,7 +67,7 @@ public class AccesoController {
   }
   @GetMapping(value="/restablecer",produces=MediaType.TEXT_HTML_VALUE)
   public ResponseEntity<String> formulario(HttpServletRequest request,CsrfToken csrf) {
-    String aviso=request.getParameterMap().containsKey("error")?"<p role=\"alert\" class=\"aviso\">Código inválido o vencido. Comprueba también que la nueva contraseña tenga al menos 12 caracteres.</p>":"";
+    String aviso=request.getParameterMap().containsKey("error")?"<p role=\"alert\" class=\"aviso\">Código inválido o vencido. Comprueba también que la nueva contraseña tenga al menos 5 caracteres.</p>":"";
     String html="""
       <!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
       <title>Boston Identidad · Restablecer acceso</title><style>__ESTILOS__</style></head><body><main class="auth-page">__PORTADA__
@@ -75,7 +75,7 @@ public class AccesoController {
       <h2 id="auth-title">Vuelve a entrar<span>.</span></h2><p>Escribe el código temporal recibido por el canal institucional y establece una nueva contraseña.</p>__AVISO__
       <form class="auth-form" action="/restablecer" method="post"><input type="hidden" name="__CSRF_NAME__" value="__CSRF_TOKEN__">
       <label for="token">Código de recuperación<input id="token" name="token" autocomplete="off" required></label>
-      <label for="nuevaClave">Nueva contraseña<input id="nuevaClave" name="nuevaClave" type="password" autocomplete="new-password" minlength="12" required></label>
+      <label for="nuevaClave">Nueva contraseña<input id="nuevaClave" name="nuevaClave" type="password" autocomplete="new-password" minlength="5" required></label>
       <button type="submit"><span>Cambiar contraseña</span><span aria-hidden="true">→</span></button></form>
       <div class="auth-help"><a href="/login">Volver al inicio de sesión</a></div></div><div class="auth-entry-footer">AULA VIRTUAL BOSTON</div></section></main></body></html>
       """.replace("__ESTILOS__",ESTILOS).replace("__PORTADA__",PORTADA).replace("__AVISO__",aviso).replace("__CSRF_NAME__",csrf.getParameterName()).replace("__CSRF_TOKEN__",csrf.getToken());

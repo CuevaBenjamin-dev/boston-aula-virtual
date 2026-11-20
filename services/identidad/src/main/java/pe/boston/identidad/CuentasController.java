@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.*;
   }
   @PostMapping("/mi-clave") @Transactional public void cambiarMiClave(@RequestBody CambioPropio d,@AuthenticationPrincipal Jwt actor) {
     if(actor==null||actor.getClaimAsString("cuenta_id")==null) throw new AccessDeniedException("Cuenta requerida");
-    if(d.claveActual()==null||d.nuevaClave()==null||d.nuevaClave().length()<12) throw new IllegalArgumentException("Contraseña inválida; usa al menos 12 caracteres");
+    if(d.claveActual()==null||d.nuevaClave()==null||d.nuevaClave().length()<5) throw new IllegalArgumentException("Contraseña inválida; usa al menos 5 caracteres");
     UUID id=UUID.fromString(actor.getClaimAsString("cuenta_id"));
     var actual=db.queryForMap("SELECT clave_hash,activo FROM cuentas WHERE id=? FOR UPDATE",id);
     if(!Boolean.TRUE.equals(actual.get("activo"))) throw new AccessDeniedException("Cuenta suspendida");

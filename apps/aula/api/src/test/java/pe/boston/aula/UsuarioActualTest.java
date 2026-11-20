@@ -1,6 +1,8 @@
 package pe.boston.aula;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -31,6 +33,24 @@ class UsuarioActualTest {
   @Test void estudianteSinMatriculaVigenteNoLeeCursoAjeno() {
     perfil("ESTUDIANTE");
     assertThrows(AccessDeniedException.class,()->usuario.leerCurso(auth,curso));
+  }
+  @Test void estudianteFinalizadoLeeSuCursoPeroNoPuedeEntregar() {
+    perfil("ESTUDIANTE");
+    when(db.queryForObject(contains("estado_matricula='FINALIZADA'"),eq(Long.class),eq(curso),eq(referencia))).thenReturn(1L);
+    assertDoesNotThrow(()->usuario.leerCurso(auth,curso));
+    assertThrows(AccessDeniedException.class,()->usuario.estudianteCurso(auth,curso));
+  }
+  @Test void estudianteVigenteConservaLecturaYEscritura() {
+    perfil("ESTUDIANTE");
+    when(db.queryForObject(contains("i.estado_matricula='VIGENTE'"),eq(Long.class),eq(curso),eq(referencia))).thenReturn(1L);
+    when(db.queryForObject(contains("estado_matricula='FINALIZADA'"),eq(Long.class),eq(curso),eq(referencia))).thenReturn(1L);
+    assertDoesNotThrow(()->usuario.leerCurso(auth,curso));
+    assertDoesNotThrow(()->usuario.estudianteCurso(auth,curso));
+  }
+  @Test void estudianteRetiradoNoRecibeLecturaHistorica() {
+    perfil("ESTUDIANTE");
+    assertThrows(AccessDeniedException.class,()->usuario.leerCurso(auth,curso));
+    assertThrows(AccessDeniedException.class,()->usuario.estudianteCurso(auth,curso));
   }
   @Test void docenteSinAsignacionVigenteNoModificaCursoAjeno() {
     perfil("DOCENTE");

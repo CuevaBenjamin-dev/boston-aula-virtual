@@ -1,4 +1,5 @@
 package pe.boston.aula;
+import pe.boston.aula.integraciones.ErpCliente;
 
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
@@ -40,7 +41,7 @@ import org.springframework.transaction.annotation.Transactional;
   public CursosYTareas(JdbcTemplate db,UsuarioActual usuario,ErpCliente erp,AvisosTarea avisos) { this.db=db;this.usuario=usuario;this.erp=erp;this.avisos=avisos; }
   public List<Map<String,Object>> cursos(Authentication a) {
     return switch(usuario.tipo(a)) {
-      case "ESTUDIANTE" -> db.queryForList(CURSOS_CON_DOCENTES+"JOIN inscripciones_curso i ON i.curso_id=c.id WHERE i.estudiante_erp_id=? AND i.activo=TRUE AND (c.periodo_fin IS NULL OR c.periodo_fin>=CURRENT_DATE) ORDER BY c.asignatura",usuario.referencia(a));
+      case "ESTUDIANTE" -> db.queryForList(CURSOS_CON_DOCENTES.replace("SELECT c.*", "SELECT c.*,i.estado_matricula")+"JOIN inscripciones_curso i ON i.curso_id=c.id WHERE i.estudiante_erp_id=? AND ((i.activo AND i.estado_matricula='VIGENTE') OR i.estado_matricula='FINALIZADA') ORDER BY c.periodo DESC,c.asignatura",usuario.referencia(a));
       case "DOCENTE" -> db.queryForList(CURSOS_CON_DOCENTES+"JOIN docentes_curso d ON d.curso_id=c.id WHERE d.docente_erp_id=? AND d.activo=TRUE AND (c.periodo_fin IS NULL OR c.periodo_fin>=CURRENT_DATE) ORDER BY c.asignatura",usuario.referencia(a));
       case "COORDINACION" -> db.queryForList(CURSOS_CON_DOCENTES+"JOIN coordinaciones_seccion x ON x.seccion_erp_id=c.seccion_erp_id WHERE x.cuenta_id=? AND x.confirmado_erp AND (c.periodo_fin IS NULL OR c.periodo_fin>=CURRENT_DATE) ORDER BY c.asignatura",usuario.cuenta(a));
       default -> throw new AccessDeniedException("Sin cursos académicos");
@@ -268,11 +269,12 @@ import org.springframework.transaction.annotation.Transactional;
   }
   public Map<String,Object> estadoPreparacion(UUID tarea,Authentication a) {
     usuario.estudiante(a); var t=tarea(tarea,a);
+    boolean vigente=db.queryForObject("SELECT count(*) FROM inscripciones_curso WHERE curso_id=? AND estudiante_erp_id=? AND activo AND estado_matricula='VIGENTE'",Long.class,t.get("curso_id"),usuario.referencia(a))>0;
     UUID estudiante=usuario.referencia(a);
     int siguiente=ultimoIntento(tarea,estudiante)+1;
     var resultado=new HashMap<String,Object>();
     var plazo=((java.sql.Timestamp)t.get("fecha_limite")).toInstant();
-    resultado.put("puede_iniciar","PUBLICADA".equals(t.get("estado"))&&t.get("tarea_sucesora_id")==null&&puedeReentregar(tarea,estudiante,siguiente,plazo,java.time.Instant.now()));
+    resultado.put("puede_iniciar",vigente&&"PUBLICADA".equals(t.get("estado"))&&t.get("tarea_sucesora_id")==null&&puedeReentregar(tarea,estudiante,siguiente,plazo,java.time.Instant.now()));
     resultado.put("siguiente_intento",siguiente);
     var filas=db.queryForList("SELECT * FROM preparaciones_entrega WHERE tarea_id=? AND estudiante_erp_id=? AND estado='ACTIVA'",tarea,estudiante);
     if(!filas.isEmpty()) resultado.putAll(filas.getFirst());
@@ -309,6 +311,8 @@ import org.springframework.transaction.annotation.Transactional;
     var previa=db.queryForMap("SELECT * FROM preparaciones_entrega WHERE id=?",id);
     if(!usuario.referencia(a).equals(previa.get("estudiante_erp_id"))) throw new AccessDeniedException("Preparación ajena");
     UUID tarea=(UUID)previa.get("tarea_id");
+    UUID curso=db.queryForObject("SELECT curso_id FROM tareas WHERE id=?",UUID.class,tarea);
+    usuario.estudianteCurso(a,curso);
     if("CONFIRMADA".equals(previa.get("estado"))) {
       if(!operacion.equals(previa.get("clave_confirmacion"))) throw new IllegalStateException("La preparación ya fue confirmada");
       return db.queryForMap("SELECT * FROM entregas WHERE id=?",previa.get("entrega_id"));

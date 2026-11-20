@@ -36,6 +36,10 @@ public class AutorizacionPersonas {
     if (!direccion(actor) && !"COORDINACION".equals(actor.rol())) throw new AccesoDenegado();
   }
 
+  public void eliminarRegistroIncorrecto(Actor actor) {
+    gestionar(actor);
+  }
+
   public void consultar(Actor actor, UUID persona) {
     if (!direccion(actor) && !coordinacionConAmbito(actor)) throw new AccesoDenegado();
   }
@@ -54,7 +58,7 @@ public class AutorizacionPersonas {
 
   public Capacidades capacidades(Actor actor) {
     boolean gestor = direccion(actor) || coordinacionConAmbito(actor);
-    return new Capacidades(gestor,gestor,gestor,gestor,gestor,gestor,false,null);
+    return new Capacidades(gestor,gestor,gestor,gestor,gestor,gestor,gestor,false,null);
   }
 
   public static final class AccesoDenegado extends RuntimeException {}

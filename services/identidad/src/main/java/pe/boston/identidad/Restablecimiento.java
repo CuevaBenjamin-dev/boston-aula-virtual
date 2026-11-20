@@ -14,7 +14,7 @@ public class Restablecimiento {
   private final JdbcTemplate db; private final PasswordEncoder encoder;
   public Restablecimiento(JdbcTemplate db,PasswordEncoder encoder) { this.db=db;this.encoder=encoder; }
   @Transactional public void cambiar(String token,String nuevaClave) {
-    if(token==null||token.isBlank()||nuevaClave==null||nuevaClave.length()<12) throw new IllegalArgumentException("Código o contraseña inválidos");
+    if(token==null||token.isBlank()||nuevaClave==null||nuevaClave.length()<5) throw new IllegalArgumentException("Código o contraseña inválidos");
     String huella=hash(token);
     UUID id=db.query("SELECT cuenta_id FROM recuperaciones WHERE token_hash=? AND usado_en IS NULL AND vence_en>now() FOR UPDATE",(rs,n)->(UUID)rs.getObject(1),huella).stream().findFirst().orElseThrow(()->new IllegalArgumentException("Código inválido o vencido"));
     db.update("UPDATE cuentas SET clave_hash=?,intentos_fallidos=0,bloqueado_hasta=NULL,sesion_version=sesion_version+1 WHERE id=?",encoder.encode(nuevaClave),id);

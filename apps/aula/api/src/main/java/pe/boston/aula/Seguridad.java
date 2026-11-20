@@ -43,7 +43,15 @@ import org.springframework.session.web.http.DefaultCookieSerializer;
     var registro=new org.springframework.boot.web.servlet.FilterRegistrationBean<>(filtro);
     registro.setEnabled(false); return registro;
   }
-  @Bean SecurityFilterChain cadena(HttpSecurity http, EstadoCuentaFiltro estado, OAuth2AuthorizedClientService clientesAutorizados,
+  @Bean @org.springframework.core.annotation.Order(1) SecurityFilterChain integracion(HttpSecurity http) throws Exception {
+    http.securityMatcher("/api/aula/integracion/**")
+      .authorizeHttpRequests(a -> a.anyRequest().hasAuthority("SCOPE_aula.proyectar"))
+      .oauth2ResourceServer(o -> o.jwt(org.springframework.security.config.Customizer.withDefaults()))
+      .sessionManagement(s -> s.sessionCreationPolicy(org.springframework.security.config.http.SessionCreationPolicy.STATELESS))
+      .csrf(c -> c.disable());
+    return http.build();
+  }
+  @Bean @org.springframework.core.annotation.Order(2) SecurityFilterChain cadena(HttpSecurity http, EstadoCuentaFiltro estado, OAuth2AuthorizedClientService clientesAutorizados,
       @Value("${BOSTON_ISSUER:http://localhost:9000}") String issuer,
       @Value("${BOSTON_PUBLIC_URL:http://localhost:8088}") String publico) throws Exception {
     http.authorizeHttpRequests(a -> a

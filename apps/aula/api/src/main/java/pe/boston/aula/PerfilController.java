@@ -18,8 +18,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController @RequestMapping("/api/aula/perfil") public class PerfilController {
-  private final JdbcTemplate db; private final UsuarioActual usuario; private final ErpCliente erp;
-  public PerfilController(JdbcTemplate db,UsuarioActual usuario,ErpCliente erp) { this.db=db;this.usuario=usuario;this.erp=erp; }
+  private final JdbcTemplate db; private final UsuarioActual usuario;
+  public PerfilController(JdbcTemplate db,UsuarioActual usuario) { this.db=db;this.usuario=usuario; }
   @GetMapping public Map<String,Object> ver(Authentication a) {
     var datos=new LinkedHashMap<String,Object>(usuario.perfil(a));
     UUID cuenta=usuario.cuenta(a);
@@ -27,13 +27,10 @@ import org.springframework.web.multipart.MultipartFile;
     datos.put("fotoActualizada",fotos.isEmpty()?null:fotos.getFirst().get("actualizada_en"));
     String tipo=usuario.tipo(a);
     if("ESTUDIANTE".equals(tipo)||"DOCENTE".equals(tipo)) {
-      try {
-        var respuesta=erp.get("/api/erp/v1/perfiles/"+tipo+"/"+usuario.referencia(a));
-        var institucional=new LinkedHashMap<String,Object>();
-        respuesta.fields().forEachRemaining(campo->{var valor=campo.getValue();institucional.put(campo.getKey(),valor.isNull()?null:valor.isNumber()?valor.numberValue():valor.asText());});
-        datos.put("datosInstitucionales",institucional);
-      }
-      catch(Exception e) { datos.put("datosInstitucionalesDisponibles",false); }
+      var nombres=db.queryForList("SELECT nombre_completo FROM perfiles_institucionales WHERE persona_erp_id=? AND tipo=?",
+        usuario.referencia(a),tipo);
+      if (nombres.isEmpty()) datos.put("datosInstitucionalesDisponibles",false);
+      else datos.put("datosInstitucionales",Map.of("nombre",nombres.getFirst().get("nombre_completo")));
     }
     if("COORDINACION".equals(tipo)) datos.put("secciones",db.queryForList("""
       SELECT DISTINCT c.grado,c.seccion,c.periodo FROM cursos c

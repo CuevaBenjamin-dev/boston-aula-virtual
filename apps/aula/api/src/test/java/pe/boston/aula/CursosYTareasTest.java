@@ -1,4 +1,5 @@
 package pe.boston.aula;
+import pe.boston.aula.integraciones.ErpCliente;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -7,6 +8,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.doThrow;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
@@ -38,6 +40,17 @@ class CursosYTareasTest {
   @Test void tareaCerradaNoRecibeMasEntregas() {
     tarea("CERRADA");when(usuario.tipo(actor)).thenReturn("ESTUDIANTE");
     assertThrows(IllegalArgumentException.class,()->tareas.entregar(tarea,"respuesta",actor));
+  }
+  @Test void matriculaFinalizadaNoPuedeConfirmarNiRepetirEntrega() {
+    UUID preparacion=UUID.randomUUID(),operacion=UUID.randomUUID();
+    when(usuario.referencia(actor)).thenReturn(estudiante);
+    when(db.queryForMap("SELECT * FROM preparaciones_entrega WHERE id=?",preparacion))
+      .thenReturn(Map.of("tarea_id",tarea,"estudiante_erp_id",estudiante,"estado","CONFIRMADA"));
+    when(db.queryForObject("SELECT curso_id FROM tareas WHERE id=?",UUID.class,tarea)).thenReturn(curso);
+    doThrow(new org.springframework.security.access.AccessDeniedException("Curso sin matrícula vigente"))
+      .when(usuario).estudianteCurso(actor,curso);
+    assertThrows(org.springframework.security.access.AccessDeniedException.class,
+      ()->tareas.confirmarPreparacion(preparacion,operacion,actor));
   }
   @Test void notaFueraDeEscalaSeRechaza() {
     tarea("PUBLICADA");when(usuario.tipo(actor)).thenReturn("DOCENTE");

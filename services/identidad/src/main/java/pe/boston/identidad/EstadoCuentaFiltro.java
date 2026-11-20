@@ -39,6 +39,13 @@ import org.springframework.web.filter.OncePerRequestFilter;
         Integer versionToken=version;
         var estado=db.query(sql,(rs,n)->new boolean[]{rs.getBoolean(1),versionToken==null || rs.getInt(2)==versionToken},parametro);
         if(estado.isEmpty()||!estado.getFirst()[0]||!estado.getFirst()[1]) { denegar(request,response); return; }
+        if (request.getRequestURI().equals("/oauth2/authorize") &&
+            Boolean.TRUE.equals(db.queryForObject("SELECT cambio_clave_obligatorio FROM cuentas WHERE usuario=?",
+              Boolean.class,auth.getName()))) {
+          String destino=request.getRequestURL().toString()+(request.getQueryString()==null?"":"?"+request.getQueryString());
+          request.getSession().setAttribute("bbs.oauth.destino",destino);
+          response.sendRedirect("/clave-inicial"); return;
+        }
       } catch(Exception e) { response.sendError(503,"No se pudo verificar la cuenta"); return; }
     }
     chain.doFilter(request,response);

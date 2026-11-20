@@ -1,26 +1,28 @@
 import type { Sesion } from '../../shared/api/sesion'
+import { tokenCsrf } from '../../shared/api/erp'
 
 export type Condicion = 'ESTUDIANTE' | 'DOCENTE' | 'PERSONAL_INSTITUCIONAL' | 'APODERADO'
-export type Capacidades = { registrar: boolean; consultar: boolean; editarContacto: boolean; corregirIdentidad: boolean; gestionarVinculos: boolean; gestionarCondiciones: boolean; accesoDocentePendiente: boolean; personaPropiaId: string | null }
+export type Capacidades = { registrar: boolean; consultar: boolean; editarContacto: boolean; corregirIdentidad: boolean; gestionarVinculos: boolean; gestionarCondiciones: boolean; eliminarRegistroIncorrecto: boolean; accesoDocentePendiente: boolean; personaPropiaId: string | null }
 export type Resumen = { id: string; nombres: string; apellidos: string; documento: string | null; condiciones: Condicion[] }
 export type Pagina = { resultados: Resumen[]; total: number; pagina: number; tamano: number }
 export type Documento = { id: string; tipo: string; pais: string; numero: string; principal: boolean; vigenteDesde: string; vigenteHasta: string | null }
 export type CondicionRegistro = { id: string; tipo: Condicion; vigenteDesde: string; vigenteHasta: string | null; motivoDesactivacion: string | null }
+export type ReferenciaPersona = { nombres: string; apellidos: string; tipoDocumento: string | null; numeroDocumento: string | null }
 export type Parentesco = { id: string; estudianteId: string; familiarId: string; tipo: string; vigenteDesde: string; vigenteHasta: string | null }
 export type Apoderamiento = { id: string; estudianteId: string; apoderadoId: string; sinParentesco: boolean; autorizador: string | null; medio: string | null; verificadoEn: string | null; vigenteDesde: string; vigenteHasta: string | null }
-export type Persona = { id: string; nombres: string; apellidos: string; fechaNacimiento: string | null; sexo: string | null; nacionalidad: string | null; telefono: string | null; correo: string | null; direccion: string | null; documentos: Documento[]; condiciones: CondicionRegistro[]; provisional: { motivo: string; sustentoTipo: string; sustentoReferencia: string; registradaEn: string; regularizadaEn: string | null } | null; parentescos: Parentesco[]; apoderamientos: Apoderamiento[] }
+export type Persona = { id: string; nombres: string; apellidos: string; fechaNacimiento: string | null; sexo: string | null; nacionalidad: string | null; telefono: string | null; correo: string | null; direccion: string | null; documentos: Documento[]; condiciones: CondicionRegistro[]; provisional: { motivo: string; sustentoTipo: string; sustentoReferencia: string; registradaEn: string; regularizadaEn: string | null } | null; parentescos: Parentesco[]; apoderamientos: Apoderamiento[]; referencias: Record<string, ReferenciaPersona> }
 export type TipoDocumento = { codigo: string; nombre: string; patron: string | null; activo: boolean }
 
 export class ErrorApi extends Error {
   constructor(message: string, public status: number) { super(message) }
 }
 
-export async function api<T>(ruta: string, sesion: Sesion, init?: RequestInit): Promise<T> {
+export async function api<T>(ruta: string, _sesion: Sesion, init?: RequestInit): Promise<T> {
   const respuesta = await fetch('/api/erp/v1/personas' + ruta, {
     ...init,
     credentials: 'same-origin',
     headers: { ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
-      ...(init?.method && init.method !== 'GET' ? { 'X-XSRF-TOKEN': sesion.csrf } : {}),
+      ...(init?.method && init.method !== 'GET' ? { 'X-XSRF-TOKEN': tokenCsrf() } : {}),
       ...init?.headers },
   })
   if (!respuesta.ok) {

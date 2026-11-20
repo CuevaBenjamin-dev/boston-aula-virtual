@@ -23,6 +23,7 @@ public class MatriculasController {
   public record Matricula(UUID id, UUID personaId, Integer anio, UUID seccionId,
     String estado, Map<String,Object> borrador, String creadoPor, String creadoEn, String confirmadoEn) {}
   public record ResultadoAnio(int anio, int finalizadas) {}
+  public record ResumenCierre(int anio, long vigentes) {}
   private final JdbcTemplate jdbc;
   private final ObjectMapper json=new ObjectMapper();
   private final PersonasParaMatriculas personas;
@@ -42,6 +43,7 @@ public class MatriculasController {
   @PostMapping @Transactional public Matricula crear(@RequestBody BorradorEntrada entrada,Authentication auth) {
     String actor=AccesoErp.actor(auth);
     JsonNode datos=validarBorrador(entrada);
+    validarMatriculaAnualExistente(datos);
     UUID id=UUID.randomUUID();
     jdbc.update("INSERT INTO mat_matriculas(id,borrador,creado_por) VALUES(?,?::jsonb,?)",id,datos.toString(),actor);
     evento(id,"BORRADOR_CREADO",actor);
@@ -51,6 +53,7 @@ public class MatriculasController {
     String actor=AccesoErp.actor(auth); Matricula actual=obtener(id);
     if (!"BORRADOR".equals(actual.estado())) throw new IllegalArgumentException("Solo se puede editar un borrador");
     JsonNode datos=validarBorrador(entrada);
+    validarMatriculaAnualExistente(datos);
     jdbc.update("UPDATE mat_matriculas SET borrador=?::jsonb,actualizado_en=now() WHERE id=?",datos.toString(),id);
     evento(id,"BORRADOR_GUARDADO",actor);
     return obtener(id);
@@ -85,6 +88,7 @@ public class MatriculasController {
     if (seccion==null) throw new IllegalArgumentException("La sección no existe en Oferta académica");
     UUID persona=m.personaId()!=null?m.personaId():texto(d,"personaId")!=null
       ?uuid(texto(d,"personaId")):registrarEstudiante(id,auth).personaId();
+    validarMatriculaAnualExistente(persona,seccion.anio());
     if (!personas.esEstudianteActivo(persona,auth) || !personas.tieneIdentificacionValida(persona,auth))
       throw new IllegalArgumentException("La persona requiere condición Estudiante e identificación vigente");
     LocalDate nacimiento=personas.fechaNacimiento(persona,auth);
@@ -113,9 +117,6 @@ public class MatriculasController {
     }
     if (Period.between(nacimiento,LocalDate.now()).getYears()<18 && personas.apoderadosVigentes(persona,auth).isEmpty())
       throw new IllegalArgumentException("El menor requiere un apoderado autorizado vigente con teléfono");
-    if (jdbc.queryForObject("SELECT count(*) FROM mat_matriculas WHERE persona_id=? AND anio=? AND id<>? AND estado IN ('VIGENTE','RETIRADA','FINALIZADA')",
-      Long.class,persona,seccion.anio(),id)>0)
-      throw new IllegalArgumentException("El estudiante ya tiene matrícula en este año. Consulta su expediente para continuarla.");
     jdbc.update("UPDATE mat_matriculas SET persona_id=?,anio=?,seccion_id=?,estado='VIGENTE',confirmado_en=now(),actualizado_en=now() WHERE id=?",
       persona,seccion.anio(),seccionId,id);
     evento(id,"CONFIRMADA",actor);
@@ -142,6 +143,11 @@ public class MatriculasController {
       evento(id,"FINALIZADA",actor); solicitud(id,"AULA","ACCESO_HISTORICO");
     }
     return new ResultadoAnio(anio,ids.size());
+  }
+  @GetMapping("/finalizar-anio/{anio}/resumen") public ResumenCierre resumenCierre(@PathVariable int anio,Authentication auth) {
+    AccesoErp.actor(auth);
+    return new ResumenCierre(anio,jdbc.queryForObject(
+      "SELECT count(*) FROM mat_matriculas WHERE anio=? AND estado='VIGENTE'",Long.class,anio));
   }
   private void cambiarEstado(UUID id,Authentication auth,String origen,String destino,String accion) {
     String actor=AccesoErp.actor(auth); Matricula m=obtener(id);
@@ -173,6 +179,25 @@ public class MatriculasController {
     if (entrada==null || entrada.datos()==null)
       throw new IllegalArgumentException("Los datos del borrador deben ser un objeto");
     return json.valueToTree(entrada.datos());
+  }
+  private void validarMatriculaAnualExistente(JsonNode datos) {
+    String personaId=texto(datos,"personaId");
+    if (personaId==null) return;
+    int anio=datos.path("anio").asInt(0);
+    String seccionId=texto(datos,"seccionId");
+    if (seccionId!=null) {
+      OfertaConsulta.Seccion seccion=oferta.seccion(uuid(seccionId));
+      if (seccion!=null) {
+        if (anio>0 && anio!=seccion.anio()) throw new IllegalArgumentException("La sección no pertenece al año seleccionado.");
+        anio=seccion.anio();
+      }
+    }
+    if (anio>0) validarMatriculaAnualExistente(uuid(personaId),anio);
+  }
+  private void validarMatriculaAnualExistente(UUID persona,int anio) {
+    if (Boolean.TRUE.equals(jdbc.queryForObject("SELECT EXISTS(SELECT 1 FROM mat_matriculas WHERE persona_id=? AND anio=? AND estado IN ('VIGENTE','RETIRADA','FINALIZADA'))",
+      Boolean.class,persona,anio)))
+      throw new IllegalArgumentException("El estudiante ya tiene una matrícula en "+anio+". Consulta su expediente existente.");
   }
   private static String texto(JsonNode n,String campo) { String v=n.path(campo).asText("").trim(); return v.isEmpty()?null:v; }
   private static String requerido(JsonNode n,String campo,String etiqueta) {

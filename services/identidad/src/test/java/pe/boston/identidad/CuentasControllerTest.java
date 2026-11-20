@@ -31,8 +31,8 @@ class CuentasControllerTest {
   @Test void cambiaClaveYRevocaAutorizaciones() {
     when(db.queryForMap("SELECT clave_hash,activo FROM cuentas WHERE id=? FOR UPDATE",id)).thenReturn(Map.of("clave_hash","hash-anterior","activo",true));
     when(encoder.matches("actual","hash-anterior")).thenReturn(true);
-    when(encoder.encode("nueva-clave-segura")).thenReturn("hash-nuevo");
-    cuentas.cambiarMiClave(new CuentasController.CambioPropio("actual","nueva-clave-segura"),actor);
+    when(encoder.encode("abcde")).thenReturn("hash-nuevo");
+    cuentas.cambiarMiClave(new CuentasController.CambioPropio("actual","abcde"),actor);
     verify(db).update("UPDATE cuentas SET clave_hash=?,intentos_fallidos=0,bloqueado_hasta=NULL,sesion_version=sesion_version+1 WHERE id=?","hash-nuevo",id);
     verify(db).update("DELETE FROM oauth2_authorization WHERE principal_name=(SELECT usuario FROM cuentas WHERE id=?)",id);
   }

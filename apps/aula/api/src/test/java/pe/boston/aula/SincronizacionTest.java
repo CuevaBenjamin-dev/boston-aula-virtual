@@ -1,8 +1,14 @@
 package pe.boston.aula;
+import pe.boston.aula.integraciones.ErpCliente;
+import pe.boston.aula.integraciones.Sincronizacion;
 
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.startsWith;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -13,10 +19,14 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.transaction.TransactionStatus;
+import java.util.function.Consumer;
 
 class SincronizacionTest {
   private final JdbcTemplate db=mock(JdbcTemplate.class);
-  private final Sincronizacion sync=new Sincronizacion(db,mock(ErpCliente.class),mock(TransactionTemplate.class));
+  private final ErpCliente erp=mock(ErpCliente.class);
+  private final TransactionTemplate transaccion=mock(TransactionTemplate.class);
+  private final Sincronizacion sync=new Sincronizacion(db,erp,transaccion);
   private final ObjectMapper json=new ObjectMapper();
 
   @Test void eventoRepetidoOAnteriorNoRevierteLaProyeccion() throws Exception {
@@ -46,5 +56,40 @@ class SincronizacionTest {
       """.formatted(curso,seccion,docente));
     sync.aplicar(evento);
     verify(db).update(startsWith("INSERT INTO docentes_curso"),eq(curso),eq(docente),eq("Luis Demo Docente"));
+  }
+
+  @Test void falloDelContratoHeredadoNoAvanzaSecuenciaYSePuedeReintentar() throws Exception {
+    String consulta="/api/erp/v1/eventos?despues=7&limite=100";
+    when(db.queryForObject("SELECT ultima_secuencia FROM estado_sincronizacion WHERE id=1",Long.class)).thenReturn(7L);
+    when(erp.get(consulta)).thenThrow(new IllegalStateException("ERP: HTTP 404")).thenReturn(json.readTree("[]"));
+
+    sync.ejecutar();
+    verify(db).update(startsWith("UPDATE estado_sincronizacion SET ultimo_error="),contains("ERP: HTTP 404"));
+    verify(db,never()).update(startsWith("UPDATE estado_sincronizacion SET ultimo_exito="));
+    verify(db,never()).update(eq("UPDATE estado_sincronizacion SET ultima_secuencia=? WHERE id=1"),any(Object.class));
+
+    sync.ejecutar();
+    verify(erp,times(2)).get(consulta);
+    verify(db).update("UPDATE estado_sincronizacion SET ultimo_exito=now(),ultimo_error=NULL WHERE id=1");
+    verify(db,never()).update(eq("UPDATE estado_sincronizacion SET ultima_secuencia=? WHERE id=1"),any(Object.class));
+  }
+
+  @Test void consumidorAplicaEventoYRegistraExitoSoloTrasLaTransaccion() throws Exception {
+    UUID cuenta=UUID.randomUUID(),seccion=UUID.randomUUID();
+    when(db.queryForObject("SELECT ultima_secuencia FROM estado_sincronizacion WHERE id=1",Long.class)).thenReturn(0L);
+    when(db.queryForObject("SELECT ultima_secuencia FROM estado_sincronizacion WHERE id=1 FOR UPDATE",Long.class)).thenReturn(0L);
+    when(erp.get("/api/erp/v1/eventos?despues=0&limite=100")).thenReturn(json.readTree("""
+      [{"secuencia":1,"tipo":"AMBITO_COORDINACION","datos":{"cuentaId":"%s","seccionId":"%s","asignado":true}}]
+      """.formatted(cuenta,seccion)));
+    doAnswer(invocacion -> {
+      Consumer<TransactionStatus> accion=invocacion.getArgument(0);
+      accion.accept(mock(TransactionStatus.class));
+      return null;
+    }).when(transaccion).executeWithoutResult(any());
+
+    sync.ejecutar();
+    verify(db).update("UPDATE estado_sincronizacion SET ultima_secuencia=? WHERE id=1",1L);
+    verify(db).update("UPDATE estado_sincronizacion SET ultimo_exito=now(),ultimo_error=NULL WHERE id=1");
+    verify(db,never()).update(startsWith("UPDATE estado_sincronizacion SET ultimo_error="),any(Object.class));
   }
 }

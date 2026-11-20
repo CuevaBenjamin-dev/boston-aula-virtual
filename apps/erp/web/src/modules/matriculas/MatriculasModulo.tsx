@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { Link, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom'
 import type { Sesion } from '../../shared/api/sesion'
 import { erp } from '../../shared/api/erp'
+import { EstadoIntegracion } from '../../shared/ui/EstadoIntegracion'
 
 type Persona = { id: string; nombres: string; apellidos: string; documento: string | null }
 type PaginaPersonas = { resultados: Persona[] }
@@ -37,7 +38,30 @@ function Listado({ sesion }: { sesion: Sesion }) {
   const [filas, setFilas] = useState<Matricula[]>([])
   const [error, setError] = useState('')
   const [cargando, setCargando] = useState(true)
-  useEffect(() => { void erp<Matricula[]>('/matriculas', sesion).then(setFilas).catch(e => setError(String(e))).finally(() => setCargando(false)) }, [sesion])
+  const [anios, setAnios] = useState<number[]>([])
+  const [anioCierre, setAnioCierre] = useState(0)
+  const [vigentes, setVigentes] = useState<number | null>(null)
+  const [cerrando, setCerrando] = useState(false)
+  const [avisoCierre, setAvisoCierre] = useState('')
+  useEffect(() => {
+    void erp<Matricula[]>('/matriculas', sesion).then(setFilas).catch(e => setError(String(e))).finally(() => setCargando(false))
+    void erp<number[]>('/oferta/anios', sesion).then(setAnios).catch(e => setError(String(e)))
+  }, [sesion])
+  useEffect(() => {
+    if (!anioCierre) { setVigentes(null); return }
+    void erp<{ vigentes: number }>(`/matriculas/finalizar-anio/${anioCierre}/resumen`, sesion)
+      .then(r => setVigentes(r.vigentes)).catch(e => setError(String(e)))
+  }, [anioCierre, sesion])
+  async function finalizarAnio() {
+    if (!anioCierre || !vigentes || !window.confirm(`Finalizar ${vigentes} matrículas vigentes de ${anioCierre}? Se conservarán cursos, entregas y calificaciones. Esta operación no se puede deshacer.`)) return
+    setError(''); setAvisoCierre(''); setCerrando(true)
+    try {
+      const resultado = await erp<{ finalizadas: number }>(`/matriculas/finalizar-anio/${anioCierre}`, sesion, 'POST')
+      setAvisoCierre(`${resultado.finalizadas} matrículas finalizadas en ${anioCierre}. La sincronización con Aula puede quedar pendiente hasta su confirmación.`)
+      setVigentes(0)
+      setFilas(await erp<Matricula[]>('/matriculas', sesion))
+    } catch (e) { setError(String(e)) } finally { setCerrando(false) }
+  }
   return <section className="pagina"><div className="erp-pagina-titulo"><div><p className="etiqueta">GESTIÓN ESCOLAR</p><h2>Matrículas</h2><p>Borradores y matrículas anuales guardados en el ERP.</p></div>
     <Link className="boton-principal" to="nueva">+ Nueva matrícula</Link></div>
     <section className="per-panel"><div className="per-panel-cabecera"><h3>Expedientes</h3><span>{filas.length} visibles</span></div>
@@ -47,6 +71,15 @@ function Listado({ sesion }: { sesion: Sesion }) {
       {filas.map(m => <div className="per-fila" key={m.id}><div><strong>{m.borrador.nombres ? `${m.borrador.nombres} ${m.borrador.apellidos ?? ''}` : m.personaId ?? 'Alumno por identificar'}</strong>
         <small>{m.anio ?? 'Año por elegir'} · {m.estado} · {new Date(m.creadoEn).toLocaleDateString('es-PE')}</small></div>
         <Link to={m.id}>Abrir expediente →</Link></div>)}
+    </section>
+    <section className="per-panel"><div className="per-panel-cabecera"><h3>Finalizar año escolar</h3></div>
+      <div className="per-panel-cuerpo"><p>Dirección o Coordinación puede cerrar expresamente las matrículas vigentes de un año escolar concluido.</p>
+        <label className="per-campo">Año escolar<select value={anioCierre || ''} onChange={e => { setAnioCierre(Number(e.target.value)); setAvisoCierre('') }}><option value="">Seleccionar año</option>
+          {anios.filter(y => y < new Date().getFullYear()).map(y => <option key={y} value={y}>{y}</option>)}</select></label>
+        {anioCierre > 0 && <p>{vigentes === null ? 'Consultando…' : `${vigentes} matrículas vigentes serán finalizadas en ${anioCierre}. Las matrículas Borrador, Retirada y Finalizada no cambiarán.`}</p>}
+        <button type="button" className="boton-principal" disabled={!vigentes || cerrando} onClick={() => void finalizarAnio()}>{cerrando ? 'Finalizando…' : 'Finalizar matrículas del año'}</button>
+        {avisoCierre && <p role="status">{avisoCierre}</p>}
+      </div>
     </section></section>
 }
 
@@ -94,14 +127,14 @@ function Expediente({ sesion, nuevo = false }: { sesion: Sesion; nuevo?: boolean
     if (!matricula) return
     setError(''); setGuardando(true)
     try { await guardarBorrador(); const m=await erp<Matricula>(`/matriculas/${matricula.id}/confirmar`,sesion,'POST');
-      setMatricula(m); setAviso('Matrícula vigente en ERP. El acceso a Aula e Identidad sigue pendiente de integración.') }
+      setMatricula(m); setAviso('Matrícula vigente en ERP. Comprueba la confirmación de Identidad y Aula en el expediente.') }
     catch (e) { setError(String(e instanceof Error ? e.message : e)) }
     finally { setGuardando(false) }
   }
   async function cambiar(accion: 'retirar' | 'reincorporar') {
     if (!matricula || !window.confirm(`¿Confirmar ${accion} esta matrícula?`)) return
     setGuardando(true); setError('')
-    try { const m=await erp<Matricula>(`/matriculas/${matricula.id}/${accion}`,sesion,'POST'); setMatricula(m); setAviso('Estado institucional actualizado. La sincronización con Aula sigue pendiente.') }
+    try { const m=await erp<Matricula>(`/matriculas/${matricula.id}/${accion}`,sesion,'POST'); setMatricula(m); setAviso('Estado institucional actualizado. Comprueba la sincronización en el expediente.') }
     catch (e) { setError(String(e)) } finally { setGuardando(false) }
   }
   const g=datos.apoderado ?? {}
@@ -112,11 +145,11 @@ function Expediente({ sesion, nuevo = false }: { sesion: Sesion; nuevo?: boolean
     {error && <p className="per-aviso" role="alert">{error}</p>}{aviso && <p className="per-aviso exito" role="status">{aviso}</p>}
     {matricula && matricula.estado !== 'BORRADOR' ? <section className="per-panel"><div className="per-panel-cabecera"><h3>Expediente</h3></div>
       <dl className="per-datos"><dt>Alumno</dt><dd>{datos.nombres} {datos.apellidos || matricula.personaId}</dd><dt>Año</dt><dd>{matricula.anio}</dd><dt>Sección</dt><dd>{secciones.find(s=>s.id===matricula.seccionId)?.nombre ?? matricula.seccionId}</dd>
-        <dt>Cuenta de Aula</dt><dd>Pendiente: contrato de integración no conectado</dd></dl>
+        <dt>Integración</dt><dd><EstadoIntegracion sesion={sesion} tipo="MATRICULA" id={matricula.id} /></dd></dl>
       {matricula.estado === 'VIGENTE' && <button className="per-secundario" disabled={guardando} onClick={() => void cambiar('retirar')}>Retirar</button>}
       {matricula.estado === 'RETIRADA' && <button className="boton-principal" disabled={guardando} onClick={() => void cambiar('reincorporar')}>Reincorporar</button>}
     </section> : <>
-      <nav className="erp-pasos" aria-label="Etapas de la matrícula">{['Alumno','Apoderado','Revisión'].map((n,i) => <button type="button" key={n} className={paso===i?'actual':''} onClick={() => setPaso(i)}>{String(i+1).padStart(2,'0')} · {n}</button>)}</nav>
+      <nav className="erp-pasos" aria-label="Etapas de la matrícula">{['Alumno','Apoderado','Revisión'].map((n,i) => <button type="button" key={n} className={paso===i?'actual':''} disabled={i>paso} onClick={() => { if (i<paso) setPaso(i) }}>{String(i+1).padStart(2,'0')} · {n}</button>)}</nav>
       {paso===0 && <form className="per-panel" onSubmit={e => void siguiente(e)}><div className="per-panel-cabecera"><h3>01 · Datos del alumno</h3></div>
         <div className="erp-opciones"><button type="button" className={modo==='nuevo'?'seleccionado':''} onClick={() => { setModo('nuevo'); actualizar('personaId','') }}>Registrar nuevo</button>
           <button type="button" className={modo==='existente'?'seleccionado':''} onClick={() => setModo('existente')}>Usar estudiante registrado</button></div>

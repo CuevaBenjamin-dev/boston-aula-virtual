@@ -33,8 +33,8 @@ import org.springframework.web.bind.annotation.*;
     var r=new java.util.HashMap<>(m);
     if("ESTUDIANTE".equals(usuario.tipo(a))) r.put("curso_id",db.queryForObject("""
       SELECT d.curso_id FROM destinos_material d JOIN inscripciones_curso i ON i.curso_id=d.curso_id
-      JOIN cursos c ON c.id=d.curso_id
-      WHERE d.material_id=? AND i.estudiante_erp_id=? AND i.activo AND (c.periodo_fin IS NULL OR c.periodo_fin>=CURRENT_DATE)
+      WHERE d.material_id=? AND i.estudiante_erp_id=?
+        AND ((i.activo AND i.estado_matricula='VIGENTE') OR i.estado_matricula='FINALIZADA')
       ORDER BY d.curso_id LIMIT 1
       """,UUID.class,id,usuario.referencia(a)));
     else r.put("curso_ids",db.queryForList("SELECT curso_id FROM destinos_material WHERE material_id=? ORDER BY curso_id",UUID.class,id));
@@ -90,9 +90,9 @@ import org.springframework.web.bind.annotation.*;
     if("ESTUDIANTE".equals(usuario.tipo(a))) {
       if(!"PUBLICADO".equals(db.queryForObject("SELECT estado FROM materiales_curso WHERE id=?",String.class,material))) throw new AccessDeniedException("Material oculto");
       for(UUID curso:destinos) if(db.queryForObject("""
-          SELECT count(*) FROM inscripciones_curso i JOIN cursos c ON c.id=i.curso_id
-          WHERE i.curso_id=? AND i.estudiante_erp_id=? AND i.activo
-            AND (c.periodo_fin IS NULL OR c.periodo_fin>=CURRENT_DATE)
+          SELECT count(*) FROM inscripciones_curso i
+          WHERE i.curso_id=? AND i.estudiante_erp_id=?
+            AND ((i.activo AND i.estado_matricula='VIGENTE') OR i.estado_matricula='FINALIZADA')
           """,Long.class,curso,usuario.referencia(a))>0) return;
       throw new AccessDeniedException("Material ajeno");
     }

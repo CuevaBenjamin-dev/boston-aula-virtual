@@ -113,9 +113,10 @@ public class Seguridad {
     });
     http.csrf(c -> c.ignoringRequestMatchers("/api/identidad/**"))
       .authorizeHttpRequests(a -> a.requestMatchers("/actuator/health", "/error", "/login", "/restablecer", "/.well-known/**", "/api/identidad/restablecer").permitAll()
+      .requestMatchers("/api/identidad/integracion/**").hasAuthority("SCOPE_identidad.provision")
       .requestMatchers("/api/identidad/estado/**").hasAuthority("SCOPE_erp.read")
       .requestMatchers("/api/identidad/docentes").hasRole("DIRECCION")
-      .requestMatchers("/api/identidad/directorio", "/api/identidad/mi-clave").authenticated()
+      .requestMatchers("/api/identidad/directorio", "/api/identidad/mi-clave", "/clave-inicial").authenticated()
       .requestMatchers("/api/identidad/**").hasRole("ADMINISTRADOR")
       .anyRequest().authenticated())
       .oauth2ResourceServer(o -> o.jwt(j -> j.jwtAuthenticationConverter(jwtConverter)))
@@ -129,6 +130,12 @@ public class Seguridad {
       }).successHandler((request, response, authentication) -> {
         jdbc.update("UPDATE cuentas SET intentos_fallidos=0,bloqueado_hasta=NULL WHERE usuario=?", authentication.getName());
         jdbc.update("INSERT INTO auditoria_seguridad(id,cuenta_id,accion) SELECT ?,id,'LOGIN' FROM cuentas WHERE usuario=?", UUID.randomUUID(), authentication.getName());
+        if (Boolean.TRUE.equals(jdbc.queryForObject("SELECT cambio_clave_obligatorio FROM cuentas WHERE usuario=?",Boolean.class,authentication.getName()))) {
+          var destino=new org.springframework.security.web.savedrequest.HttpSessionRequestCache().getRequest(request,response);
+          if (destino!=null && destino.getRedirectUrl().contains("/oauth2/authorize"))
+            request.getSession().setAttribute("bbs.oauth.destino",destino.getRedirectUrl());
+          response.sendRedirect("/clave-inicial"); return;
+        }
         new org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler().onAuthenticationSuccess(request, response, authentication);
       }))
       .logout(l -> l.logoutSuccessUrl("/login?logout"))
@@ -157,6 +164,10 @@ public class Seguridad {
     if (repo.findByClientId("aula-servicio") == null) repo.save(RegisteredClient.withId(UUID.randomUUID().toString())
       .clientId("aula-servicio").clientSecret(encoder.encode(erp)).clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
       .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS).scope("erp.read").scope("erp.sync").build());
+    if (repo.findByClientId("erp-integracion") == null) repo.save(RegisteredClient.withId(UUID.randomUUID().toString())
+      .clientId("erp-integracion").clientSecret(encoder.encode(erp)).clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+      .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+      .scope("identidad.provision").scope("aula.proyectar").build());
     if (repo.findByClientId("erp-web") == null) repo.save(RegisteredClient.withId(UUID.randomUUID().toString())
       .clientId("erp-web").clientSecret(encoder.encode(erpWeb)).clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
       .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE).authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)

@@ -62,6 +62,8 @@ services:
       BOSTON_ISSUER: http://localhost:9000
       BOSTON_TOKEN_URI: http://identidad:9000/oauth2/token
       BOSTON_IDENTIDAD_URL: http://identidad:9000
+      BOSTON_AULA_URL: http://api-aula:8080
+      BOSTON_INTEGRACION_SECRET: ${ERP_CLIENT_SECRET:-cambiar-local-erp}
       BOSTON_ERP_WEB_SECRET: ${ERP_WEB_CLIENT_SECRET:-cambiar-local-erp-web}
     depends_on:
       postgres:

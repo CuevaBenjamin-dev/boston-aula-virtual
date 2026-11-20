@@ -1,7 +1,8 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { Link, Route, Routes, useNavigate, useParams } from 'react-router-dom'
 import type { Sesion } from '../../shared/api/sesion'
-import { api, guardar, type Capacidades, type Condicion, type Pagina, type Persona, type TipoDocumento } from './api'
+import { api, guardar, type Capacidades, type Condicion, type Pagina, type Persona, type ReferenciaPersona, type TipoDocumento } from './api'
+import { EstadoIntegracion } from '../../shared/ui/EstadoIntegracion'
 
 const tiposCondicion: { valor: Condicion; texto: string }[] = [
   { valor: 'ESTUDIANTE', texto: 'Estudiante' }, { valor: 'DOCENTE', texto: 'Docente' },
@@ -18,6 +19,14 @@ function Aviso({ mensaje, tipo = 'error' }: { mensaje: string; tipo?: 'error' | 
 
 function Campo({ titulo, children }: { titulo: string; children: ReactNode }) {
   return <label className="per-campo"><span>{titulo}</span>{children}</label>
+}
+
+function NombreVinculado({ id, referencia }: { id: string; referencia?: ReferenciaPersona }) {
+  return <Link to={'/personas/' + id}>{referencia ? `${referencia.nombres} ${referencia.apellidos}` : 'Ver ficha de la persona'}</Link>
+}
+
+function DocumentoVinculado({ referencia }: { referencia?: ReferenciaPersona }) {
+  return referencia?.numeroDocumento ? <>{referencia.tipoDocumento} {referencia.numeroDocumento} · </> : null
 }
 
 function SelectorPersona({ sesion, titulo, condicion, valor, alElegir }: {
@@ -157,7 +166,7 @@ function Registro({ sesion, capacidades }: { sesion: Sesion; capacidades: Capaci
   }
   if (!capacidades.registrar) return <Aviso mensaje="No tienes permiso para registrar personas." />
   return <section className="per-pagina"><Link className="per-volver" to="/personas">← Directorio</Link>
-    <div className="per-titulo"><div><p className="etiqueta">ALTA INSTITUCIONAL</p><h2>Registrar persona</h2><p>El documento se comprueba antes de crear un nuevo UUID.</p></div></div>
+    <div className="per-titulo"><div><p className="etiqueta">ALTA INSTITUCIONAL</p><h2>Registrar persona</h2><p>El documento se comprueba antes de crear la ficha.</p></div></div>
     <Aviso mensaje={exito} tipo="exito" />
     <form className="per-panel" onSubmit={e => void enviar(e)}>
       <div className="per-panel-cabecera"><h3>Condición inicial</h3></div>
@@ -201,12 +210,16 @@ function Registro({ sesion, capacidades }: { sesion: Sesion; capacidades: Capaci
 
 function Ficha({ sesion, capacidades }: { sesion: Sesion; capacidades: Capacidades }) {
   const { id } = useParams()
+  const navegar = useNavigate()
   const [persona, setPersona] = useState<Persona | null>(null)
   const [error, setError] = useState('')
   const [exito, setExito] = useState('')
   const [cargando, setCargando] = useState(true)
   const [accion, setAccion] = useState('')
   const [campos, setCampos] = useState<Record<string, string>>({})
+  const [confirmandoEliminar, setConfirmandoEliminar] = useState(false)
+  const [confirmacion, setConfirmacion] = useState('')
+  const [eliminando, setEliminando] = useState(false)
   const valor = (clave: string) => campos[clave] ?? ''
   const cambiar = (clave: string, v: string) => setCampos(c => ({ ...c, [clave]: v }))
   async function recargar() {
@@ -221,11 +234,31 @@ function Ficha({ sesion, capacidades }: { sesion: Sesion; capacidades: Capacidad
     try { setError(''); await guardar<void>(ruta, sesion, metodo, cuerpo); setExito(mensaje); setAccion(''); setCampos({}); await recargar() }
     catch (e) { setError(String(e instanceof Error ? e.message : e)) }
   }
+  async function eliminarRegistro() {
+    if (!persona || confirmacion !== 'ELIMINAR') return
+    setError(''); setEliminando(true)
+    try {
+      await api<void>('/' + persona.id, sesion, { method: 'DELETE' })
+      navegar('/personas', { replace: true })
+    } catch (e) {
+      setError(String(e instanceof Error ? e.message : e))
+      setEliminando(false)
+    }
+  }
   if (cargando) return <p role="status">Cargando ficha…</p>
   if (!persona) return <Aviso mensaje={error || 'Persona no encontrada'} />
+  const documentoPrincipal = persona.documentos.find(d => d.principal && !d.vigenteHasta) ?? persona.documentos[0]
   return <section className="per-pagina"><Link className="per-volver" to="/personas">← Directorio</Link>
-    <div className="per-titulo"><div><p className="etiqueta">FICHA INSTITUCIONAL</p><h2>{persona.nombres} {persona.apellidos}</h2><p>UUID {persona.id}</p></div></div>
+    <div className="per-titulo"><div><p className="etiqueta">FICHA INSTITUCIONAL</p><h2>{persona.nombres} {persona.apellidos}</h2><p>{documentoPrincipal ? `${documentoPrincipal.tipo} · ${documentoPrincipal.numero}` : 'Identificación provisional'}</p></div>
+      {capacidades.eliminarRegistroIncorrecto && <button className="per-peligro" type="button" onClick={() => setConfirmandoEliminar(true)}>Eliminar registro incorrecto</button>}</div>
     <Aviso mensaje={error} /><Aviso mensaje={exito} tipo="exito" />
+    {confirmandoEliminar && <section className="per-panel per-confirmar-eliminacion" aria-label="Confirmar eliminación de registro incorrecto">
+      <h3>Eliminar registro incorrecto</h3>
+      <p>Esta acción libera el documento y no se puede deshacer. Solo se permite si la persona no tiene matrículas, vínculos, asignaciones ni cambios posteriores a su registro.</p>
+      <Campo titulo="Escribe ELIMINAR para confirmar"><input value={confirmacion} onChange={e => setConfirmacion(e.target.value)} autoComplete="off" /></Campo>
+      <div className="per-acciones"><button className="per-secundario" type="button" onClick={() => { setConfirmandoEliminar(false); setConfirmacion('') }}>Conservar registro</button>
+        <button className="per-peligro" type="button" disabled={confirmacion !== 'ELIMINAR' || eliminando} onClick={() => void eliminarRegistro()}>{eliminando ? 'Eliminando…' : 'Eliminar definitivamente'}</button></div>
+    </section>}
     <div className="per-dos-columnas"><section className="per-panel"><div className="per-panel-cabecera"><h3>Datos personales</h3></div>
       <dl className="per-datos"><dt>Nacimiento</dt><dd>{persona.fechaNacimiento || '—'}</dd><dt>Teléfono</dt><dd>{persona.telefono || '—'}</dd><dt>Correo</dt><dd>{persona.correo || '—'}</dd></dl>
       {capacidades.editarContacto && <button className="per-secundario" onClick={() => { setAccion('contacto'); setCampos({ telefono: persona.telefono ?? '', correo: persona.correo ?? '', direccion: persona.direccion ?? '' }) }}>Editar contacto</button>}
@@ -241,11 +274,13 @@ function Ficha({ sesion, capacidades }: { sesion: Sesion; capacidades: Capacidad
       {persona.apoderamientos.some(a => a.apoderadoId === persona.id && !a.vigenteHasta) && <div className="per-fila"><strong>APODERADO · activo por vínculo vigente</strong></div>}
       {!persona.condiciones.length && !persona.apoderamientos.length && <p className="per-vacio">Sin condiciones registradas.</p>}
     </section>
+    {persona.condiciones.some(c => c.tipo === 'DOCENTE') && <section className="per-panel"><div className="per-panel-cabecera"><h3>Cuenta docente de Aula</h3></div>
+      <EstadoIntegracion sesion={sesion} tipo="PERSONA" id={persona.id} /></section>}
     <div className="per-dos-columnas"><section className="per-panel"><div className="per-panel-cabecera"><h3>Parentescos</h3>{capacidades.gestionarVinculos && <button className="per-secundario" onClick={() => setAccion('parentesco')}>+ Vincular</button>}</div>
-      {persona.parentescos.map(p => <div className="per-fila" key={p.id}><div><strong>{p.tipo}</strong><small>Estudiante {p.estudianteId} · Familiar {p.familiarId}<br /><Fecha valor={p.vigenteHasta} /></small></div>{!p.vigenteHasta && capacidades.gestionarVinculos && <button className="per-secundario" onClick={() => void operar('/' + persona.id + '/parentescos/' + p.id + '/desactivar', 'POST', {}, 'Parentesco desactivado')}>Desactivar</button>}</div>)}
+      {persona.parentescos.map(p => { const esEstudiante = p.estudianteId === persona.id; const otroId = esEstudiante ? p.familiarId : p.estudianteId; const referencia = persona.referencias[otroId]; return <div className="per-fila per-vinculo" key={p.id}><div><strong>{p.tipo} · <NombreVinculado id={otroId} referencia={referencia} /></strong><small>{esEstudiante ? 'Familiar' : 'Estudiante'} · <DocumentoVinculado referencia={referencia} />{p.vigenteHasta ? 'Finalizado' : 'Vigente'}</small></div>{!p.vigenteHasta && capacidades.gestionarVinculos && <button className="per-secundario" onClick={() => void operar('/' + persona.id + '/parentescos/' + p.id + '/desactivar', 'POST', {}, 'Parentesco desactivado')}>Desactivar</button>}</div> })}
       {!persona.parentescos.length && <p className="per-vacio">Sin parentescos.</p>}
     </section><section className="per-panel"><div className="per-panel-cabecera"><h3>Apoderamientos</h3>{capacidades.gestionarVinculos && <button className="per-secundario" onClick={() => setAccion('apoderamiento')}>+ Vincular</button>}</div>
-      {persona.apoderamientos.map(a => <div className="per-fila" key={a.id}><div><strong>Estudiante {a.estudianteId}</strong><small>Apoderado {a.apoderadoId} · {a.sinParentesco ? 'Autorización verificada' : 'Con parentesco'} · <Fecha valor={a.vigenteHasta} /></small></div>{!a.vigenteHasta && capacidades.gestionarVinculos && <button className="per-secundario" onClick={() => { setAccion('desactivar-apoderamiento:' + a.id); setCampos({}) }}>Desactivar</button>}</div>)}
+      {persona.apoderamientos.map(a => { const esEstudiante = a.estudianteId === persona.id; const otroId = esEstudiante ? a.apoderadoId : a.estudianteId; const referencia = persona.referencias[otroId]; return <div className="per-fila per-vinculo" key={a.id}><div><strong>{esEstudiante ? 'Apoderado' : 'Estudiante'} · <NombreVinculado id={otroId} referencia={referencia} /></strong><small><DocumentoVinculado referencia={referencia} />{a.sinParentesco ? 'Autorización verificada' : 'Con parentesco'} · {a.vigenteHasta ? 'Finalizado' : 'Vigente'}</small></div>{!a.vigenteHasta && capacidades.gestionarVinculos && <button className="per-secundario" onClick={() => { setAccion('desactivar-apoderamiento:' + a.id); setCampos({}) }}>Desactivar</button>}</div> })}
       {!persona.apoderamientos.length && <p className="per-vacio">Sin apoderamientos.</p>}
     </section></div>
     {accion && <form className="per-panel per-editor" onSubmit={e => { e.preventDefault(); const base='/' + persona.id

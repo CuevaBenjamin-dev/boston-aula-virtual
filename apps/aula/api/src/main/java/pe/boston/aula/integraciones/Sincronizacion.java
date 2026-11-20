@@ -1,4 +1,4 @@
-package pe.boston.aula;
+package pe.boston.aula.integraciones;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -14,13 +14,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Service public class Sincronizacion {
+  // Conserva el cursor 436 y el consumidor histórico para consulta; el ERP nuevo usa push v1.
+  @org.springframework.beans.factory.annotation.Value("${BOSTON_LEGACY_SYNC_ENABLED:false}")
+  private boolean legadoHabilitado=true;
   private static final Logger log=LoggerFactory.getLogger(Sincronizacion.class);
   private final JdbcTemplate db;
   private final ErpCliente erp;
   private final TransactionTemplate transaccion;
   private final ObjectMapper json=new ObjectMapper();
   public Sincronizacion(JdbcTemplate db,ErpCliente erp,TransactionTemplate transaccion) { this.db=db; this.erp=erp; this.transaccion=transaccion; }
+  public boolean legadoHabilitado() { return legadoHabilitado; }
   @Scheduled(fixedDelay=15000,initialDelay=3000) public void ejecutar() {
+    if (!legadoHabilitado) return;
     try {
       long ultimo=db.queryForObject("SELECT ultima_secuencia FROM estado_sincronizacion WHERE id=1",Long.class);
       JsonNode eventos=erp.get("/api/erp/v1/eventos?despues="+ultimo+"&limite=100");

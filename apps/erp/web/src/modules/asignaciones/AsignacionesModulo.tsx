@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import type { Sesion } from '../../shared/api/sesion'
 import { erp } from '../../shared/api/erp'
+import { EstadoIntegracion } from '../../shared/ui/EstadoIntegracion'
 
 type Persona = { id: string; nombres: string; apellidos: string; documento: string | null }
 type Pagina = { resultados: Persona[] }
@@ -45,13 +46,13 @@ export function AsignacionesModulo({ sesion }: { sesion: Sesion }) {
   async function crear(e: FormEvent) {
     e.preventDefault(); setError(''); setAviso(''); setGuardando(true)
     try { const a=await erp<Asignacion>('/asignaciones',sesion,'POST',{ docenteId,seccionId,asignaturaId,tipo,desde,hasta:hasta||null,horario:horario||null })
-      setFilas(f=>[a,...f]); setAviso('Asignación registrada en ERP. Sincronización con Aula pendiente.'); setAsignaturaId('') }
+      setFilas(f=>[a,...f]); setAviso('Asignación registrada en ERP. Comprueba la confirmación de Aula en la fila.'); setAsignaturaId('') }
     catch (e) { setError(String(e instanceof Error?e.message:e)) } finally { setGuardando(false) }
   }
   async function cerrar(id: string) {
     if (!window.confirm('¿Cerrar esta asignación? Su historial permanecerá disponible.')) return
     setError(''); setGuardando(true)
-    try { const a=await erp<Asignacion>(`/asignaciones/${id}/cerrar`,sesion,'POST'); setFilas(f=>f.map(x=>x.id===id?a:x)); setAviso('Asignación cerrada; actualización de Aula pendiente.') }
+    try { const a=await erp<Asignacion>(`/asignaciones/${id}/cerrar`,sesion,'POST'); setFilas(f=>f.map(x=>x.id===id?a:x)); setAviso('Asignación cerrada; comprueba la actualización de Aula.') }
     catch (e) { setError(String(e instanceof Error?e.message:e)) } finally { setGuardando(false) }
   }
 
@@ -76,7 +77,7 @@ export function AsignacionesModulo({ sesion }: { sesion: Sesion }) {
           <label className="per-campo">Desde<input required type="date" value={desde} onChange={e=>setDesde(e.target.value)} /></label>
           <label className="per-campo">Hasta (opcional)<input type="date" value={hasta} onChange={e=>setHasta(e.target.value)} /></label>
           <label className="per-campo">Horario (referencia opcional)<input value={horario} onChange={e=>setHorario(e.target.value)} placeholder="Lunes 08:00–09:00" /></label></div>
-        <div className="per-acciones"><small>La asignación queda persistida; Aula se actualizará cuando exista el contrato remoto.</small>
+        <div className="per-acciones"><small>La asignación queda persistida; Aula se actualiza al confirmar el destino.</small>
           <button className="boton-principal" disabled={guardando||!docenteId||!anios.length}>Registrar asignación</button></div>
       </form>
     </section>
@@ -84,7 +85,8 @@ export function AsignacionesModulo({ sesion }: { sesion: Sesion }) {
       {!filas.length && <p className="per-vacio">No hay asignaciones en este año.</p>}
       {filas.map(a=><div className="per-fila" key={a.id}><div><strong>{a.asignatura} · {a.seccion}</strong>
         <small>{a.docente} · {a.tipo} · {a.desde}{a.hasta?` a ${a.hasta}`:''} · {a.estado}</small>
-        {a.coberturaPendiente && <small className="per-aviso">Cobertura futura por resolver: docente inactivo.</small>}</div>
+        {a.coberturaPendiente && <small className="per-aviso">Cobertura futura por resolver: docente inactivo.</small>}
+        <EstadoIntegracion sesion={sesion} tipo="ASIGNACION" id={a.id} /></div>
         {a.estado==='ACTIVA' && <button className="per-secundario" type="button" disabled={guardando} onClick={()=>void cerrar(a.id)}>Cerrar</button>}</div>)}
     </section>
   </section>

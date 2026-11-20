@@ -53,7 +53,9 @@ import org.springframework.transaction.annotation.Transactional;
   }
   public Map<String,Object> detalle(UUID id,Authentication a) {
     comprobar(); var clase=db.queryForMap(DATOS+" WHERE c.id=?",id);
-    usuario.leerCurso(a,(UUID)clase.get("curso_id")); return clase;
+    if("ESTUDIANTE".equals(usuario.tipo(a))) usuario.estudianteCurso(a,(UUID)clase.get("curso_id"));
+    else usuario.leerCurso(a,(UUID)clase.get("curso_id"));
+    return clase;
   }
   private void validar(String tema,OffsetDateTime inicio,OffsetDateTime fin) {
     if(tema==null||tema.isBlank()||tema.length()>200) throw new IllegalArgumentException("Tema inválido");

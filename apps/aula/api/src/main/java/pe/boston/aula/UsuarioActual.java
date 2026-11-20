@@ -30,10 +30,14 @@ import org.springframework.stereotype.Component;
   }
   public void estudianteCurso(Authentication a,UUID curso) {
     estudiante(a);
-    if (db.queryForObject("SELECT count(*) FROM inscripciones_curso i JOIN cursos c ON c.id=i.curso_id WHERE i.curso_id=? AND i.estudiante_erp_id=? AND i.activo=TRUE AND (c.periodo_fin IS NULL OR c.periodo_fin>=CURRENT_DATE)",Long.class,curso,referencia(a))==0) throw new AccessDeniedException("Curso ajeno");
+    if (db.queryForObject("SELECT count(*) FROM inscripciones_curso i WHERE i.curso_id=? AND i.estudiante_erp_id=? AND i.activo=TRUE AND i.estado_matricula='VIGENTE'",Long.class,curso,referencia(a))==0) throw new AccessDeniedException("Curso sin matrícula vigente");
   }
   public void leerCurso(Authentication a,UUID curso) {
-    if ("ESTUDIANTE".equals(tipo(a))) estudianteCurso(a,curso);
+    if ("ESTUDIANTE".equals(tipo(a))) {
+      estudiante(a);
+      if (db.queryForObject("SELECT count(*) FROM inscripciones_curso WHERE curso_id=? AND estudiante_erp_id=? AND ((activo AND estado_matricula='VIGENTE') OR estado_matricula='FINALIZADA')",Long.class,curso,referencia(a))==0)
+        throw new AccessDeniedException("Curso ajeno");
+    }
     else if ("DOCENTE".equals(tipo(a))) docente(a,curso);
     else if ("COORDINACION".equals(tipo(a))) {
       if(db.queryForObject("SELECT count(*) FROM cursos c JOIN coordinaciones_seccion x ON x.seccion_erp_id=c.seccion_erp_id WHERE c.id=? AND x.cuenta_id=? AND x.confirmado_erp AND (c.periodo_fin IS NULL OR c.periodo_fin>=CURRENT_DATE)",Long.class,curso,cuenta(a))==0) throw new AccessDeniedException("Curso fuera del ámbito de coordinación");

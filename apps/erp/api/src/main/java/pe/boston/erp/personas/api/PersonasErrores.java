@@ -31,8 +31,12 @@ public class PersonasErrores {
   public ResponseEntity<Map<String,String>> denegado() {
     return error(HttpStatus.FORBIDDEN,"SIN_PERMISO","No tienes permiso para esta operación");
   }
-  @ExceptionHandler({PersonasServicio.Conflicto.class,DataIntegrityViolationException.class})
-  public ResponseEntity<Map<String,String>> conflicto() {
+  @ExceptionHandler(PersonasServicio.Conflicto.class)
+  public ResponseEntity<Map<String,String>> conflicto(PersonasServicio.Conflicto e) {
+    return error(HttpStatus.CONFLICT,"CONFLICTO",e.getMessage());
+  }
+  @ExceptionHandler(DataIntegrityViolationException.class)
+  public ResponseEntity<Map<String,String>> conflictoIntegridad() {
     return error(HttpStatus.CONFLICT,"CONFLICTO","La operación contradice un registro o vigencia existente");
   }
 }
