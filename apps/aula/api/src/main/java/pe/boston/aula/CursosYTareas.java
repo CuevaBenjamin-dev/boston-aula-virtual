@@ -57,9 +57,11 @@ import org.springframework.transaction.annotation.Transactional;
           AND n.estado='PUBLICADA' AND n.entrega_version=(SELECT max(e.version) FROM entregas e
             WHERE e.tarea_id=t.id AND e.estudiante_erp_id=?)) AS evaluacion_publicada
       FROM tareas t WHERE t.curso_id=? AND t.estado<>'FALTA_COMPLETAR'
-        AND NOT EXISTS (SELECT 1 FROM tareas siguiente WHERE siguiente.tarea_anterior_id=t.id)
+        AND (NOT EXISTS (SELECT 1 FROM tareas siguiente WHERE siguiente.tarea_anterior_id=t.id)
+          OR EXISTS (SELECT 1 FROM inscripciones_curso i WHERE i.curso_id=t.curso_id
+            AND i.estudiante_erp_id=? AND i.estado_matricula='FINALIZADA'))
       ORDER BY t.publicado_en DESC NULLS LAST,t.fecha_limite
-      """,usuario.referencia(a),usuario.referencia(a),usuario.referencia(a),usuario.referencia(a),usuario.referencia(a),curso);
+      """,usuario.referencia(a),usuario.referencia(a),usuario.referencia(a),usuario.referencia(a),usuario.referencia(a),curso,usuario.referencia(a));
     if("DOCENTE".equals(usuario.tipo(a))) return db.queryForList("""
       SELECT t.*,k.total_estudiantes,k.entregados,k.tardias,
         (k.total_estudiantes-k.entregados) AS pendientes,k.pendientes_revision,
