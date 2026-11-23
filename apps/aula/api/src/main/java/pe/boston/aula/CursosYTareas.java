@@ -11,7 +11,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
@@ -19,69 +18,22 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service public class CursosYTareas {
-  private static final String CURSOS_CON_DOCENTES="SELECT c.*,(SELECT string_agg(dc.nombre_completo, ', ' ORDER BY dc.nombre_completo) FROM docentes_curso dc WHERE dc.curso_id=c.id AND dc.activo AND dc.nombre_completo IS NOT NULL) AS docentes FROM cursos c ";
-  private static final String INDICADORES="""
-    LEFT JOIN LATERAL (
-      SELECT count(*) AS total_estudiantes,
-             count(e.id) AS entregados,
-             count(*) FILTER (WHERE e.estado='TARDIA') AS tardias,
-             count(*) FILTER (WHERE e.id IS NOT NULL AND (n.id IS NULL OR n.estado='BORRADOR')) AS pendientes_revision
-      FROM inscripciones_curso i
-      LEFT JOIN LATERAL (
-        SELECT id,estado,version FROM entregas WHERE tarea_id=t.id AND estudiante_erp_id=i.estudiante_erp_id
-        ORDER BY version DESC LIMIT 1
-      ) e ON TRUE
-      LEFT JOIN calificaciones_tarea n ON n.tarea_id=t.id AND n.estudiante_erp_id=i.estudiante_erp_id AND n.entrega_version=e.version
-      WHERE i.curso_id=t.curso_id AND i.activo
-    ) k ON TRUE
-    """;
-  private final JdbcTemplate db; private final UsuarioActual usuario; private final ErpCliente erp; private final AvisosTarea avisos;
-  @Value("${boston.calificaciones.minimo:0}") private BigDecimal notaMinima=new BigDecimal("0");
-  @Value("${boston.calificaciones.maximo:20}") private BigDecimal notaMaxima=new BigDecimal("20");
-  public CursosYTareas(JdbcTemplate db,UsuarioActual usuario,ErpCliente erp,AvisosTarea avisos) { this.db=db;this.usuario=usuario;this.erp=erp;this.avisos=avisos; }
-  public List<Map<String,Object>> cursos(Authentication a) {
-    return switch(usuario.tipo(a)) {
-      case "ESTUDIANTE" -> db.queryForList(CURSOS_CON_DOCENTES.replace("SELECT c.*", "SELECT c.*,i.estado_matricula")+"JOIN inscripciones_curso i ON i.curso_id=c.id WHERE i.estudiante_erp_id=? AND ((i.activo AND i.estado_matricula='VIGENTE') OR i.estado_matricula='FINALIZADA') ORDER BY c.periodo DESC,c.asignatura",usuario.referencia(a));
-      case "DOCENTE" -> db.queryForList(CURSOS_CON_DOCENTES+"JOIN docentes_curso d ON d.curso_id=c.id WHERE d.docente_erp_id=? AND d.activo=TRUE AND (c.periodo_fin IS NULL OR c.periodo_fin>=CURRENT_DATE) ORDER BY c.asignatura",usuario.referencia(a));
-      case "COORDINACION" -> db.queryForList(CURSOS_CON_DOCENTES+"JOIN coordinaciones_seccion x ON x.seccion_erp_id=c.seccion_erp_id WHERE x.cuenta_id=? AND x.confirmado_erp AND (c.periodo_fin IS NULL OR c.periodo_fin>=CURRENT_DATE) ORDER BY c.asignatura",usuario.cuenta(a));
-      default -> throw new AccessDeniedException("Sin cursos académicos");
-    };
+  private final JdbcTemplate db; private final UsuarioActual usuario; private final ErpCliente erp; private final AvisosTarea avisos; private final ConsultaAcademica consulta; private final CalificacionesTarea calificaciones;
+  public CursosYTareas(JdbcTemplate db,UsuarioActual usuario,ErpCliente erp,AvisosTarea avisos,ConsultaAcademica consulta,CalificacionesTarea calificaciones) {
+    this.db=db;this.usuario=usuario;this.erp=erp;this.avisos=avisos;this.consulta=consulta;this.calificaciones=calificaciones;
   }
-  public List<Map<String,Object>> tareas(UUID curso,Authentication a) {
-    usuario.leerCurso(a,curso);
-    if("ESTUDIANTE".equals(usuario.tipo(a))) return db.queryForList("""
-      SELECT t.*,EXISTS(SELECT 1 FROM entregas e WHERE e.tarea_id=t.id AND e.estudiante_erp_id=?) AS presentada,
-        (SELECT e.estado FROM entregas e WHERE e.tarea_id=t.id AND e.estudiante_erp_id=? ORDER BY e.version DESC LIMIT 1) AS ultima_entrega_estado,
-        (SELECT max(e.version) FROM entregas e WHERE e.tarea_id=t.id AND e.estudiante_erp_id=?) AS ultima_entrega_version,
-        EXISTS(SELECT 1 FROM calificaciones_tarea n WHERE n.tarea_id=t.id AND n.estudiante_erp_id=?
-          AND n.estado='PUBLICADA' AND n.entrega_version=(SELECT max(e.version) FROM entregas e
-            WHERE e.tarea_id=t.id AND e.estudiante_erp_id=?)) AS evaluacion_publicada
-      FROM tareas t WHERE t.curso_id=? AND t.estado<>'FALTA_COMPLETAR'
-        AND (NOT EXISTS (SELECT 1 FROM tareas siguiente WHERE siguiente.tarea_anterior_id=t.id)
-          OR EXISTS (SELECT 1 FROM inscripciones_curso i WHERE i.curso_id=t.curso_id
-            AND i.estudiante_erp_id=? AND i.estado_matricula='FINALIZADA'))
-      ORDER BY t.publicado_en DESC NULLS LAST,t.fecha_limite
-      """,usuario.referencia(a),usuario.referencia(a),usuario.referencia(a),usuario.referencia(a),usuario.referencia(a),curso,usuario.referencia(a));
-    if("DOCENTE".equals(usuario.tipo(a))) return db.queryForList("""
-      SELECT t.*,k.total_estudiantes,k.entregados,k.tardias,
-        (k.total_estudiantes-k.entregados) AS pendientes,k.pendientes_revision,
-        EXISTS(SELECT 1 FROM tareas sucesora WHERE sucesora.tarea_anterior_id=t.id) AS es_historica
-      FROM tareas t
-      """+INDICADORES+" WHERE t.curso_id=? ORDER BY t.creado_en DESC",curso);
-    return db.queryForList("SELECT * FROM tareas WHERE curso_id=? AND estado<>'FALTA_COMPLETAR' ORDER BY fecha_limite",curso);
+  public List<Map<String,Object>> cursos(Authentication a) { return consulta.cursos(a); }
+  public List<Map<String,Object>> tareas(UUID curso,Authentication a) { return consulta.tareas(curso,a); }
+  public Map<String,Object> tarea(UUID id,Authentication a) { return consulta.tarea(id,a); }
+  public Map<String,Object> guardarBorrador(UUID tarea,UUID estudiante,BigDecimal valor,String comentario,Integer version,Integer entregaEsperada,Authentication a) {
+    return calificaciones.guardarBorrador(tarea,estudiante,valor,comentario,version,entregaEsperada,a);
   }
-  public Map<String,Object> tarea(UUID id,Authentication a) {
-    var t=new HashMap<>(db.queryForMap("SELECT * FROM tareas WHERE id=?",id)); UUID curso=(UUID)t.get("curso_id");
-    usuario.leerCurso(a,curso);
-    if("ESTUDIANTE".equals(usuario.tipo(a)) && "FALTA_COMPLETAR".equals(t.get("estado"))) throw new AccessDeniedException("Tarea no publicada");
-    t.put("tarea_sucesora_id",db.queryForList("SELECT id FROM tareas WHERE tarea_anterior_id=?",UUID.class,id).stream().findFirst().orElse(null));
-    if("DOCENTE".equals(usuario.tipo(a))) { var contadores=db.queryForList("""
-      SELECT k.total_estudiantes,k.entregados,k.tardias,
-             (k.total_estudiantes-k.entregados) AS pendientes,k.pendientes_revision
-      FROM tareas t
-      """+INDICADORES+" WHERE t.id=?",id); if(!contadores.isEmpty()) t.putAll(contadores.getFirst()); }
-    return t;
+  public Map<String,Object> publicarCalificacion(UUID tarea,UUID estudiante,Integer entregaEsperada,Integer version,UUID operacionId,Authentication a) {
+    return calificaciones.publicarCalificacion(tarea,estudiante,entregaEsperada,version,operacionId,a);
   }
+  public List<Map<String,Object>> notas(UUID curso,Authentication a) { return calificaciones.notas(curso,a); }
+  public Map<String,Object> nota(UUID id,Authentication a) { return calificaciones.nota(id,a); }
+  public List<Map<String,Object>> historialNota(UUID id,Authentication a) { return calificaciones.historialNota(id,a); }
   @Transactional public UUID crear(UUID curso,String titulo,String instrucciones,OffsetDateTime limite,Authentication a) {
     usuario.docente(a,curso); validar(titulo,instrucciones,limite);
     UUID id=UUID.randomUUID();
@@ -399,97 +351,6 @@ import org.springframework.transaction.annotation.Transactional;
       case "REVISION" -> e.get("entrega_id")!=null && e.get("nota_id")==null;
       default -> true;
     }).toList();
-  }
-  private Map<String,Object> contextoCalificacion(UUID tarea,Authentication a) {
-    var t=tarea(tarea,a);
-    var bloqueada=db.queryForMap("SELECT estado FROM tareas WHERE id=? FOR UPDATE",tarea);
-    usuario.docente(a,(UUID)t.get("curso_id"));
-    if("CANCELADA".equals(bloqueada.get("estado")) || "FALTA_COMPLETAR".equals(bloqueada.get("estado")) ||
-       db.queryForObject("SELECT count(*) FROM tareas WHERE tarea_anterior_id=?",Long.class,tarea)>0)
-      throw new IllegalStateException("Esta versión de la tarea no admite nuevas calificaciones");
-    return t;
-  }
-  private int entregaCalificable(UUID tarea,UUID estudiante,Integer entregaEsperada) {
-    int ultima=db.queryForObject("SELECT COALESCE(max(version),0) FROM entregas WHERE tarea_id=? AND estudiante_erp_id=?",Integer.class,tarea,estudiante);
-    if(ultima==0) throw new IllegalArgumentException("No existe entrega");
-    if(entregaEsperada!=null && entregaEsperada!=ultima) throw new IllegalStateException("Llegó un intento más reciente; vuelve a abrir la entrega");
-    return ultima;
-  }
-  @Transactional public Map<String,Object> guardarBorrador(UUID tarea,UUID estudiante,BigDecimal valor,String comentario,Integer version,Integer entregaEsperada,Authentication a) {
-    var t=contextoCalificacion(tarea,a);
-    if(valor==null || valor.scale()>2 || valor.compareTo(notaMinima)<0 || valor.compareTo(notaMaxima)>0 || valor.compareTo((BigDecimal)t.get("escala_maxima"))>0)
-      throw new IllegalArgumentException("La calificación debe estar entre 0 y 20, con hasta dos decimales");
-    int intento=entregaCalificable(tarea,estudiante,entregaEsperada);
-    var anteriores=db.queryForList("SELECT * FROM calificaciones_tarea WHERE tarea_id=? AND estudiante_erp_id=? AND entrega_version=? FOR UPDATE",tarea,estudiante,intento);
-    UUID id;
-    if(anteriores.isEmpty()) {
-      if(version!=null && version!=0) throw new IllegalStateException("Versión obsoleta");
-      id=UUID.randomUUID();
-      db.update("INSERT INTO calificaciones_tarea(id,tarea_id,estudiante_erp_id,valor,comentario,entrega_version,actualizado_por,estado) VALUES (?,?,?,?,?,?,?,'BORRADOR')",id,tarea,estudiante,valor,comentario,intento,usuario.cuenta(a));
-    } else {
-      var anterior=anteriores.getFirst(); id=(UUID)anterior.get("id");
-      if(version==null || version!=((Number)anterior.get("version")).intValue()) throw new IllegalStateException("Versión obsoleta");
-      if("PUBLICADA".equals(anterior.get("estado")))
-        db.update("UPDATE calificaciones_tarea SET valor_borrador=?,comentario_borrador=?,borrador_actualizado_en=now(),borrador_actualizado_por=?,version=version+1 WHERE id=?",valor,comentario,usuario.cuenta(a),id);
-      else
-        db.update("UPDATE calificaciones_tarea SET valor=?,comentario=?,actualizado_en=now(),actualizado_por=?,version=version+1 WHERE id=?",valor,comentario,usuario.cuenta(a),id);
-    }
-    auditar(a,"BORRADOR_CALIFICACION",id);
-    return db.queryForMap("SELECT * FROM calificaciones_tarea WHERE id=?",id);
-  }
-  @Transactional public Map<String,Object> publicarCalificacion(UUID tarea,UUID estudiante,Integer entregaEsperada,Integer version,UUID operacionId,Authentication a) {
-    var t=contextoCalificacion(tarea,a);
-    if(operacionId==null) throw new IllegalArgumentException("Falta identificador de operación");
-    var repetida=db.queryForList("SELECT c.* FROM historial_calificaciones h JOIN calificaciones_tarea c ON c.id=h.calificacion_id WHERE h.operacion_id=?",operacionId);
-    if(!repetida.isEmpty()) {
-      if(!tarea.equals(repetida.getFirst().get("tarea_id")) || !estudiante.equals(repetida.getFirst().get("estudiante_erp_id")))
-        throw new IllegalStateException("Identificador de publicación utilizado en otra evaluación");
-      return repetida.getFirst();
-    }
-    int intento=entregaCalificable(tarea,estudiante,entregaEsperada);
-    var actuales=db.queryForList("SELECT * FROM calificaciones_tarea WHERE tarea_id=? AND estudiante_erp_id=? AND entrega_version=? FOR UPDATE",tarea,estudiante,intento);
-    if(actuales.isEmpty()) throw new IllegalStateException("Guarda primero el borrador de la calificación");
-    var actual=actuales.getFirst(); UUID id=(UUID)actual.get("id");
-    if(version==null || version!=((Number)actual.get("version")).intValue()) throw new IllegalStateException("Versión obsoleta");
-    boolean correccion="PUBLICADA".equals(actual.get("estado"));
-    if(correccion && actual.get("valor_borrador")==null) return actual;
-    BigDecimal nuevo=(BigDecimal)(correccion?actual.get("valor_borrador"):actual.get("valor"));
-    BigDecimal anterior=correccion?(BigDecimal)actual.get("valor"):null;
-    String comentarioNuevo=(String)(correccion?actual.get("comentario_borrador"):actual.get("comentario"));
-    db.update("UPDATE calificaciones_tarea SET valor=?,comentario=?,estado='PUBLICADA',publicada_en=now(),publicada_por=?,valor_borrador=NULL,comentario_borrador=NULL,borrador_actualizado_en=NULL,borrador_actualizado_por=NULL,actualizado_en=now(),actualizado_por=?,version=version+1 WHERE id=?",nuevo,comentarioNuevo,usuario.cuenta(a),usuario.cuenta(a),id);
-    db.update("INSERT INTO historial_calificaciones(id,calificacion_id,valor_anterior,valor_nuevo,comentario_anterior,comentario,actor_id,estado_anterior,estado_nuevo,operacion_id) VALUES (?,?,?,?,?,?,?,?,'PUBLICADA',?)",UUID.randomUUID(),id,anterior,nuevo,actual.get("comentario"),comentarioNuevo,usuario.cuenta(a),actual.get("estado"),operacionId);
-    int nuevaVersion=((Number)actual.get("version")).intValue()+1;
-    avisos.calificacion(tarea,(UUID)t.get("curso_id"),estudiante,(String)t.get("titulo"),id,nuevaVersion,correccion);
-    auditar(a,correccion?"CORRECCION_CALIFICACION":"PUBLICACION_CALIFICACION",id);
-    return db.queryForMap("SELECT * FROM calificaciones_tarea WHERE id=?",id);
-  }
-  public List<Map<String,Object>> notas(UUID curso,Authentication a) {
-    usuario.leerCurso(a,curso);
-    String sql="SELECT c.*,t.titulo,t.fecha_limite,t.escala_maxima,(SELECT max(e.version) FROM entregas e WHERE e.tarea_id=c.tarea_id AND e.estudiante_erp_id=c.estudiante_erp_id) AS ultima_entrega_version FROM calificaciones_tarea c JOIN tareas t ON t.id=c.tarea_id WHERE t.curso_id=?";
-    if("ESTUDIANTE".equals(usuario.tipo(a))) return db.queryForList(sql+" AND c.estudiante_erp_id=? AND c.estado='PUBLICADA' ORDER BY c.publicada_en DESC",curso,usuario.referencia(a)).stream().map(this::sinBorrador).toList();
-    if("COORDINACION".equals(usuario.tipo(a))) return db.queryForList(sql+" AND c.estado='PUBLICADA' ORDER BY c.publicada_en DESC",curso).stream().map(this::sinBorrador).toList();
-    return db.queryForList(sql+" ORDER BY c.actualizado_en DESC",curso);
-  }
-  public Map<String,Object> nota(UUID id,Authentication a) {
-    var n=db.queryForMap("SELECT c.*,t.curso_id,t.titulo,t.instrucciones,t.fecha_limite,t.escala_maxima FROM calificaciones_tarea c JOIN tareas t ON t.id=c.tarea_id WHERE c.id=?",id);
-    usuario.leerCurso(a,(UUID)n.get("curso_id"));
-    if("ESTUDIANTE".equals(usuario.tipo(a)) && !usuario.referencia(a).equals(n.get("estudiante_erp_id"))) throw new AccessDeniedException("Nota ajena");
-    if(!"DOCENTE".equals(usuario.tipo(a))) {
-      if(!"PUBLICADA".equals(n.get("estado"))) throw new AccessDeniedException("Calificación sin publicar");
-      return sinBorrador(n);
-    }
-    return n;
-  }
-  private Map<String,Object> sinBorrador(Map<String,Object> fila) {
-    var visible=new HashMap<>(fila);
-    visible.remove("valor_borrador"); visible.remove("comentario_borrador");
-    visible.remove("borrador_actualizado_en"); visible.remove("borrador_actualizado_por");
-    visible.remove("version");
-    return visible;
-  }
-  public List<Map<String,Object>> historialNota(UUID id,Authentication a) {
-    nota(id,a);
-    return db.queryForList("SELECT id,valor_anterior,valor_nuevo,comentario_anterior,comentario,actor_id,instante,estado_anterior,estado_nuevo FROM historial_calificaciones WHERE calificacion_id=? ORDER BY instante,id",id);
   }
   private void auditar(Authentication a,String accion,UUID id) { db.update("INSERT INTO registros_auditoria(id,actor,accion,entidad_id) VALUES (?,?,?,?)",UUID.randomUUID(),usuario.oidc(a).getSubject(),accion,id); }
 }

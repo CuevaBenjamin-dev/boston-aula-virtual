@@ -1,39 +1,23 @@
-import {useEffect,useRef,useState} from 'react';
+import {useEffect,useState} from 'react';
 import {Link,useNavigate,useParams,useSearchParams} from 'react-router-dom';
 import {useMutation,useQuery,useQueryClient} from '@tanstack/react-query';
 import {useForm} from 'react-hook-form';
 import {z} from 'zod';
 import {zodResolver} from '@hookform/resolvers/zod';
-import {api,del,post,put,subirArchivo,type Archivo,type Clase,type Curso,type Entrega,type Material,type Nota,type Perfil,type PreparacionEntrega,type Seguimiento,type Tarea} from '../api';
+import {api,post,put,subirArchivo,type Archivo,type Clase,type Curso,type Entrega,type Nota,type Perfil,type Tarea} from '../api';
 import {PageHeading} from '../PageHeading';
+import {fecha} from './AcademicoComun';
+import {PrepararEntrega} from './EntregasAcademicas';
+import {SeguimientoTarea} from './SeguimientoAcademico';
+import {ArchivosDe,archivoPermitido} from './AdjuntosAcademicos';
+import {MaterialesCurso} from './MaterialesAcademicos';
+export {MaterialesPage} from './MaterialesAcademicos';
 
-const fecha=(s:string)=>new Date(s).toLocaleString('es-PE',{dateStyle:'medium',timeStyle:'short',timeZone:'America/Lima'});
 function fechaLocalLima(s:string){const piezas=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:'America/Lima',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date(s)).map(x=>[x.type,x.value]));return `${piezas.year}-${piezas.month}-${piezas.day}T${piezas.hour}:${piezas.minute}`}
 function aIsoLima(s:string){return new Date(`${s}:00-05:00`).toISOString()}
 const esquema=z.object({titulo:z.string().trim().min(3),instrucciones:z.string().trim().min(3),fechaLimite:z.string().min(1)});
 type FormTarea=z.infer<typeof esquema>;
 type NotaDetalle=Nota&{curso_id:string;instrucciones:string};
-const archivoPermitido='.pdf,.png,.jpg,.jpeg,.docx,.pptx';
-const archivoEntregaPermitido='.pdf,.docx,.pptx,.xlsx,.txt,.jpg,.jpeg,.png';
-const mega=1024*1024;
-const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-function gruposMateriales(materiales:Material[]){
-  const grupos=new Map<string,{mes:number|null;semana:number|null;materiales:Material[]}>();
-  for(const material of materiales){
-    const clave=`${material.mes||0}-${material.semana||0}`;
-    if(!grupos.has(clave))grupos.set(clave,{mes:material.mes,semana:material.semana,materiales:[]});
-    grupos.get(clave)!.materiales.push(material);
-  }
-  return [...grupos.values()].sort((a,b)=>(b.mes||0)-(a.mes||0)||(b.semana||0)-(a.semana||0));
-}
-function tituloGrupo(mes:number|null,semana:number|null){return mes?`${meses[mes-1]}${semana?` · Semana ${semana}`:''}`:'Sin mes ni semana asignados'}
-function validarArchivosEntrega(actuales:Archivo[],pendientes:File[],nuevos:File[],sustituido?:Archivo){
-  if(actuales.length+pendientes.length+nuevos.length-(sustituido?1:0)>4)return 'Máximo cuatro archivos por intento.';
-  if(nuevos.some(f=>f.size<1||f.size>25*mega||!archivoEntregaPermitido.split(',').includes('.'+f.name.split('.').pop()?.toLowerCase())))return 'Cada archivo debe ser permitido y no superar 25 MB.';
-  const total=actuales.reduce((n,f)=>n+(f.id===sustituido?.id?0:f.tamano),0)+pendientes.reduce((n,f)=>n+f.size,0)+nuevos.reduce((n,f)=>n+f.size,0);
-  return total>100*mega?'El total no puede superar 100 MB.':null;
-}
-
 function estadoTarea(t:Tarea,perfil:Perfil){
   if(perfil.tipo==='ESTUDIANTE'&&t.presentada)return t.evaluacion_publicada?'REVISADA':t.ultima_entrega_estado==='TARDIA'?'ENTREGADA TARDÍA':'ENTREGADA';
   if(t.estado==='CANCELADA')return 'CANCELADA';
@@ -212,76 +196,6 @@ function CrearTarea({curso,cursos}:{curso?:string;cursos:Curso[]}){
     <label>Título<input {...register('titulo')}/>{errors.titulo&&<small className="error">Escribe al menos 3 caracteres.</small>}</label><label>Instrucciones<textarea rows={4} {...register('instrucciones')}/>{errors.instrucciones&&<small className="error">Las instrucciones son obligatorias.</small>}</label><label>Fecha y hora límite (Lima)<input type="datetime-local" {...register('fechaLimite')}/></label><label>Archivos de referencia (opcional)<input type="file" multiple accept={archivoPermitido} onChange={e=>setArchivos(Array.from(e.target.files||[]))}/></label>{archivos.length>0&&<small>{archivos.map(a=>a.name).join(', ')}</small>}{progreso>0&&<progress value={progreso} max="100"/>}{crear.error&&<p className="error">No se completó la tarea. {incompleta?<Link to={`/tareas/${incompleta}`}>Abrir tarea para completarla →</Link>:String(crear.error)}</p>}<div className="row-actions"><button className="button primary" disabled={crear.isPending}>Publicar {destinos.length>1?'tareas':'tarea'}</button><button type="button" className="button secondary" disabled={crear.isPending} onClick={handleSubmit(d=>enviar(d,false))}>Guardar como borrador</button></div></form>}</>;
 }
 
-function MaterialesCurso({curso,perfil}:{curso:string;perfil:Perfil}){
-  const qc=useQueryClient(),[nuevo,setNuevo]=useState(false);
-  const {data:materiales=[],error}=useQuery<Material[]>({queryKey:['materiales',curso],queryFn:()=>api(`/cursos/${curso}/materiales`)});
-  const ocultar=useMutation({mutationFn:(id:string)=>post(`/materiales/${id}/ocultar`,{}),onSuccess:()=>qc.invalidateQueries({queryKey:['materiales']})});
-  return <section className="section curso-resumen-seccion" id="curso-materiales"><div className="curso-seccion-cabecera"><div className="curso-seccion-titulos"><span className="curso-seccion-numero">02 / RECURSOS</span><h2>Materiales del curso</h2><p>Archivos y enlaces compartidos para esta sección.</p></div>{perfil.tipo==='DOCENTE'&&<button className="button secondary" onClick={()=>setNuevo(!nuevo)}>+ Añadir material</button>}</div>
-    {nuevo&&<FormularioMaterial curso={curso} cerrar={()=>setNuevo(false)}/>}
-    {error?<div className="alert">No se pudieron consultar los materiales. {String(error)}</div>:!materiales.length?<div className="empty">Todavía no hay materiales.</div>:<div className="curso-materiales-lista">{gruposMateriales(materiales).map(grupo=><div className="materiales-grupo" key={`${grupo.mes}-${grupo.semana}`}><h3>{tituloGrupo(grupo.mes,grupo.semana)}</h3>{grupo.materiales.map(m=><MaterialFila key={m.id} material={m} curso={curso} perfil={perfil} ocultar={()=>ocultar.mutate(m.id)}/>)}</div>)}</div>}
-    {ocultar.error&&<p className="error">{String(ocultar.error)}</p>}
-    <Link className="curso-seccion-pie" to={`/materiales?curso=${encodeURIComponent(curso)}`}>Ver todos los materiales <span aria-hidden="true">→</span></Link>
-  </section>;
-}
-
-function MaterialFila({material,curso,perfil,ocultar,editable=true}:{material:Material;curso:string;perfil:Perfil;ocultar?:()=>void;editable?:boolean}){
-  const [editar,setEditar]=useState(false);
-  return <article className="panel curso-material"><div className="curso-material-cabecera"><div><h3>{material.nombre}</h3><p>{material.estado==='BORRADOR'?'Falta completar':material.estado==='OCULTO'?'Oculto':'Publicado'} · {material.total_archivos||0} {material.total_archivos===1?'archivo':'archivos'}</p></div>{editable&&perfil.tipo==='DOCENTE'&&<div className="row-actions"><button className="button secondary" onClick={()=>setEditar(!editar)}>Editar</button>{material.estado==='PUBLICADO'&&<button className="button secondary" onClick={ocultar}>Ocultar</button>}</div>}</div>
-    {material.descripcion&&<p className="prewrap curso-material-descripcion">{material.descripcion}</p>}
-    <div className="curso-material-recursos">{material.enlace&&<a className="text-link" href={material.enlace} target="_blank" rel="noopener noreferrer">Abrir enlace ↗</a>}<ArchivosDe padre="materiales" id={material.id} editable={editable&&perfil.tipo==='DOCENTE'}/></div>
-    {editar&&<FormularioMaterial curso={curso} material={material} cerrar={()=>setEditar(false)}/>}
-  </article>;
-}
-
-function FormularioMaterial({curso,material,cerrar}:{curso:string;material?:Material;cerrar:()=>void}){
-  const qc=useQueryClient(),[nombre,setNombre]=useState(material?.nombre||''),[descripcion,setDescripcion]=useState(material?.descripcion||''),[enlace,setEnlace]=useState(material?.enlace||''),[mes,setMes]=useState(material?.mes?String(material.mes):''),[semana,setSemana]=useState(material?.semana?String(material.semana):''),[archivos,setArchivos]=useState<File[]>([]),[progreso,setProgreso]=useState(0);
-  const guardar=useMutation({mutationFn:async(publicar:boolean)=>{
-    if(!mes||!semana)throw new Error('Selecciona el mes y la semana del material.');
-    const datos={nombre,descripcion,enlace,mes:Number(mes),semana:Number(semana),...(material?{}:{cursoIds:[curso]})};
-    const id=material?.id||(await post<{id:string}>('/materiales',datos)).id;
-    if(material)await put(`/materiales/${id}`,datos);
-    for(const archivo of archivos)await subirArchivo('materiales',id,archivo,setProgreso);
-    if(publicar)await post(`/materiales/${id}/publicar`,{});
-    return id;
-  },onSuccess:()=>{qc.invalidateQueries({queryKey:['materiales']});qc.invalidateQueries({queryKey:['archivos','materiales']});cerrar()}});
-  return <form className="form compact" onSubmit={e=>{e.preventDefault();guardar.mutate(true)}}><h3>{material?'Editar material':'Nuevo material'}</h3><label>Nombre<input value={nombre} maxLength={200} onChange={e=>setNombre(e.target.value)} required/></label><div className="materiales-periodo-campos"><label>Mes<select value={mes} onChange={e=>setMes(e.target.value)} required><option value="">Seleccionar mes</option>{meses.map((m,i)=><option value={i+1} key={m}>{m}</option>)}</select></label><label>Semana<select value={semana} onChange={e=>setSemana(e.target.value)} required><option value="">Seleccionar semana</option>{[1,2,3,4,5].map(n=><option value={n} key={n}>Semana {n}</option>)}</select></label></div><label>Descripción<textarea value={descripcion} rows={3} onChange={e=>setDescripcion(e.target.value)}/></label><label>Enlace (opcional)<input type="url" value={enlace} onChange={e=>setEnlace(e.target.value)} placeholder="https://..."/></label>
-    <label>Adjuntar archivos<input type="file" multiple accept={archivoPermitido} onChange={e=>setArchivos(Array.from(e.target.files||[]))}/></label>{archivos.length>0&&<small>{archivos.map(a=>a.name).join(', ')}</small>}{progreso>0&&<progress value={progreso} max="100"/>}{guardar.error&&<p className="error">{String(guardar.error)}</p>}
-    <div className="row-actions"><button className="button primary" disabled={guardar.isPending}>Publicar</button><button type="button" className="button secondary" disabled={guardar.isPending} onClick={()=>guardar.mutate(false)}>Guardar como borrador</button><button type="button" className="text-link" onClick={cerrar}>Cancelar</button></div>
-  </form>;
-}
-
-export function MaterialesPage({perfil}:{perfil:Perfil}){
-  const [params,setParams]=useSearchParams();
-  const {data:cursos=[],isLoading:cargandoCursos,error:errorCursos}=useQuery<Curso[]>({queryKey:['cursos'],queryFn:()=>api('/cursos')});
-  const ids=cursos.map(c=>c.id).join(',');
-  const {data:registros=[],isLoading:cargandoMateriales,error:errorMateriales}=useQuery<Array<{material:Material;cursos:Curso[]}>>({queryKey:['materiales','todos',ids],enabled:!!ids,queryFn:async()=>{
-    const porCurso=await Promise.all(cursos.map(async curso=>({curso,materiales:await api<Material[]>(`/cursos/${curso.id}/materiales`)})));
-    const unicos=new Map<string,{material:Material;cursos:Curso[]}>();
-    for(const {curso,materiales} of porCurso)for(const material of materiales){
-      if(!unicos.has(material.id))unicos.set(material.id,{material,cursos:[]});
-      unicos.get(material.id)!.cursos.push(curso);
-    }
-    return [...unicos.values()];
-  }});
-  const cambiar=(clave:string,valor:string)=>{const siguientes=new URLSearchParams(params);if(valor)siguientes.set(clave,valor);else siguientes.delete(clave);setParams(siguientes)};
-  const docentes=[...new Set(cursos.flatMap(c=>c.docentes?.split(', ').map(n=>n.trim()).filter(Boolean)||[]))].sort((a,b)=>a.localeCompare(b,'es'));
-  const visibles=registros.filter(r=>(!params.get('curso')||r.cursos.some(c=>c.id===params.get('curso')))
-    &&(!params.get('mes')||r.material.mes===Number(params.get('mes')))
-    &&(!params.get('semana')||r.material.semana===Number(params.get('semana')))
-    &&(!params.get('docente')||r.cursos.some(c=>c.docentes?.split(', ').includes(params.get('docente')!))));
-  const porId=new Map(visibles.map(r=>[r.material.id,r]));
-  return <main className="materiales-editorial"><PageHeading title="Mis materiales" metricLabel="MATERIALES DISPONIBLES" metricValue={String(visibles.length).padStart(2,'0')} metricCaption="EN ESTA VISTA"/>
-    <header className="cursos-portada"><div className="cursos-portada-principal"><span className="cursos-sobretitulo">RECURSOS ACADÉMICOS</span><h1>Mis materiales<i>.</i></h1><p>Consulta los materiales de estudio de tus cursos.</p></div><div className="cursos-portada-lateral"><span>MATERIALES DISPONIBLES</span><strong>{String(visibles.length).padStart(2,'0')}</strong><small>EN ESTA VISTA</small></div></header>
-    <section className="materiales-filtros" aria-label="Filtrar materiales"><h2>Buscar materiales</h2><div className="materiales-filtros-campos">
-      <label>Curso<select value={params.get('curso')||''} onChange={e=>cambiar('curso',e.target.value)}><option value="">Todos los cursos</option>{cursos.map(c=><option key={c.id} value={c.id}>{c.asignatura} · {c.nivel} {c.grado} {c.seccion}</option>)}</select></label>
-      <label>Mes<select value={params.get('mes')||''} onChange={e=>cambiar('mes',e.target.value)}><option value="">Todos los meses</option>{meses.map((m,i)=><option key={m} value={i+1}>{m}</option>)}</select></label>
-      <label>Semana<select value={params.get('semana')||''} onChange={e=>cambiar('semana',e.target.value)}><option value="">Todas las semanas</option>{[1,2,3,4,5].map(n=><option key={n} value={n}>Semana {n}</option>)}</select></label>
-      <label>Docente<select value={params.get('docente')||''} onChange={e=>cambiar('docente',e.target.value)}><option value="">Todos los docentes</option>{docentes.map(n=><option key={n} value={n}>{n}</option>)}</select></label>
-    </div><button type="button" className="button secondary" onClick={()=>setParams(new URLSearchParams())}>Limpiar filtros</button></section>
-    {errorCursos||errorMateriales?<div className="alert">No se pudieron consultar los materiales. {String(errorCursos||errorMateriales)}</div>:cargandoCursos||cargandoMateriales?<div className="empty">Cargando materiales…</div>:!visibles.length?<div className="empty">No hay materiales para estos filtros.</div>:<section className="materiales-resultados" aria-label="Materiales encontrados">{gruposMateriales(visibles.map(r=>r.material)).map(grupo=><div className="materiales-grupo" key={`${grupo.mes}-${grupo.semana}`}><h2>{tituloGrupo(grupo.mes,grupo.semana)}</h2><div className="materiales-grupo-tarjetas">{grupo.materiales.map(material=>{const registro=porId.get(material.id)!;const curso=registro.cursos.find(c=>c.id===params.get('curso'))||registro.cursos[0];return <div key={material.id} className="materiales-resultado"><div className="materiales-resultado-contexto">{registro.cursos.map(c=><Link key={c.id} to={`/cursos/${c.id}?vista=materiales`}>{c.asignatura} · {c.nivel} {c.grado} {c.seccion}</Link>)}<span>DOCENTE: {curso.docentes||'Sin docente asignado'}</span></div><MaterialFila material={material} curso={curso.id} perfil={perfil} editable={false}/></div>})}</div></div>)}</section>}
-  </main>;
-}
-
 export function CursoPage({perfil,modulos}:{perfil:Perfil;modulos?:{clasesYGrabaciones:boolean}}){
   const {cursoId}=useParams();
   const [parametros,setParametros]=useSearchParams();
@@ -321,53 +235,6 @@ export function CursoPage({perfil,modulos}:{perfil:Perfil;modulos?:{clasesYGraba
   </main>;
 }
 
-function ArchivosDe({padre,id,editable=false}:{padre:'tareas'|'entregas'|'materiales';id:string;editable?:boolean}){
-  const qc=useQueryClient();
-  const {data=[]}=useQuery<Archivo[]>({queryKey:['archivos',padre,id],queryFn:()=>api(`/${padre}/${id}/archivos`),enabled:!!id});const [error,setError]=useState('');
-  async function abrir(archivo:Archivo){try{const {url}=await api<{url:string}>(`/archivos/${archivo.id}/url`);window.open(url,'_blank','noopener,noreferrer')}catch(e){setError(String(e))}}
-  async function retirar(archivo:Archivo){try{await del(`/archivos/${archivo.id}`);qc.invalidateQueries({queryKey:['archivos',padre,id]})}catch(e){setError(String(e))}}
-  async function reemplazar(archivo:Archivo,nuevo:File){try{await subirArchivo(padre,id,nuevo,()=>{},archivo.id);qc.invalidateQueries({queryKey:['archivos',padre,id]})}catch(e){setError(String(e))}}
-  async function agregar(nuevos:FileList|null){if(!nuevos)return;try{for(const nuevo of Array.from(nuevos))await subirArchivo(padre,id,nuevo,()=>{});qc.invalidateQueries({queryKey:['archivos',padre,id]})}catch(e){setError(String(e))}}
-  return <>{data.map(a=><div className="row-actions" key={a.id}><button className="text-link" onClick={()=>abrir(a)}>↓ {a.nombre}</button>{editable&&<><label className="text-link">Sustituir<input type="file" accept={archivoPermitido} style={{display:'none'}} onChange={e=>{const f=e.target.files?.[0];if(f)reemplazar(a,f)}}/></label><button className="text-link" onClick={()=>retirar(a)}>Retirar</button></>}</div>)}{editable&&<label className="text-link">+ Agregar archivos<input type="file" multiple accept={archivoPermitido} style={{display:'none'}} onChange={e=>agregar(e.target.files)}/></label>}{error&&<small className="error">{error}</small>}</>;
-}
-function PrepararEntrega({tarea,presentada,confirmada}:{tarea:Tarea;presentada:boolean;confirmada:(id:string)=>void}){
-  const qc=useQueryClient();
-  const {data:estado,isLoading,error}=useQuery<PreparacionEntrega>({queryKey:['preparacion',tarea.id],queryFn:()=>api(`/tareas/${tarea.id}/preparacion`)});
-  const [idLocal,setIdLocal]=useState<string|null>(null),[respuesta,setRespuesta]=useState(''),[guardada,setGuardada]=useState(''),[pendientes,setPendientes]=useState<File[]>([]),[progreso,setProgreso]=useState(0),[errorArchivo,setErrorArchivo]=useState(''),[subiendo,setSubiendo]=useState(false);
-  const operacion=useRef(crypto.randomUUID());
-  const cargadas=useRef(new Map<File,string>());
-  const inicializada=useRef<string|null>(null);
-  const id=(inicializada.current===tarea.id?idLocal:null)||estado?.id||null;
-  const {data:archivos=[]}=useQuery<Archivo[]>({queryKey:['archivos','preparaciones',id],queryFn:()=>api(`/preparaciones/${id}/archivos`),enabled:!!id});
-  useEffect(()=>{if(!estado||inicializada.current===tarea.id)return;inicializada.current=tarea.id;setIdLocal(estado.id||null);setRespuesta(estado.respuesta||'');setGuardada(estado.respuesta||'');setPendientes([]);setErrorArchivo('')},[tarea.id,estado]);
-  const iniciar=useMutation({mutationFn:()=>post<PreparacionEntrega>(`/tareas/${tarea.id}/preparacion`,{tareaVersion:tarea.version}),onSuccess:p=>{setIdLocal(p.id||null);qc.setQueryData(['preparacion',tarea.id],{...estado,...p})}});
-  const guardar=useMutation({mutationFn:async()=>{
-    let destino=id;
-    if(!destino){const p=await post<PreparacionEntrega>(`/tareas/${tarea.id}/preparacion`,{tareaVersion:tarea.version});destino=p.id||null;setIdLocal(destino);qc.setQueryData(['preparacion',tarea.id],{...estado,...p})}
-    if(!destino)throw new Error('No se pudo crear la preparación');
-    const p=await put<PreparacionEntrega>(`/preparaciones/${destino}`,{respuesta,tareaVersion:tarea.version});
-    setGuardada(respuesta);qc.setQueryData(['preparacion',tarea.id],{...estado,...p,puede_iniciar:true});
-    for(const archivo of pendientes)if(!cargadas.current.has(archivo))
-      cargadas.current.set(archivo,await subirArchivo('preparaciones',destino,archivo,setProgreso));
-    return destino;
-  },onSuccess:destino=>{cargadas.current.clear();setPendientes([]);setProgreso(0);qc.invalidateQueries({queryKey:['archivos','preparaciones',destino]});qc.invalidateQueries({queryKey:['preparacion',tarea.id]})},onError:()=>{setPendientes(antes=>antes.filter(archivo=>!cargadas.current.has(archivo)));cargadas.current.clear();if(id)qc.invalidateQueries({queryKey:['archivos','preparaciones',id]})}});
-  const confirmar=useMutation({mutationFn:()=>post<Entrega>(`/preparaciones/${id}/confirmar`,{operacionId:operacion.current}),onSuccess:e=>{confirmada(e.id);setIdLocal(null);setRespuesta('');setGuardada('');operacion.current=crypto.randomUUID();qc.setQueryData(['preparacion',tarea.id],{puede_iniciar:false,siguiente_intento:e.version+1});qc.invalidateQueries({queryKey:['entregas',tarea.id]});qc.invalidateQueries({queryKey:['preparacion',tarea.id]});qc.invalidateQueries({queryKey:['tareas',tarea.curso_id]});qc.invalidateQueries({queryKey:['vista-global']})}});
-  async function retirar(archivo:Archivo){try{setErrorArchivo('');await del(`/archivos/${archivo.id}`);qc.invalidateQueries({queryKey:['archivos','preparaciones',id]})}catch(e){setErrorArchivo(String(e))}}
-  async function reemplazar(archivo:Archivo,nuevo:File){const fallo=validarArchivosEntrega(archivos,pendientes,[nuevo],archivo);if(fallo){setErrorArchivo(fallo);return}if(!id)return;try{setSubiendo(true);setErrorArchivo('');await subirArchivo('preparaciones',id,nuevo,setProgreso,archivo.id);qc.invalidateQueries({queryKey:['archivos','preparaciones',id]})}catch(e){setErrorArchivo(String(e))}finally{setSubiendo(false);setProgreso(0)}}
-  function elegir(nuevos:FileList|null){if(!nuevos)return;const lista=Array.from(nuevos),fallo=validarArchivosEntrega(archivos,pendientes,lista);if(fallo){setErrorArchivo(fallo);return}setErrorArchivo('');setPendientes(antes=>[...antes,...lista])}
-  if(isLoading)return <p className="muted">Cargando preparación…</p>;
-  if(error)return <p className="error">No se pudo consultar la preparación. {String(error)}</p>;
-  if(tarea.estado!=='PUBLICADA'||tarea.tarea_sucesora_id)return <div className="panel">{id?'La preparación quedó guardada, pero esta tarea ya no recibe entregas.':'Esta tarea ya no recibe entregas.'}</div>;
-  if(!id&&!estado?.puede_iniciar)return presentada?<div className="panel">Ya realizaste la única reentrega permitida fuera del plazo.</div>:null;
-  if(presentada&&!id)return <div className="panel"><button className="button secondary" disabled={iniciar.isPending} onClick={()=>iniciar.mutate()}>Realizar nueva entrega</button>{iniciar.error&&<p className="error">{String(iniciar.error)}</p>}</div>;
-  return <div className="panel form"><p>Intento {estado?.intento||estado?.siguiente_intento||1} · La preparación no se considera entregada hasta confirmarla.</p><label>Respuesta escrita (opcional si adjuntas archivos)<textarea rows={5} value={respuesta} onChange={e=>setRespuesta(e.target.value)}/></label>
-    <label>Archivos (PDF, DOCX, PPTX, XLSX, TXT, JPG o PNG; máximo 4 archivos, 25 MB cada uno y 100 MB en total)<input type="file" multiple accept={archivoEntregaPermitido} onChange={e=>{elegir(e.target.files);e.target.value=''}}/></label>
-    {pendientes.map((f,i)=><div className="row-actions" key={`${f.name}-${i}`}><span>{f.name}</span><button type="button" className="text-link" onClick={()=>setPendientes(antes=>antes.filter((_,indice)=>indice!==i))}>Retirar</button></div>)}
-    {archivos.map(f=><div className="row-actions" key={f.id}><span>{f.nombre}</span><label className="text-link">Reemplazar<input type="file" accept={archivoEntregaPermitido} style={{display:'none'}} onChange={e=>{const nuevo=e.target.files?.[0];if(nuevo)reemplazar(f,nuevo);e.target.value=''}}/></label><button type="button" className="text-link" onClick={()=>retirar(f)}>Retirar</button></div>)}
-    {progreso>0&&<progress value={progreso} max="100"/>}{errorArchivo&&<small className="error">{errorArchivo}</small>}{guardar.error&&<small className="error">{String(guardar.error)} La preparación guardada se conserva.</small>}{confirmar.error&&<small className="error">{String(confirmar.error)}</small>}
-    <div className="row-actions"><button type="button" className="button secondary" disabled={guardar.isPending||confirmar.isPending||subiendo} onClick={()=>guardar.mutate()}>Guardar preparación</button><button type="button" className="button primary" disabled={!id||guardar.isPending||confirmar.isPending||subiendo||pendientes.length>0||respuesta!==guardada} onClick={()=>confirmar.mutate()}>Confirmar entrega</button></div>
-  </div>;
-}
 function EditarTarea({tarea,hayEntregas}:{tarea:Tarea;hayEntregas:boolean}){
   const qc=useQueryClient(),navegar=useNavigate(),[abierto,setAbierto]=useState(false),[archivos,setArchivos]=useState<File[]>([]),[progreso,setProgreso]=useState(0),[curso,setCurso]=useState(tarea.curso_id),[operacion,setOperacion]=useState(crypto.randomUUID()),[tipoCambio,setTipoCambio]=useState<'MENOR'|'SUSTANCIAL'>('MENOR');
   const {data:cursos=[]}=useQuery<Curso[]>({queryKey:['cursos'],queryFn:()=>api('/cursos')});
@@ -385,51 +252,6 @@ function EditarTarea({tarea,hayEntregas}:{tarea:Tarea;hayEntregas:boolean}){
   },onSuccess:(resultado)=>{if(!resultado)return;qc.invalidateQueries({queryKey:['tarea']});qc.invalidateQueries({queryKey:['tareas']});qc.invalidateQueries({queryKey:['archivos']});qc.invalidateQueries({queryKey:['vista-global']});setArchivos([]);setProgreso(0);setOperacion(crypto.randomUUID());setAbierto(false);if(resultado.id!==tarea.id)navegar(`/tareas/${resultado.id}`)}});
   return <><button className="button secondary" onClick={()=>setAbierto(!abierto)}>Editar tarea</button>{abierto&&<form className="form compact" onSubmit={handleSubmit(d=>mut.mutate(d))}><label>Tipo de cambio<select value={tipoCambio} onChange={e=>setTipoCambio(e.target.value as 'MENOR'|'SUSTANCIAL')}><option value="MENOR">Ampliación o corrección menor</option><option value="SUSTANCIAL">Cambio del trabajo solicitado</option></select></label><label>Curso y sección<select value={curso} onChange={e=>{setCurso(e.target.value);if(e.target.value!==tarea.curso_id)setTipoCambio('SUSTANCIAL')}}>{cursos.map(c=><option value={c.id} key={c.id}>{c.asignatura} · {c.nivel} {c.grado} {c.seccion}</option>)}</select></label><label>Título<input {...register('titulo')}/></label><label>Instrucciones<textarea rows={4} {...register('instrucciones')}/></label><label>Fecha y hora límite (Lima)<input type="datetime-local" {...register('fechaLimite')}/></label><label>Agregar archivos<input type="file" multiple accept={archivoPermitido} onChange={e=>setArchivos(Array.from(e.target.files||[]))}/></label>{hayEntregas&&<p className="muted">Una ampliación o corrección menor conserva las entregas. Cambiar el trabajo, curso o material esencial crea una nueva versión.</p>}{Object.keys(errors).length>0&&<p className="error">Revisa los datos de la tarea.</p>}{mut.error&&<p className="error">No se completaron todos los cambios. {String(mut.error)}</p>}{progreso>0&&<progress value={progreso} max="100"/>}<button className="button primary" disabled={mut.isPending}>Guardar cambios</button></form>}</>;
 }
-function Calificar({tarea,estudiante,entregaVersion}:{tarea:string;estudiante:string;entregaVersion:number}){
-  const [abierto,setAbierto]=useState(false),[valor,setValor]=useState(''),[comentario,setComentario]=useState(''),[edicion,setEdicion]=useState<Nota|null>(null),[verHistorial,setVerHistorial]=useState(false),qc=useQueryClient();
-  const {data:t}=useQuery<Tarea>({queryKey:['tarea',tarea],queryFn:()=>api(`/tareas/${tarea}`)});
-  const {data:notas=[]}=useQuery<Nota[]>({queryKey:['notas',t?.curso_id],queryFn:()=>api(`/cursos/${t?.curso_id}/notas`),enabled:!!t?.curso_id});
-  const actual=notas.find(n=>n.tarea_id===tarea&&n.estudiante_erp_id===estudiante&&n.entrega_version===entregaVersion);
-  const vigente=edicion||actual;
-  const hayBorrador=vigente?.estado==='BORRADOR'||vigente?.valor_borrador!=null;
-  const valorGuardado=vigente?.estado==='BORRADOR'?vigente.valor:vigente?.valor_borrador;
-  const comentarioGuardado=vigente?.estado==='BORRADOR'?vigente.comentario:vigente?.comentario_borrador;
-  const borradorSinCambios=hayBorrador&&Number(valor)===valorGuardado&&comentario===(comentarioGuardado??'');
-  const {data:historial=[]}=useQuery<{id:string;valor_anterior:number|null;valor_nuevo:number;comentario:string|null;instante:string}[]>({queryKey:['historial-nota',actual?.id],queryFn:()=>api(`/notas/${actual?.id}/historial`),enabled:verHistorial&&!!actual?.id});
-  const refrescar=()=>{qc.invalidateQueries({queryKey:['notas',t?.curso_id]});qc.invalidateQueries({queryKey:['seguimiento',tarea]});qc.invalidateQueries({queryKey:['tarea',tarea]});qc.invalidateQueries({queryKey:['tareas',t?.curso_id]});qc.invalidateQueries({queryKey:['vista-global']});qc.invalidateQueries({queryKey:['historial-nota',actual?.id]})};
-  const guardar=useMutation({mutationFn:()=>put<Nota>(`/tareas/${tarea}/calificacion/borrador`,{estudianteId:estudiante,valor:Number(valor),comentario,version:vigente?.version||0,entregaVersion}),onSuccess:n=>{setEdicion(n);refrescar()}});
-  const publicar=useMutation({mutationFn:()=>post<Nota>(`/tareas/${tarea}/calificacion/publicar`,{estudianteId:estudiante,entregaVersion,version:vigente?.version,operacionId:crypto.randomUUID()}),onSuccess:n=>{setEdicion(n);setAbierto(false);refrescar()}});
-  const abrir=()=>{if(!abierto){setEdicion(null);setValor(String(actual?.valor_borrador??actual?.valor??''));setComentario(actual?.comentario_borrador??actual?.comentario??'')}setAbierto(!abierto)};
-  return <div><button className="button secondary" onClick={abrir}>{actual?.estado==='PUBLICADA'?`Nota ${actual.valor}/${t?.escala_maxima} · ${hayBorrador?'Corrección en borrador':'Corregir'}`:actual?'Borrador de nota · Continuar':'Calificar'}</button>{abierto&&<div className="form compact"><label>Nota sobre {t?.escala_maxima}<input type="number" min="0" max={Math.min(20,t?.escala_maxima||20)} step="0.01" value={valor} onChange={e=>setValor(e.target.value)}/></label><label>Observaciones<input value={comentario} onChange={e=>setComentario(e.target.value)}/></label><div className="row-actions"><button type="button" className="button secondary" disabled={guardar.isPending||publicar.isPending||valor===''||!/^\d+(\.\d{1,2})?$/.test(valor)} onClick={()=>guardar.mutate()}>Guardar borrador</button>{hayBorrador&&<button type="button" className="button primary" disabled={!borradorSinCambios||publicar.isPending||guardar.isPending} onClick={()=>publicar.mutate()}>Publicar nota</button>}</div>{guardar.error&&<small className="error">{String(guardar.error)}</small>}{publicar.error&&<small className="error">{String(publicar.error)}</small>}{vigente?.estado==='PUBLICADA'&&vigente.valor_borrador!=null&&<small>La nota publicada sigue visible para el estudiante hasta publicar la corrección.</small>}</div>}{actual?.estado==='PUBLICADA'&&<><button type="button" className="text-link" onClick={()=>setVerHistorial(!verHistorial)}>{verHistorial?'Ocultar historial':'Ver historial de notas'}</button>{verHistorial&&<div className="list">{historial.map(h=><p key={h.id}>{fecha(h.instante)} · {h.valor_anterior==null?'Publicada':'Corregida'}: {h.valor_nuevo}/20{h.comentario?` · ${h.comentario}`:''}</p>)}</div>}</>}</div>;
-}
-
-function SeguimientoTarea({tarea,entregas,cargandoEntregas,errorEntregas}:{tarea:Tarea;entregas:Entrega[];cargandoEntregas:boolean;errorEntregas:Error|null}){
-  const [grupo,setGrupo]=useState<'TODOS'|'ENTREGARON'|'TARDIAS'|'PENDIENTES'|'REVISION'>('TODOS');
-  const [seleccionado,setSeleccionado]=useState<string|null>(null);
-  const [altoReservado,setAltoReservado]=useState(0),resultadosRef=useRef<HTMLDivElement>(null);
-  const {data:filas=[],error,isLoading:cargando}=useQuery<Seguimiento[]>({queryKey:['seguimiento',tarea.id,grupo],queryFn:()=>api(`/tareas/${tarea.id}/seguimiento?grupo=${grupo}`)});
-  const {data:notas=[]}=useQuery<Nota[]>({queryKey:['notas',tarea.curso_id],queryFn:()=>api(`/cursos/${tarea.curso_id}/notas`)});
-  const opciones:[typeof grupo,string,number|undefined][]=[['TODOS','Total',tarea.total_estudiantes],['ENTREGARON','Entregaron',tarea.entregados],['TARDIAS','Tardías',tarea.tardias],['PENDIENTES','Pendientes',tarea.pendientes],['REVISION','Por revisar',tarea.pendientes_revision]];
-  const filtrar=(siguiente:typeof grupo)=>{
-    if(siguiente===grupo)return;
-    const altoActual=resultadosRef.current?.getBoundingClientRect().height||0;
-    const altoNecesario=window.scrollY+window.innerHeight-(document.documentElement.scrollHeight-altoActual);
-    setAltoReservado(Math.max(0,Math.ceil(altoNecesario)+2));
-    setSeleccionado(null);
-    setGrupo(siguiente);
-  };
-  return <section className="section tarea-seguimiento-seccion"><h2>Seguimiento de esta versión</h2><div className="row-actions">{opciones.map(([clave,etiqueta,total])=><button key={clave} className={'button '+(grupo===clave?'primary':'secondary')} onClick={()=>filtrar(clave)}>{etiqueta} {total??0}</button>)}</div>
-    <div ref={resultadosRef} style={altoReservado?{minHeight:altoReservado}:undefined}>{error?<p className="error">No se pudo consultar el seguimiento. {String(error)}</p>:cargando?<p className="muted">Cargando estudiantes…</p>:!filas.length?<div className="empty">No hay estudiantes en este filtro.</div>:<div className="list">{filas.map(e=>{
-      if(!e.entrega_id)return <div className="list-row" key={e.estudiante_erp_id}><div><strong>{e.estudiante}</strong><span>Sin entregar</span></div></div>;
-      const abierto=seleccionado===e.estudiante_erp_id;
-      const historial=entregas.filter(entrega=>entrega.estudiante_erp_id===e.estudiante_erp_id).sort((a,b)=>b.version-a.version);
-      return <div className="student-entry" key={e.estudiante_erp_id}><button type="button" className="student-entry-toggle" aria-expanded={abierto} aria-controls={`detalle-${e.estudiante_erp_id}`} onClick={()=>setSeleccionado(abierto?null:e.estudiante_erp_id)}><span><strong>{e.estudiante}</strong><small>{e.estado_entrega==='TARDIA'?'Entregada tardía':'Entregada'}{e.entregado_en?` · ${fecha(e.entregado_en)}`:''}</small></span><b className="text-link">{abierto?'Ocultar entrega ↑':'Ver entrega ↓'}</b></button>
-        {abierto&&<div className="student-entry-detail" id={`detalle-${e.estudiante_erp_id}`}>{errorEntregas?<p className="error">No se pudo consultar la entrega. {String(errorEntregas)}</p>:cargandoEntregas?<p className="muted">Cargando entrega…</p>:!historial.length?<p className="muted">No se encontró el detalle de esta entrega.</p>:<>{historial.map(entrega=><div className="student-delivery" key={entrega.id}><strong>Entrega {entrega.version}</strong><span>{entrega.estado==='TARDIA'?'Entregada tardía':'Entregada'} el {fecha(entrega.entregado_en)} (Lima) · Plazo al recibir: {fecha(entrega.fecha_limite_al_entregar)}</span>{entrega.respuesta&&<p className="prewrap">{entrega.respuesta}</p>}<ArchivosDe padre="entregas" id={entrega.id}/>{notas.filter(n=>n.tarea_id===tarea.id&&n.estudiante_erp_id===e.estudiante_erp_id&&n.entrega_version===entrega.version).map(n=><p key={n.id}>{n.estado==='PUBLICADA'?<Link className="text-link" to={`/notas/${n.id}`}>Nota {n.valor}/{n.escala_maxima} · Ver historial →</Link>:<span>Borrador de nota</span>}</p>)}{entrega.version===e.entrega_version&&<div className="row-actions"><Calificar tarea={tarea.id} estudiante={e.estudiante_erp_id} entregaVersion={entrega.version}/></div>}</div>)}</>}</div>}
-      </div>;
-    })}</div>}</div>
-  </section>;
-}
-
 function TareasDelLote({lote,actual}:{lote:string;actual:string}){
   const qc=useQueryClient();
   const {data:tareas=[]}=useQuery<(Tarea&{asignatura:string;grado:string;seccion:string})[]>({queryKey:['lote',lote],queryFn:()=>api(`/tareas/lotes/${lote}`)});

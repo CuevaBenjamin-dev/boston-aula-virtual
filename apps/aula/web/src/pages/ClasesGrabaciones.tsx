@@ -1,48 +1,14 @@
 import {useEffect, useMemo, useRef, useState} from 'react';
 import {Link, useParams, useSearchParams} from 'react-router-dom';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
-import {api, post, put, type Clase, type Curso, type Grabacion, type NotificacionClase, type Perfil} from '../api';
+import {api, post, put, type Clase, type Curso, type Grabacion, type Perfil} from '../api';
 import {PageHeading} from '../PageHeading';
+import {fecha,hora,horario,fechaAgenda,local,aIsoLima,unico,errorDe,useFiltros,Filtros,Paginacion,paginaFilas} from './ClasesPresentacion';
+import {RegistrarVideo,Video} from './GrabacionesVideo';
+export {normalizarYoutube} from './ClasesPresentacion';
+export {GrabacionesListado,AdminGrabaciones} from './GrabacionesListado';
+export {Notificaciones} from './NotificacionesAula';
 
-const fecha=(s:string)=>new Date(s).toLocaleString('es-PE',{dateStyle:'medium',timeStyle:'short',timeZone:'America/Lima'});
-const hora=(s:string)=>new Date(s).toLocaleTimeString('es-PE',{timeStyle:'short',timeZone:'America/Lima'});
-const horario=(inicio:string,fin:string)=>`${new Date(inicio).toLocaleDateString('es-PE',{dateStyle:'medium',timeZone:'America/Lima'})} · ${new Date(inicio).toLocaleTimeString('es-PE',{timeStyle:'short',timeZone:'America/Lima'})} a ${new Date(fin).toLocaleTimeString('es-PE',{timeStyle:'short',timeZone:'America/Lima'})}`;
-const fechaAgenda=(s:string)=>{const d=new Date(s);return {dia:new Intl.DateTimeFormat('es-PE',{timeZone:'America/Lima',day:'2-digit'}).format(d),mes:new Intl.DateTimeFormat('es-PE',{timeZone:'America/Lima',month:'short'}).format(d).replace('.','').toUpperCase()}};
-const local=(s:string)=>new Intl.DateTimeFormat('sv-SE',{timeZone:'America/Lima',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(s)).replace(' ','T');
-const aIsoLima=(s:string)=>new Date(`${s}:00-05:00`).toISOString();
-const paginaTamano=10;
-const unico=(xs:string[])=>[...new Set(xs)].sort((a,b)=>a.localeCompare(b,'es'));
-const errorDe=(error:unknown)=>error instanceof Error?error.message:String(error);
-
-export function normalizarYoutube(valor:string):string|null {
-  try {
-    const u=new URL(valor.trim());
-    if(!['https:','http:'].includes(u.protocol)||u.username||u.password||!u.hostname||valor.length>2048)return null;
-    return valor.trim();
-  } catch {return null}
-}
-
-function useFiltros(){
-  const [params,setParams]=useSearchParams();
-  function cambiar(clave:string,valor:string){const p=new URLSearchParams(params);if(valor)p.set(clave,valor);else p.delete(clave);if(clave!=='p')p.delete('p');setParams(p)}
-  return {params,cambiar,limpiar:()=>setParams(new URLSearchParams())};
-}
-function Filtros({params,cambiar,limpiar,asignaturas,grados,secciones,estados,conTitulo=false}:{params:URLSearchParams;cambiar:(k:string,v:string)=>void;limpiar:()=>void;asignaturas:string[];grados:string[];secciones:string[];estados?:string[];conTitulo?:boolean}){
-  return <div className="panel form filters"><div className="filter-grid">
-    <label>{conTitulo?'Buscar título':'Buscar tema'}<input value={params.get('q')||''} onChange={e=>cambiar('q',e.target.value)} placeholder="Escribe para buscar"/></label>
-    <label>Curso<select value={params.get('asignatura')||''} onChange={e=>cambiar('asignatura',e.target.value)}><option value="">Todos</option>{asignaturas.map(x=><option key={x}>{x}</option>)}</select></label>
-    <label>Grado<select value={params.get('grado')||''} onChange={e=>cambiar('grado',e.target.value)}><option value="">Todos</option>{grados.map(x=><option key={x}>{x}</option>)}</select></label>
-    <label>Sección<select value={params.get('seccion')||''} onChange={e=>cambiar('seccion',e.target.value)}><option value="">Todas</option>{secciones.map(x=><option key={x}>{x}</option>)}</select></label>
-    <label>Fecha<input type="date" value={params.get('fecha')||''} onChange={e=>cambiar('fecha',e.target.value)}/></label>
-    {estados&&<label>Estado<select value={params.get('estado')||''} onChange={e=>cambiar('estado',e.target.value)}><option value="">Todos</option>{estados.map(x=><option key={x} value={x}>{x}</option>)}</select></label>}
-  </div><button type="button" className="button secondary" onClick={limpiar}>Limpiar filtros</button></div>
-}
-function Paginacion({total,params,cambiar}:{total:number;params:URLSearchParams;cambiar:(k:string,v:string)=>void}){
-  const max=Math.max(1,Math.ceil(total/paginaTamano)),actual=Math.min(max,Math.max(1,Number(params.get('p'))||1));
-  if(max<2)return null;
-  return <div className="pagination"><button className="button secondary" disabled={actual<=1} onClick={()=>cambiar('p',String(actual-1))}>← Anterior</button><span>Página {actual} de {max}</span><button className="button secondary" disabled={actual>=max} onClick={()=>cambiar('p',String(actual+1))}>Siguiente →</button></div>
-}
-function paginaFilas<T>(filas:T[],params:URLSearchParams){const max=Math.max(1,Math.ceil(filas.length/paginaTamano));const p=Math.min(max,Math.max(1,Number(params.get('p'))||1));return filas.slice((p-1)*paginaTamano,p*paginaTamano)}
 function rutaRegreso(params:URLSearchParams,porDefecto:string){const r=params.get('return');return r&&r.startsWith('/')&&!r.startsWith('//')&&(/^\/(clases|grabaciones|notificaciones)(\?|$)/.test(r)||/^\/cursos\/[a-f\d-]+(\?|$)/i.test(r))?r:porDefecto}
 function estadoClase(c:Clase){return ({CANCELADA:'Cancelada',FINALIZADA:'Finalizada',PASADA:'Pasada',PROGRAMADA:'Programada'} as const)[c.estado_visible||c.estado]}
 type DatosProgramacion={tema:string;fecha:string;horaInicio:string;horaFin:string;enlace:string};
@@ -108,21 +74,6 @@ function EnlaceZoom({clase}:{clase:Clase}){
   return <form className="panel form" onSubmit={e=>{e.preventDefault();mut.mutate()}}><h2>Continuar con otra reunión Zoom</h2><p>Se mantiene la misma clase académica y se conserva el historial de enlaces.</p><label>Nuevo enlace<input required type="text" placeholder="Escribe el enlace" value={enlace} onChange={e=>setEnlace(e.target.value)}/></label>{mut.error&&<p className="error">{errorDe(mut.error)}</p>}<button className="button secondary" disabled={mut.isPending}>Actualizar enlace vigente</button></form>
 }
 
-function RegistrarVideo({clases,claseFija}:{clases:Clase[];claseFija?:string}){
-  const qc=useQueryClient();const [claseId,setClaseId]=useState(claseFija||'');const [orden,setOrden]=useState(0);const [titulo,setTitulo]=useState('');const [url,setUrl]=useState('');const [publicar,setPublicar]=useState(false);const [hecho,setHecho]=useState(false);const operacion=useRef(crypto.randomUUID());
-  const clase=clases.find(c=>c.id===(claseFija||claseId));const canon=normalizarYoutube(url);
-  const mut=useMutation({mutationFn:()=>post('/grabaciones',{claseId:clase!.id,orden,titulo,url:canon,publicar,operacionId:operacion.current}),onSuccess:()=>{operacion.current=crypto.randomUUID();qc.invalidateQueries({queryKey:['grabaciones-global']});qc.invalidateQueries({queryKey:['grabaciones-clase',clase?.id]});setUrl('');setTitulo('');setOrden(0);setHecho(true)}});
-  return <form className="panel form" onSubmit={e=>{e.preventDefault();setHecho(false);mut.mutate()}}><h2>Registrar grabación</h2>{!claseFija&&<label>Clase académica finalizada<select required value={claseId} onChange={e=>{setClaseId(e.target.value);setOrden(0)}}><option value="">Seleccionar clase</option>{clases.filter(c=>c.estado==='FINALIZADA').map(c=><option key={c.id} value={c.id}>{c.tema} · {c.asignatura} · {c.grado} {c.seccion} · {fecha(c.inicio)}</option>)}</select></label>}{clase&&<p className="muted">{clase.asignatura} · {clase.grado} {clase.seccion} · {fecha(clase.inicio)}</p>}<div className="form-grid"><label>Título<input value={titulo} onChange={e=>setTitulo(e.target.value)} maxLength={200} placeholder="Parte de la clase"/></label><label>Enlace de la grabación<input required type="url" value={url} onChange={e=>setUrl(e.target.value)} placeholder="https://…"/></label><label>Número de parte (opcional)<input type="number" min={1} value={orden||''} onChange={e=>setOrden(Number(e.target.value))} placeholder="Automático"/></label></div><label className="check"><input type="checkbox" checked={publicar} onChange={e=>setPublicar(e.target.checked)}/> Publicar para estudiantes</label>{url&&!canon&&<p className="error">Introduce una URL web válida.</p>}{mut.error&&<p className="error">{errorDe(mut.error)}</p>}{hecho&&<p className="success">Enlace registrado.</p>}<button className="button primary" disabled={!clase||!canon||mut.isPending}>Registrar parte</button></form>
-}
-function Video({g,editable}:{g:Grabacion;editable:boolean}){
-  const qc=useQueryClient();const [editando,setEditando]=useState(false);const [url,setUrl]=useState(g.url);const [titulo,setTitulo]=useState(g.titulo);const [orden,setOrden]=useState(g.orden);const canon=normalizarYoutube(url);const operacionEditar=useRef(crypto.randomUUID()),operacionEstado=useRef(crypto.randomUUID()),operacionRetirar=useRef(crypto.randomUUID());
-  const refrescar=()=>{qc.invalidateQueries({queryKey:['grabaciones-global']});qc.invalidateQueries({queryKey:['grabaciones-clase',g.clase_id]});qc.invalidateQueries({queryKey:['grabaciones-admin']});qc.invalidateQueries({queryKey:['notificaciones']})};
-  const editar=useMutation({mutationFn:()=>put(`/grabaciones/${g.id}`,{titulo,orden,url:canon,operacionId:operacionEditar.current}),onSuccess:()=>{operacionEditar.current=crypto.randomUUID();refrescar();setEditando(false)}});
-  const estado=useMutation({mutationFn:()=>put(`/grabaciones/${g.id}/estado`,{publicar:g.estado!=='PUBLICADA',operacionId:operacionEstado.current}),onSuccess:()=>{operacionEstado.current=crypto.randomUUID();refrescar()}});
-  const retirar=useMutation({mutationFn:()=>post(`/grabaciones/${g.id}/retirar`,{operacionId:operacionRetirar.current}),onSuccess:()=>{operacionRetirar.current=crypto.randomUUID();refrescar()}});
-  return <div className="video-row"><strong>Parte {g.orden}: {g.titulo}</strong><span className={'badge '+g.estado.toLowerCase()}>{g.estado==='PUBLICADA'?'Publicada':g.estado==='OCULTA'?'Borrador / oculta':'Retirada'}</span><div className="row-actions">{g.estado==='PUBLICADA'&&<a className="button secondary" href={g.url} target="_blank" rel="noopener noreferrer">Ver en YouTube ↗</a>}{editable&&g.estado!=='RETIRADA'&&<><button className="button secondary" onClick={()=>setEditando(!editando)}>Editar</button><button className="button secondary" disabled={estado.isPending} onClick={()=>estado.mutate()}>{g.estado==='PUBLICADA'?'Ocultar':'Publicar'}</button><button className="button secondary" disabled={retirar.isPending} onClick={()=>{if(window.confirm('¿Retirar esta referencia? Se conservará el historial.'))retirar.mutate()}}>Retirar</button></>}</div>{editando&&<form className="form video-edit" onSubmit={e=>{e.preventDefault();editar.mutate()}}><label>Título<input required maxLength={200} value={titulo} onChange={e=>setTitulo(e.target.value)}/></label><label>Enlace<input type="url" required value={url} onChange={e=>setUrl(e.target.value)}/></label><label>Número de parte<input type="number" min={1} required value={orden} onChange={e=>setOrden(Number(e.target.value))}/></label>{url&&!canon&&<small className="error">URL web no válida.</small>}<button className="button primary" disabled={!canon||orden<1||editar.isPending}>Guardar cambios</button></form>}{(editar.error||estado.error||retirar.error)&&<p className="error">{errorDe(editar.error||estado.error||retirar.error)}</p>}</div>
-}
-
 export function ClaseDetalle({perfil}:{perfil:Perfil}){
   const {claseId}=useParams();const [params]=useSearchParams();const qc=useQueryClient();
   const {data:clase,isLoading,error}=useQuery<Clase>({queryKey:['clase',claseId],queryFn:()=>api(`/clases/${claseId}`),enabled:!!claseId});
@@ -143,40 +94,4 @@ export function ClaseDetalle({perfil}:{perfil:Perfil}){
     {perfil.tipo==='DOCENTE'&&cambios.length>0&&<section className="panel clase-historial"><h2>Historial de la clase</h2><ol className="clase-eventos-lista">{cambios.map((h,i)=>{const cambioTema=h.tema_anterior&&h.tema_anterior!==h.tema,cambioHorario=h.inicio_anterior&&h.fin_anterior&&(h.inicio_anterior!==h.inicio||h.fin_anterior!==h.fin),cambioEnlace=h.enlace_anterior&&h.enlace_anterior!==h.enlace;return <li key={i}><span className="clase-evento-punto" aria-hidden="true"/><div className="clase-evento-cabecera"><strong>{h.accion==='ENLACE'?'ENLACE ACTUALIZADO':h.accion}</strong><time dateTime={h.registrado_en}>{fecha(h.registrado_en)}</time></div><p className="clase-evento-responsable">Responsable: <strong>{h.responsable||'No identificado'}</strong></p>{(h.accion==='CREADA'||cambioTema)&&<p><span>Tema</span>{cambioTema&&<del>{h.tema_anterior}</del>}<strong>{h.tema}</strong></p>}{(h.accion==='CREADA'||cambioHorario)&&<p><span>Horario</span>{cambioHorario&&<del>{horario(h.inicio_anterior!,h.fin_anterior!)}</del>}<strong>{horario(h.inicio,h.fin)}</strong></p>}{(h.accion==='ENLACE'||cambioEnlace)&&<p><span>Enlace Zoom</span>{cambioEnlace&&<del className="clase-evento-enlace">{h.enlace_anterior}</del>}<strong className="clase-evento-enlace">{h.enlace}</strong></p>}{(h.accion==='CANCELADA'||h.accion==='FINALIZADA')&&<p><span>Estado</span><strong>{h.estado}</strong></p>}</li>})}</ol></section>}
     <section className="section"><h2>Grabaciones de la clase</h2>{perfil.tipo==='DOCENTE'&&clase.estado==='FINALIZADA'&&<RegistrarVideo clases={[{...clase,asignatura:curso?.asignatura,grado:curso?.grado,seccion:curso?.seccion}]} claseFija={clase.id}/ >}{!videos.length?<div className="empty">No hay grabaciones {perfil.tipo==='ESTUDIANTE'?'publicadas':'registradas'} para esta clase.</div>:<div className="panel">{videos.map(g=><Video key={g.id} g={g} editable={perfil.tipo==='DOCENTE'}/>)}</div>}</section>
   </div></main>
-}
-
-function GrabacionesPortada({cantidad,descripcion,etiqueta}:{cantidad:number;descripcion:string;etiqueta:string}){
-  const anio=new Intl.DateTimeFormat('en-US',{timeZone:'America/Lima',year:'numeric'}).format(new Date());
-  return <header className="cursos-portada grabaciones-portada"><div className="cursos-portada-principal"><span className="cursos-sobretitulo">AULA VIRTUAL — {anio}</span><h1>GRABACIONES<i>.</i></h1><p>{descripcion}</p></div><div className="cursos-portada-lateral"><span>ARCHIVO DE CLASES</span><strong>{String(cantidad).padStart(2,'0')}</strong><small>{etiqueta}</small></div></header>
-}
-
-function GrabacionTarjeta({partes,editable,verClase=false}:{partes:Grabacion[];editable:boolean;verClase?:boolean}){
-  const g=partes[0],calendario=fechaAgenda(g.inicio);
-  return <article className="grabaciones-tarjeta"><div className="grabaciones-tarjeta-cabecera"><time className="clases-tarjeta-fecha" dateTime={g.inicio}><strong>{calendario.dia}</strong><span>{calendario.mes}</span></time><div className="grabaciones-tarjeta-info"><span className="clases-tarjeta-curso">{g.asignatura} · {g.grado} {g.seccion}</span><h3>{g.tema}</h3><p>{fecha(g.inicio)} · Docente: {g.docente}</p></div><div className="grabaciones-tarjeta-acciones"><span>{partes.length} {partes.length===1?'video':'videos'}</span>{verClase&&<Link className="clases-detalle-link" to={`/clases/${g.clase_id}?return=${encodeURIComponent('/grabaciones'+window.location.search)}`}>Ver clase <span aria-hidden="true">→</span></Link>}</div></div><div className="grabaciones-partes">{partes.map(parte=><Video key={parte.id} g={parte} editable={editable}/>)}</div></article>
-}
-
-export function GrabacionesListado({perfil}:{perfil:Perfil}){
-  const {params,cambiar,limpiar}=useFiltros();const {data:grabaciones=[],isLoading,error}=useQuery<Grabacion[]>({queryKey:['grabaciones-global'],queryFn:()=>api('/grabaciones'),refetchInterval:30000});
-  const {data:clases=[]}=useQuery<Clase[]>({queryKey:['clases-global'],queryFn:()=>api('/clases'),enabled:perfil.tipo==='DOCENTE'});
-  const grupos=useMemo(()=>{const m=new Map<string,Grabacion[]>();for(const g of grabaciones){if((params.get('q')&&!`${g.tema} ${g.titulo}`.toLowerCase().includes(params.get('q')!.toLowerCase()))||(params.get('asignatura')&&g.asignatura!==params.get('asignatura'))||(params.get('grado')&&g.grado!==params.get('grado'))||(params.get('seccion')&&g.seccion!==params.get('seccion'))||(params.get('fecha')&&local(g.inicio).slice(0,10)!==params.get('fecha')))continue;const a=m.get(g.clase_id)||[];a.push(g);m.set(g.clase_id,a)}return [...m.values()]},[grabaciones,params]);
-  return <main className="grabaciones-editorial"><PageHeading title="Grabaciones" metricLabel="ARCHIVO DE CLASES" metricValue={String(new Set(grabaciones.map(g=>g.clase_id)).size).padStart(2,'0')} metricCaption="CLASES CON GRABACIÓN"/><GrabacionesPortada cantidad={new Set(grabaciones.map(g=>g.clase_id)).size} descripcion={perfil.tipo==='DOCENTE'?'Registra y administra los videos de tus clases.':'Consulta las grabaciones disponibles de tus clases.'} etiqueta="CLASES CON GRABACIÓN"/>
-    {perfil.tipo==='DOCENTE'&&<section className="grabaciones-registro" aria-label="Registrar grabación"><RegistrarVideo clases={clases}/></section>}
-    <section className="grabaciones-busqueda" aria-labelledby="grabaciones-busqueda-titulo"><h2 id="grabaciones-busqueda-titulo">BUSCAR GRABACIONES</h2><Filtros params={params} cambiar={cambiar} limpiar={limpiar} asignaturas={unico(grabaciones.map(g=>g.asignatura))} grados={unico(grabaciones.map(g=>g.grado))} secciones={unico(grabaciones.map(g=>g.seccion))} conTitulo/></section>
-    <section className="grabaciones-resultados" aria-labelledby="grabaciones-resultados-titulo"><div className="clases-agenda-encabezado"><h2 id="grabaciones-resultados-titulo">CLASES GRABADAS</h2><span>{grupos.length} {grupos.length===1?'resultado':'resultados'}</span></div>
-    {isLoading?<div className="grabaciones-sin-resultados">Cargando grabaciones…</div>:error?<div className="alert">{errorDe(error)}</div>:!grupos.length?<div className="grabaciones-sin-resultados"><span aria-hidden="true">▷</span><p>No hay grabaciones para estos filtros.</p></div>:<div className="grabaciones-lista">{paginaFilas(grupos,params).map(partes=><GrabacionTarjeta key={partes[0].clase_id} partes={partes} editable={perfil.tipo==='DOCENTE'} verClase/>)}</div>}
-    </section>
-    <Paginacion total={grupos.length} params={params} cambiar={cambiar}/>
-  </main>
-}
-
-export function AdminGrabaciones(){
-  const {data:grabaciones=[],isLoading,error}=useQuery<Grabacion[]>({queryKey:['grabaciones-admin'],queryFn:()=>api('/grabaciones/administracion')});
-  const grupos=useMemo(()=>{const m=new Map<string,Grabacion[]>();for(const g of grabaciones){const a=m.get(g.clase_id)||[];a.push(g);m.set(g.clase_id,a)}return [...m.values()]},[grabaciones]);
-  return <main className="grabaciones-editorial"><PageHeading title="Grabaciones" metricLabel="ARCHIVO DE CLASES" metricValue={String(grabaciones.length).padStart(2,'0')} metricCaption="VIDEOS REGISTRADOS"/><GrabacionesPortada cantidad={grabaciones.length} descripcion="Edita, publica u oculta las referencias de YouTube registradas." etiqueta="VIDEOS REGISTRADOS"/><section className="grabaciones-resultados" aria-labelledby="grabaciones-admin-titulo"><div className="clases-agenda-encabezado"><h2 id="grabaciones-admin-titulo">REFERENCIAS REGISTRADAS</h2><span>{grupos.length} {grupos.length===1?'clase':'clases'}</span></div>{isLoading?<div className="grabaciones-sin-resultados">Cargando grabaciones…</div>:error?<div className="alert">{errorDe(error)}</div>:!grupos.length?<div className="grabaciones-sin-resultados"><span aria-hidden="true">▷</span><p>No hay referencias de YouTube registradas.</p></div>:<div className="grabaciones-lista">{grupos.map(partes=><GrabacionTarjeta key={partes[0].clase_id} partes={partes} editable/>)}</div>}</section></main>
-}
-
-export function Notificaciones(){
-  const qc=useQueryClient();const {data:avisos=[],isLoading,error}=useQuery<NotificacionClase[]>({queryKey:['notificaciones'],queryFn:()=>api('/notificaciones'),refetchInterval:30000});
-  const leer=useMutation({mutationFn:(id:string)=>post(`/notificaciones/${id}/leer`,{}),onSuccess:()=>qc.invalidateQueries({queryKey:['notificaciones']})});
-  return <><div className="page-head"><div><span className="eyebrow">AULA VIRTUAL</span><h1>Notificaciones</h1><p>Avisos de tus clases virtuales.</p></div></div>{isLoading?<p className="muted">Cargando avisos…</p>:error?<div className="alert">{errorDe(error)}</div>:!avisos.length?<div className="empty">No tienes notificaciones.</div>:<div className="list">{avisos.map(n=><div className={'list-row stack-mobile '+(!n.leida_en?'unread':'')} key={n.id}><div><strong>{n.mensaje}</strong><span>{n.asignatura} · {n.grado} {n.seccion} · {fecha(n.creada_en)}</span></div><div className="row-actions"><Link className="button secondary" to={`/clases/${n.clase_id}?return=${encodeURIComponent('/notificaciones')}`}>Ver clase</Link>{!n.leida_en&&<button className="button secondary" disabled={leer.isPending} onClick={()=>leer.mutate(n.id)}>Marcar como leída</button>}</div></div>)}</div>}{leer.error&&<p className="error">{errorDe(leer.error)}</p>}</>
 }
