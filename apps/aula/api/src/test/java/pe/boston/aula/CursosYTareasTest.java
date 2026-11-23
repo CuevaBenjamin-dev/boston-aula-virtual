@@ -25,7 +25,9 @@ class CursosYTareasTest {
   private final JdbcTemplate db=mock(JdbcTemplate.class);
   private final UsuarioActual usuario=mock(UsuarioActual.class);
   private final AvisosTarea avisos=mock(AvisosTarea.class);
-  private final CursosYTareas tareas=new CursosYTareas(db,usuario,mock(ErpCliente.class),avisos);
+  private final ConsultaAcademica consulta=new ConsultaAcademica(db,usuario);
+  private final CalificacionesTarea calificaciones=new CalificacionesTarea(db,usuario,avisos,consulta);
+  private final CursosYTareas tareas=new CursosYTareas(db,usuario,mock(ErpCliente.class),avisos,consulta,calificaciones);
   private final Authentication actor=mock(Authentication.class);
   private final UUID tarea=UUID.randomUUID(),curso=UUID.randomUUID(),estudiante=UUID.randomUUID();
 

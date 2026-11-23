@@ -1,13 +1,8 @@
 package pe.boston.aula;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.sql.Timestamp;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -22,7 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service public class Clases {
   public record Programacion(UUID cursoId,String tema,OffsetDateTime inicio,OffsetDateTime fin,String enlace) {}
-  private static final DateTimeFormatter FECHA=DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm").withZone(ZoneId.of("America/Lima"));
   private static final String DATOS="""
     SELECT c.*,
       CASE WHEN c.estado='PROGRAMADA' AND c.fin<=now() THEN 'PASADA' ELSE c.estado END AS estado_visible,
@@ -32,8 +26,8 @@ import org.springframework.transaction.annotation.Transactional;
       (SELECT max(b.actualizado_en) FROM bloques_zoom b WHERE b.clase_id=c.id) AS enlace_actualizado
     FROM clases_academicas c
     """;
-  private final JdbcTemplate db; private final UsuarioActual usuario;
-  public Clases(JdbcTemplate db,UsuarioActual usuario) { this.db=db;this.usuario=usuario; }
+  private final JdbcTemplate db; private final UsuarioActual usuario; private final PlanificacionClases planificacion;
+  public Clases(JdbcTemplate db,UsuarioActual usuario,PlanificacionClases planificacion) { this.db=db;this.usuario=usuario;this.planificacion=planificacion; }
   public boolean habilitado() { return Boolean.TRUE.equals(db.queryForObject("SELECT habilitado FROM configuraciones_modulos WHERE clave='clases_y_grabaciones'",Boolean.class)); }
   public void comprobar() { if(!habilitado()) throw new IllegalStateException("Clases y grabaciones desactivadas"); }
   public List<Map<String,Object>> listar(UUID curso,Authentication a) {
@@ -57,66 +51,13 @@ import org.springframework.transaction.annotation.Transactional;
     else usuario.leerCurso(a,(UUID)clase.get("curso_id"));
     return clase;
   }
-  private void validar(String tema,OffsetDateTime inicio,OffsetDateTime fin) {
-    if(tema==null||tema.isBlank()||tema.length()>200) throw new IllegalArgumentException("Tema inválido");
-    if(inicio==null||fin==null||!fin.isAfter(inicio)) throw new IllegalArgumentException("Horario inválido");
-  }
-  private String validarEnlace(String enlace) {
-    if(enlace==null||enlace.isBlank()) throw new IllegalArgumentException("Ingresa un enlace");
-    return enlace.trim();
-  }
-  private String huella(List<UUID> cursos,String tema,OffsetDateTime inicio,OffsetDateTime fin,String enlace) {
-    String datos=cursos+"|"+tema.trim()+"|"+inicio.toInstant()+"|"+fin.toInstant()+"|"+enlace;
-    return resumen(datos);
-  }
-  private String huellaProgramaciones(List<Programacion> planes,boolean grupal) {
-    StringBuilder datos=new StringBuilder("programaciones|"+grupal);
-    for(Programacion p:planes) datos.append('|').append(p.cursoId()).append('|').append(p.tema()).append('|')
-      .append(p.inicio().toInstant()).append('|').append(p.fin().toInstant()).append('|').append(p.enlace());
-    return resumen(datos.toString());
-  }
-  private String resumen(String datos) {
-    try { return java.util.HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(datos.getBytes(StandardCharsets.UTF_8))); }
-    catch(NoSuchAlgorithmException e) { throw new IllegalStateException(e); }
-  }
-  private void bloquear(List<String> claves) {
-    claves.stream().distinct().sorted().forEach(clave->db.queryForList("SELECT pg_advisory_xact_lock(hashtextextended(?,0))",clave));
-  }
-  private List<String> claves(UUID operacion,UUID docente,List<UUID> cursos) {
-    var claves=new ArrayList<String>(); claves.add("operacion:"+operacion); claves.add("docente:"+docente);
-    for(UUID curso:cursos) claves.add("seccion:"+db.queryForObject("SELECT seccion_erp_id FROM cursos WHERE id=?",UUID.class,curso));
-    return claves;
-  }
-  private List<Map<String,Object>> conflictos(List<UUID> cursos,OffsetDateTime inicio,OffsetDateTime fin,UUID excluir,UUID docente) {
-    String plazas=String.join(",",java.util.Collections.nCopies(cursos.size(),"?"));
-    String sql="""
-      SELECT DISTINCT c.id,c.tema,c.inicio,c.fin,curso.asignatura,curso.grado,curso.seccion
-      FROM clases_academicas c JOIN cursos curso ON curso.id=c.curso_id
-      WHERE c.estado<>'CANCELADA' AND c.inicio<? AND c.fin>?
-        AND (curso.seccion_erp_id IN (SELECT seccion_erp_id FROM cursos WHERE id IN (%s))
-          OR c.docente_erp_id=?
-          OR EXISTS (SELECT 1 FROM docentes_curso d WHERE d.curso_id=c.curso_id AND d.docente_erp_id=? AND d.activo))
-      """.formatted(plazas);
-    var parametros=new ArrayList<Object>(); parametros.add(fin); parametros.add(inicio); parametros.addAll(cursos); parametros.add(docente); parametros.add(docente);
-    if(excluir!=null) { sql+=" AND c.id<>?"; parametros.add(excluir); }
-    return db.queryForList(sql+" ORDER BY c.inicio",parametros.toArray());
-  }
-  private void exigirConfirmacion(List<Map<String,Object>> conflictos,int secciones,boolean confirmado) {
-    if(!confirmado&&(!conflictos.isEmpty()||secciones>1)) {
-      String detalle=conflictos.isEmpty()?"el mismo docente dicta en varias secciones a esa hora":
-        conflictos.stream().distinct().limit(3).map(c->"«"+c.get("tema")+"» · "+c.get("asignatura")+" "+c.get("grado")+" "+c.get("seccion")+
-          " · "+FECHA.format(((Timestamp)c.get("inicio")).toInstant())+" a "+FECHA.format(((Timestamp)c.get("fin")).toInstant()))
-          .collect(java.util.stream.Collectors.joining("; "));
-      throw new IllegalStateException("CONFLICTO_HORARIO: Coincide con "+detalle+". ¿Guardar de todos modos?");
-    }
-  }
   @Transactional public List<Map<String,Object>> crearLote(List<UUID> destinos,String tema,OffsetDateTime inicio,OffsetDateTime fin,String enlace,UUID operacion,boolean confirmarConflicto,Authentication a) {
-    comprobar(); validar(tema,inicio,fin); String zoom=validarEnlace(enlace);
+    comprobar(); planificacion.validar(tema,inicio,fin); String zoom=planificacion.validarEnlace(enlace);
     if(operacion==null||destinos==null||destinos.isEmpty()||destinos.stream().anyMatch(java.util.Objects::isNull)||new HashSet<>(destinos).size()!=destinos.size())
       throw new IllegalArgumentException("Cursos u operación inválidos");
     var cursos=destinos.stream().sorted().toList();
     var planes=cursos.stream().map(c->new Programacion(c,tema.trim(),inicio,fin,zoom)).toList();
-    return crearPlanes(planes,operacion,huella(cursos,tema,inicio,fin,zoom),false,true,confirmarConflicto,a);
+    return crearPlanes(planes,operacion,planificacion.huella(cursos,tema,inicio,fin,zoom),false,true,confirmarConflicto,a);
   }
   @Transactional public List<Map<String,Object>> crearProgramaciones(List<Programacion> programaciones,UUID operacion,boolean grupal,boolean confirmarConflicto,Authentication a) {
     comprobar();
@@ -125,8 +66,8 @@ import org.springframework.transaction.annotation.Transactional;
     var planes=new ArrayList<Programacion>();
     for(Programacion p:programaciones) {
       if(p.cursoId()==null) throw new IllegalArgumentException("Falta un curso");
-      validar(p.tema(),p.inicio(),p.fin());
-      planes.add(new Programacion(p.cursoId(),p.tema().trim(),p.inicio(),p.fin(),validarEnlace(p.enlace())));
+      planificacion.validar(p.tema(),p.inicio(),p.fin());
+      planes.add(new Programacion(p.cursoId(),p.tema().trim(),p.inicio(),p.fin(),planificacion.validarEnlace(p.enlace())));
     }
     planes.sort(Comparator.comparing(Programacion::cursoId));
     if(grupal&&planes.size()>1) {
@@ -135,7 +76,7 @@ import org.springframework.transaction.annotation.Transactional;
           ||!p.fin().toInstant().equals(primera.fin().toInstant())||!p.enlace().equals(primera.enlace())))
         throw new IllegalArgumentException("La clase compartida debe tener el mismo tema, horario y enlace Zoom");
     }
-    return crearPlanes(planes,operacion,huellaProgramaciones(planes,grupal),grupal,false,confirmarConflicto,a);
+    return crearPlanes(planes,operacion,planificacion.huellaProgramaciones(planes,grupal),grupal,false,confirmarConflicto,a);
   }
   private List<Map<String,Object>> crearPlanes(List<Programacion> planes,UUID operacion,String hash,boolean grupal,boolean advertirMultiples,boolean confirmarConflicto,Authentication a) {
     var cursos=planes.stream().map(Programacion::cursoId).toList();
@@ -144,7 +85,7 @@ import org.springframework.transaction.annotation.Transactional;
     for(UUID curso:cursos) usuario.docente(a,curso);
     var familias=db.queryForList("SELECT DISTINCT asignatura,nivel,grado FROM cursos WHERE id IN ("+String.join(",",java.util.Collections.nCopies(cursos.size(),"?"))+")",cursos.toArray());
     if(familias.size()!=1) throw new IllegalArgumentException("Selecciona secciones de la misma asignatura y grado");
-    bloquear(claves(operacion,docente,cursos));
+    planificacion.bloquear(planificacion.claves(operacion,docente,cursos));
     var anteriores=db.queryForList("SELECT id,curso_id,creado_por,solicitud_hash FROM clases_academicas WHERE operacion_id=? ORDER BY curso_id",operacion);
     if(!anteriores.isEmpty()) {
       if(anteriores.size()!=cursos.size()||anteriores.stream().anyMatch(c->!usuario.cuenta(a).equals(c.get("creado_por"))||!hash.equals(c.get("solicitud_hash"))||!cursos.contains(c.get("curso_id"))))
@@ -155,14 +96,14 @@ import org.springframework.transaction.annotation.Transactional;
       Programacion uno=planes.get(i),dos=planes.get(j);
       if(uno.inicio().isBefore(dos.fin())&&uno.fin().isAfter(dos.inicio()))
         throw new IllegalArgumentException("Las clases con horarios separados se superponen: «"+uno.tema()+"» · sección "+
-          db.queryForObject("SELECT seccion FROM cursos WHERE id=?",String.class,uno.cursoId())+" · "+FECHA.format(uno.inicio().toInstant())+
-          " a "+FECHA.format(uno.fin().toInstant())+"; «"+dos.tema()+"» · sección "+
-          db.queryForObject("SELECT seccion FROM cursos WHERE id=?",String.class,dos.cursoId())+" · "+FECHA.format(dos.inicio().toInstant())+
-          " a "+FECHA.format(dos.fin().toInstant())+". Ajusta uno de los horarios.");
+          db.queryForObject("SELECT seccion FROM cursos WHERE id=?",String.class,uno.cursoId())+" · "+PlanificacionClases.FECHA.format(uno.inicio().toInstant())+
+          " a "+PlanificacionClases.FECHA.format(uno.fin().toInstant())+"; «"+dos.tema()+"» · sección "+
+          db.queryForObject("SELECT seccion FROM cursos WHERE id=?",String.class,dos.cursoId())+" · "+PlanificacionClases.FECHA.format(dos.inicio().toInstant())+
+          " a "+PlanificacionClases.FECHA.format(dos.fin().toInstant())+". Ajusta uno de los horarios.");
     }
     var existentes=new ArrayList<Map<String,Object>>();
-    for(Programacion p:planes) existentes.addAll(conflictos(List.of(p.cursoId()),p.inicio(),p.fin(),null,docente));
-    exigirConfirmacion(existentes,advertirMultiples?cursos.size():1,confirmarConflicto);
+    for(Programacion p:planes) existentes.addAll(planificacion.conflictos(List.of(p.cursoId()),p.inicio(),p.fin(),null,docente));
+    planificacion.exigirConfirmacion(existentes,advertirMultiples?cursos.size():1,confirmarConflicto);
     var creadas=new ArrayList<Map<String,Object>>();
     for(Programacion p:planes) {
       UUID curso=p.cursoId();
@@ -180,7 +121,7 @@ import org.springframework.transaction.annotation.Transactional;
     return (UUID)crearLote(List.of(curso),tema,inicio,fin,enlace,operacion,confirmarConflicto,a).getFirst().get("id");
   }
   @Transactional public void editar(UUID id,String tema,OffsetDateTime inicio,OffsetDateTime fin,String enlace,UUID operacion,boolean confirmarConflicto,Authentication a) {
-    comprobar(); validar(tema,inicio,fin); String zoom=validarEnlace(enlace);
+    comprobar(); planificacion.validar(tema,inicio,fin); String zoom=planificacion.validarEnlace(enlace);
     if(operacion==null) throw new IllegalArgumentException("Falta identificador de operación");
     var anterior=db.queryForMap("SELECT curso_id,tema,inicio,fin,estado FROM clases_academicas WHERE id=? FOR UPDATE",id);
     UUID curso=(UUID)anterior.get("curso_id"); usuario.docente(a,curso);
@@ -196,8 +137,8 @@ import org.springframework.transaction.annotation.Transactional;
     boolean horario=!inicio.toInstant().equals(((Timestamp)anterior.get("inicio")).toInstant())||!fin.toInstant().equals(((Timestamp)anterior.get("fin")).toInstant());
     boolean temaCambio=!tema.trim().equals(anterior.get("tema")),enlaceCambio=!zoom.equals(actual);
     if(!horario&&!temaCambio&&!enlaceCambio) return;
-    bloquear(claves(operacion,usuario.referencia(a),List.of(curso)));
-    if(horario) exigirConfirmacion(conflictos(List.of(curso),inicio,fin,id,usuario.referencia(a)),1,confirmarConflicto);
+    planificacion.bloquear(planificacion.claves(operacion,usuario.referencia(a),List.of(curso)));
+    if(horario) planificacion.exigirConfirmacion(planificacion.conflictos(List.of(curso),inicio,fin,id,usuario.referencia(a)),1,confirmarConflicto);
     db.update("UPDATE clases_academicas SET tema=?,inicio=?,fin=?,modificado_en=now() WHERE id=?",tema.trim(),inicio,fin,id);
     if(enlaceCambio) guardarEnlace(id,zoom,null,a);
     UUID evento=registrarHistorial(id,"EDITADA",operacion,a);
@@ -223,7 +164,7 @@ import org.springframework.transaction.annotation.Transactional;
     auditar(id,"CLASE_"+nuevo,a);
   }
   @Transactional public void actualizar(UUID clase,String enlace,UUID operacion,Authentication a) {
-    comprobar(); String zoom=validarEnlace(enlace);
+    comprobar(); String zoom=planificacion.validarEnlace(enlace);
     if(operacion==null) throw new IllegalArgumentException("Falta identificador de operación");
     var estado=db.queryForMap("SELECT curso_id,tema,inicio,fin,estado FROM clases_academicas WHERE id=? FOR UPDATE",clase);
     UUID curso=(UUID)estado.get("curso_id"); usuario.docente(a,curso);
@@ -246,7 +187,7 @@ import org.springframework.transaction.annotation.Transactional;
   }
   private String mensaje(String accion,UUID curso,String tema,OffsetDateTime inicio,OffsetDateTime fin) {
     var c=db.queryForMap("SELECT asignatura,grado,seccion FROM cursos WHERE id=?",curso);
-    return accion+": "+tema+" · "+c.get("asignatura")+" "+c.get("grado")+" "+c.get("seccion")+" · "+FECHA.format(inicio.toInstant())+" a "+FECHA.format(fin.toInstant());
+    return accion+": "+tema+" · "+c.get("asignatura")+" "+c.get("grado")+" "+c.get("seccion")+" · "+PlanificacionClases.FECHA.format(inicio.toInstant())+" a "+PlanificacionClases.FECHA.format(fin.toInstant());
   }
   private void notificar(UUID evento,UUID clase,UUID curso,String tipo,String mensaje) {
     db.update("""

@@ -1,16 +1,10 @@
 package pe.boston.aula;
 
 import java.net.URI;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.charset.CodingErrorAction;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.zip.ZipInputStream;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
@@ -25,34 +19,9 @@ import org.springframework.transaction.annotation.Transactional;
   private final AlmacenamientoObjetos objetos;
   private final MaterialesController materiales;
   private final AvisosTarea avisos;
-  @Value("${boston.archivos.max-mb:100}") private long maxMb;
+  private final ValidacionArchivosAcademicos validacion;
   @Value("${boston.archivos.capacidad-padre-mb:1024}") private long capacidadMb;
-  @Value("${boston.archivos.tipos:application/pdf,image/png,image/jpeg,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation}") private String tipos;
-  public ArchivosAcademicos(JdbcTemplate db,UsuarioActual usuario,AlmacenamientoObjetos objetos,MaterialesController materiales,AvisosTarea avisos) { this.db=db;this.usuario=usuario;this.objetos=objetos;this.materiales=materiales;this.avisos=avisos; }
-  private String extension(String nombre,String tipo,long tamano) {
-    if(nombre==null||nombre.isBlank()||nombre.length()>200||nombre.contains("/")||nombre.contains("\\")||tamano<1||tamano>maxMb*1024*1024) throw new IllegalArgumentException("Nombre o tamaño de archivo inválido (máximo "+maxMb+" MB)");
-    if(!List.of(tipos.split(",")).contains(tipo)) throw new IllegalArgumentException("Tipo de archivo no permitido");
-    String n=nombre.toLowerCase(java.util.Locale.ROOT);
-    if(n.endsWith(".pdf")&&"application/pdf".equals(tipo)) return "pdf";
-    if(n.endsWith(".png")&&"image/png".equals(tipo)) return "png";
-    if((n.endsWith(".jpg")||n.endsWith(".jpeg"))&&"image/jpeg".equals(tipo)) return "jpg";
-    if(n.endsWith(".docx")&&"application/vnd.openxmlformats-officedocument.wordprocessingml.document".equals(tipo)) return "docx";
-    if(n.endsWith(".pptx")&&"application/vnd.openxmlformats-officedocument.presentationml.presentation".equals(tipo)) return "pptx";
-    throw new IllegalArgumentException("Solo PDF, PNG, JPG, DOCX o PPTX");
-  }
-  private String extensionEntrega(String nombre,String tipo,long tamano) {
-    if(nombre==null||nombre.isBlank()||nombre.length()>200||nombre.contains("/")||nombre.contains("\\")||tamano<1||tamano>25L*1024*1024)
-      throw new IllegalArgumentException("Nombre o tamaño inválido (máximo 25 MB por archivo)");
-    String n=nombre.toLowerCase(java.util.Locale.ROOT);
-    if(n.endsWith(".pdf")&&"application/pdf".equals(tipo)) return "pdf";
-    if(n.endsWith(".png")&&"image/png".equals(tipo)) return "png";
-    if((n.endsWith(".jpg")||n.endsWith(".jpeg"))&&"image/jpeg".equals(tipo)) return "jpg";
-    if(n.endsWith(".docx")&&"application/vnd.openxmlformats-officedocument.wordprocessingml.document".equals(tipo)) return "docx";
-    if(n.endsWith(".pptx")&&"application/vnd.openxmlformats-officedocument.presentationml.presentation".equals(tipo)) return "pptx";
-    if(n.endsWith(".xlsx")&&"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet".equals(tipo)) return "xlsx";
-    if(n.endsWith(".txt")&&"text/plain".equals(tipo)) return "txt";
-    throw new IllegalArgumentException("Solo PDF, DOCX, PPTX, XLSX, TXT, JPG o PNG");
-  }
+  public ArchivosAcademicos(JdbcTemplate db,UsuarioActual usuario,AlmacenamientoObjetos objetos,MaterialesController materiales,AvisosTarea avisos,ValidacionArchivosAcademicos validacion) { this.db=db;this.usuario=usuario;this.objetos=objetos;this.materiales=materiales;this.avisos=avisos;this.validacion=validacion; }
   public Map<String,Object> iniciarTarea(UUID tarea,String nombre,String tipo,long tamano,UUID sustituye,Authentication a) {
     var t=db.queryForMap("SELECT curso_id,estado FROM tareas WHERE id=?",tarea);
     usuario.docente(a,(UUID)t.get("curso_id"));
@@ -79,7 +48,7 @@ import org.springframework.transaction.annotation.Transactional;
   }
   private Map<String,Object> iniciar(String tabla,String columna,UUID padre,String prefijo,String nombre,String tipo,long tamano,UUID sustituye,Authentication a) {
     boolean preparacion="preparacion_id".equals(columna);
-    String ext=preparacion?extensionEntrega(nombre,tipo,tamano):extension(nombre,tipo,tamano);
+    String ext=preparacion?validacion.extensionEntrega(nombre,tipo,tamano):validacion.extension(nombre,tipo,tamano);
     if(preparacion) {
       long sustituido=0,descontar=0;
       if(sustituye!=null) {
@@ -175,16 +144,16 @@ import org.springframework.transaction.annotation.Transactional;
     if(!yaCompleto) objetos.completar(clave,(String)f.get("upload_id"),partes);
     byte[] cabecera=objetos.cabecera(clave);
     boolean firma= switch((String)f.get("tipo")) {
-      case "application/pdf" -> prefijo(cabecera,37,80,68,70);
-      case "image/png" -> prefijo(cabecera,137,80,78,71,13,10,26,10);
-      case "image/jpeg" -> prefijo(cabecera,255,216,255);
-      case "application/vnd.openxmlformats-officedocument.wordprocessingml.document" -> prefijo(cabecera,80,75,3,4);
-      case "application/vnd.openxmlformats-officedocument.presentationml.presentation" -> prefijo(cabecera,80,75,3,4);
-      case "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" -> prefijo(cabecera,80,75,3,4);
+      case "application/pdf" -> validacion.prefijo(cabecera,37,80,68,70);
+      case "image/png" -> validacion.prefijo(cabecera,137,80,78,71,13,10,26,10);
+      case "image/jpeg" -> validacion.prefijo(cabecera,255,216,255);
+      case "application/vnd.openxmlformats-officedocument.wordprocessingml.document" -> validacion.prefijo(cabecera,80,75,3,4);
+      case "application/vnd.openxmlformats-officedocument.presentationml.presentation" -> validacion.prefijo(cabecera,80,75,3,4);
+      case "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" -> validacion.prefijo(cabecera,80,75,3,4);
       case "text/plain" -> true;
       default -> false;
     };
-    if(firma&&"PREPARACION".equals(f.get("origen"))) firma=contenidoEntregaValido(clave,(String)f.get("tipo"));
+    if(firma&&"PREPARACION".equals(f.get("origen"))) firma=validacion.contenidoEntregaValido(clave,(String)f.get("tipo"));
     if(objetos.tamano(clave)!=((Number)f.get("tamano")).longValue()||!firma) {
       objetos.eliminar(clave);
       db.update("UPDATE "+tabla(f)+" SET estado='RECHAZADO',activo=FALSE,upload_id=NULL WHERE id=?",id);
@@ -195,31 +164,6 @@ import org.springframework.transaction.annotation.Transactional;
     db.update("UPDATE "+tabla(f)+" SET estado='DISPONIBLE',upload_id=NULL WHERE id=?",id);
     if("TAREA".equals(f.get("origen")) && "PUBLICADA".equals(f.get("estado_tarea"))) cambioAdjuntoTarea((UUID)f.get("padre_id"));
     auditar(a,"ARCHIVO_PUBLICADO",id);
-  }
-  private boolean prefijo(byte[] b,int... bytes) { if(b.length<bytes.length) return false; for(int i=0;i<bytes.length;i++) if((b[i]&255)!=bytes[i]) return false; return true; }
-  private boolean contenidoEntregaValido(String clave,String tipo) {
-    if(!"text/plain".equals(tipo)&&!tipo.startsWith("application/vnd.openxmlformats-officedocument")) return true;
-    byte[] datos=objetos.contenido(clave);
-    if(datos.length>25L*1024*1024) return false;
-    if("text/plain".equals(tipo)) {
-      try {
-        String texto=StandardCharsets.UTF_8.newDecoder().onMalformedInput(CodingErrorAction.REPORT).decode(ByteBuffer.wrap(datos)).toString();
-        return texto.chars().noneMatch(c->c==0 || (c<32&&c!=9&&c!=10&&c!=13));
-      } catch(java.nio.charset.CharacterCodingException e) { return false; }
-    }
-    String requerido=tipo.endsWith("wordprocessingml.document")?"word/document.xml":
-      tipo.endsWith("presentationml.presentation")?"ppt/presentation.xml":"xl/workbook.xml";
-    boolean contenido=false,principal=false;
-    try(var zip=new ZipInputStream(new ByteArrayInputStream(datos))) {
-      int entradas=0;long descomprimido=0;byte[] bloque=new byte[8192];
-      for(var entrada=zip.getNextEntry();entrada!=null;entrada=zip.getNextEntry()) {
-        if(++entradas>2000) return false;
-        if("[Content_Types].xml".equals(entrada.getName())) contenido=true;
-        if(requerido.equals(entrada.getName())) principal=true;
-        int leidos;while((leidos=zip.read(bloque))!=-1) if((descomprimido+=leidos)>100L*1024*1024) return false;
-      }
-      return contenido&&principal;
-    } catch(IOException e) { return false; }
   }
   private String tabla(Map<String,Object> f) { return switch((String)f.get("origen")) { case "TAREA" -> "archivos_tarea"; case "MATERIAL" -> "archivos_material"; default -> "archivos_entrega"; }; }
   public URI enlace(UUID id,Authentication a) { return objetos.leer((String)autorizado(id,a,false).get("clave_objeto"),Duration.ofMinutes(5)); }
