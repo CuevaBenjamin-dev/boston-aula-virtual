@@ -1,4 +1,5 @@
 import {useSearchParams} from 'react-router-dom';
+import {BusquedaConSugerencias} from '../components/BusquedaConSugerencias';
 
 export const fecha=(s:string)=>new Date(s).toLocaleString('es-PE',{dateStyle:'medium',timeStyle:'short',timeZone:'America/Lima'});
 export const hora=(s:string)=>new Date(s).toLocaleTimeString('es-PE',{timeStyle:'short',timeZone:'America/Lima'});
@@ -23,9 +24,9 @@ export function useFiltros(){
   function cambiar(clave:string,valor:string){const p=new URLSearchParams(params);if(valor)p.set(clave,valor);else p.delete(clave);if(clave!=='p')p.delete('p');setParams(p)}
   return {params,cambiar,limpiar:()=>setParams(new URLSearchParams())};
 }
-export function Filtros({params,cambiar,limpiar,asignaturas,grados,secciones,estados,conTitulo=false}:{params:URLSearchParams;cambiar:(k:string,v:string)=>void;limpiar:()=>void;asignaturas:string[];grados:string[];secciones:string[];estados?:string[];conTitulo?:boolean}){
+export function Filtros({params,cambiar,limpiar,asignaturas,grados,secciones,estados,sugerencias=[],conTitulo=false}:{params:URLSearchParams;cambiar:(k:string,v:string)=>void;limpiar:()=>void;asignaturas:string[];grados:string[];secciones:string[];estados?:string[];sugerencias?:string[];conTitulo?:boolean}){
   return <div className="panel form filters"><div className="filter-grid">
-    <label>{conTitulo?'Buscar título':'Buscar tema'}<input value={params.get('q')||''} onChange={e=>cambiar('q',e.target.value)} placeholder="Escribe para buscar"/></label>
+    <BusquedaConSugerencias etiqueta={conTitulo?'Buscar título':'Buscar tema'} valor={params.get('q')||''} alCambiar={v=>cambiar('q',v)} candidatos={sugerencias} placeholder="Escribe para buscar"/>
     <label>Curso<select value={params.get('asignatura')||''} onChange={e=>cambiar('asignatura',e.target.value)}><option value="">Todos</option>{asignaturas.map(x=><option key={x}>{x}</option>)}</select></label>
     <label>Grado<select value={params.get('grado')||''} onChange={e=>cambiar('grado',e.target.value)}><option value="">Todos</option>{grados.map(x=><option key={x}>{x}</option>)}</select></label>
     <label>Sección<select value={params.get('seccion')||''} onChange={e=>cambiar('seccion',e.target.value)}><option value="">Todas</option>{secciones.map(x=><option key={x}>{x}</option>)}</select></label>

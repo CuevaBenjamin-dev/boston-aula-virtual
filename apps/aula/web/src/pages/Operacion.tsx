@@ -2,6 +2,7 @@ import {useRef,useState} from 'react';
 import {useMutation,useQuery,useQueryClient} from '@tanstack/react-query';
 import {api,post,put,type Perfil} from '../api';
 import {PageHeading} from '../PageHeading';
+import {BusquedaConSugerencias,coincideBusqueda} from '../components/BusquedaConSugerencias';
 
 type Props={perfil:Perfil;pagina:string};
 type Pago={id:string;referencia:string;importe:number;estado:string;registrado_en:string};
@@ -41,7 +42,7 @@ function Pagos(){
   const filtrosActivos=Boolean(buscar||estado||desde||hasta);
   const pagos=data?.pagos.filter(p=>{
     const dia=new Date(p.registrado_en).toLocaleDateString('sv-SE');
-    return (!buscar||p.referencia.toLowerCase().includes(buscar.toLowerCase()))&&(!estado||p.estado===estado)&&(!desde||dia>=desde)&&(!hasta||dia<=hasta);
+    return (!buscar||coincideBusqueda(p.referencia,buscar))&&(!estado||p.estado===estado)&&(!desde||dia>=desde)&&(!hasta||dia<=hasta);
   })||[];
   const pendientes=data?.obligaciones.filter(o=>o.saldo>0).length||0;
   return <main className="pagos-editorial"><PageHeading title="Mis pagos" metricLabel="SALDO PENDIENTE" metricValue={data?moneda(data.saldoTotal):'—'} metricCaption={data?`${pendientes} ${pendientes===1?'OBLIGACIÓN PENDIENTE':'OBLIGACIONES PENDIENTES'}`:'ESTADO DE CUENTA'}/>
@@ -59,7 +60,7 @@ function Pagos(){
       </section>
       <section className="pagos-seccion pagos-historial" aria-labelledby="pagos-historial-titulo">
         <div className="pagos-seccion-cabecera"><div><span>02 / MOVIMIENTOS</span><h2 id="pagos-historial-titulo">Historial de pagos</h2><p>Encuentra un pago por referencia, estado o fecha de registro.</p></div><strong>{String(pagos.length).padStart(2,'0')} <small>{pagos.length===1?'RESULTADO':'RESULTADOS'}</small></strong></div>
-        <div className="pagos-filtros form"><div className="filter-grid"><label>Referencia<input value={buscar} onChange={e=>setBuscar(e.target.value)} placeholder="Buscar referencia"/></label><label>Estado<select value={estado} onChange={e=>setEstado(e.target.value)}><option value="">Todos</option><option>REGISTRADO</option><option>ANULADO</option></select></label><label>Desde<input type="date" value={desde} onChange={e=>setDesde(e.target.value)}/></label><label>Hasta<input type="date" value={hasta} onChange={e=>setHasta(e.target.value)}/></label></div><button type="button" className="button secondary" onClick={()=>{setBuscar('');setEstado('');setDesde('');setHasta('')}}>Limpiar filtros</button></div>
+<div className="pagos-filtros form"><div className="filter-grid"><BusquedaConSugerencias etiqueta="Referencia" valor={buscar} alCambiar={setBuscar} candidatos={data.pagos.map(p=>p.referencia)} placeholder="Buscar referencia"/><label>Estado<select value={estado} onChange={e=>setEstado(e.target.value)}><option value="">Todos</option><option>REGISTRADO</option><option>ANULADO</option></select></label><label>Desde<input type="date" value={desde} onChange={e=>setDesde(e.target.value)}/></label><label>Hasta<input type="date" value={hasta} onChange={e=>setHasta(e.target.value)}/></label></div><button type="button" className="button secondary" onClick={()=>{setBuscar('');setEstado('');setDesde('');setHasta('')}}>Limpiar filtros</button></div>
         {!pagos.length?<div className="pagos-vacio"><strong>{filtrosActivos?'No hay pagos para estos filtros.':'Aún no hay pagos registrados.'}</strong><p>{filtrosActivos?'Prueba con otra referencia, estado o rango de fechas.':'Los pagos registrados en tesorería aparecerán en esta sección.'}</p></div>:<div className="pagos-movimientos">{pagos.map(p=><article className="pagos-movimiento" key={p.id}><div><span>REFERENCIA</span><strong>{p.referencia}</strong></div><div><span>FECHA DE REGISTRO</span><time dateTime={p.registrado_en}>{new Date(p.registrado_en).toLocaleDateString('es-PE')}</time></div><div><span>IMPORTE</span><strong>{moneda(p.importe)}</strong></div><div><span>ESTADO</span><b className="pagos-estado">{p.estado}</b></div></article>)}</div>}
       </section>
     </>}

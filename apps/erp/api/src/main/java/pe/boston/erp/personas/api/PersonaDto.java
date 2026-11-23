@@ -35,7 +35,8 @@ public final class PersonaDto {
     String autorizador, String medio, Instant verificadoEn, Instant vigenteDesde, Instant vigenteHasta) {}
   public record Provisional(String motivo, String sustentoTipo, String sustentoReferencia,
     Instant registradaEn, Instant regularizadaEn) {}
-  public record ReferenciaPersona(String nombres, String apellidos, String tipoDocumento, String numeroDocumento) {}
+  public record ReferenciaPersona(String nombres, String apellidos, String tipoDocumento, String numeroDocumento,
+    String sexo) {}
   public record Persona(UUID id, String nombres, String apellidos, LocalDate fechaNacimiento,
     String sexo, String nacionalidad, String telefono, String correo, String direccion,
     List<Documento> documentos, List<Condicion> condiciones, Provisional provisional,

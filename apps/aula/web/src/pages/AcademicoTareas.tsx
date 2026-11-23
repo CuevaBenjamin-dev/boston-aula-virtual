@@ -6,6 +6,7 @@ import {z} from 'zod';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {api,post,put,subirArchivo,type Archivo,type Clase,type Curso,type Entrega,type Nota,type Perfil,type Tarea} from '../api';
 import {PageHeading} from '../PageHeading';
+import {BusquedaConSugerencias,coincideBusqueda} from '../components/BusquedaConSugerencias';
 import {fecha} from './AcademicoComun';
 import {PrepararEntrega} from './EntregasAcademicas';
 import {SeguimientoTarea} from './SeguimientoAcademico';
@@ -80,12 +81,12 @@ function VistaGlobal({cursos,pagina,perfil}:{cursos:Curso[];pagina:string;perfil
     return (await Promise.all(cursos.map(async curso=>(await api<Tarea[]>(`/cursos/${curso.id}/tareas`)).map(t=>({id:t.id,curso,tarea:t}))))).flat().sort((a,b)=>new Date(b.tarea!.creado_en).getTime()-new Date(a.tarea!.creado_en).getTime());
   }});
   const visibles=filas.filter(f=>{
-    const texto=(params.get('q')||'').toLocaleLowerCase('es');
+    const texto=params.get('q')||'';
     const valorFecha=f.nota?.actualizado_en||f.tarea?.fecha_limite||'';
     const dia=fechaLocalLima(valorFecha).slice(0,10);
     return (!params.get('curso')||f.curso.id===params.get('curso'))
       &&(pagina!=='tareas'||perfil.tipo!=='DOCENTE'||Boolean(f.tarea?.es_historica)===mostrarHistorial)
-      &&(!texto||`${f.nota?.titulo||f.tarea?.titulo} ${f.curso.asignatura} ${f.nota?.comentario||''}`.toLocaleLowerCase('es').includes(texto))
+      &&(!texto||coincideBusqueda(`${f.nota?.titulo||f.tarea?.titulo} ${f.curso.asignatura} ${f.nota?.comentario||''}`,texto))
       &&(pagina!=='tareas'||!params.get('estado')||estadoTarea(f.tarea!,perfil)===params.get('estado'))
       &&(!params.get('desde')||dia>=params.get('desde')!)
       &&(!params.get('hasta')||dia<=params.get('hasta')!);
@@ -105,7 +106,7 @@ function VistaGlobal({cursos,pagina,perfil}:{cursos:Curso[];pagina:string;perfil
       <section className="tareas-busqueda" aria-labelledby="tareas-busqueda-titulo">
         <div className="tareas-seccion-cabecera"><div><span>01 / EXPLORAR</span><h2 id="tareas-busqueda-titulo">Encuentra una tarea</h2><p>Filtra por curso, estado o fecha de entrega.</p></div></div>
         <div className="panel form filters"><div className="filter-grid">
-          <label>Buscar<input value={params.get('q')||''} onChange={e=>cambiar('q',e.target.value)} placeholder="Tarea o curso"/></label>
+          <BusquedaConSugerencias etiqueta="Buscar" valor={params.get('q')||''} alCambiar={v=>cambiar('q',v)} candidatos={filas.flatMap(f=>[f.tarea?.titulo||'',f.curso.asignatura])} placeholder="Tarea o curso"/>
           <label>Curso<select value={params.get('curso')||''} onChange={e=>cambiar('curso',e.target.value)}><option value="">Todos los cursos</option>{cursos.map(c=><option key={c.id} value={c.id}>{c.asignatura} · {c.nivel} {c.grado} {c.seccion}</option>)}</select></label>
           <label>Estado<select value={params.get('estado')||''} onChange={e=>cambiar('estado',e.target.value)}><option value="">Todos</option>{(perfil.tipo==='ESTUDIANTE'?['PENDIENTE','URGENTE','VENCIDA ABIERTA','ENTREGADA','ENTREGADA TARDÍA','REVISADA','CERRADA','CANCELADA']:['PUBLICADO','VENCIDA ABIERTA','FALTA COMPLETAR','CERRADA','CANCELADA']).map(e=><option key={e}>{e}</option>)}</select></label>
           <label>Desde<input type="date" value={params.get('desde')||''} onChange={e=>cambiar('desde',e.target.value)}/></label>
@@ -127,7 +128,7 @@ function VistaGlobal({cursos,pagina,perfil}:{cursos:Curso[];pagina:string;perfil
   const volver=(id:string)=>encodeURIComponent('/notas?'+new URLSearchParams({...Object.fromEntries(params),resaltar:id}).toString());
   return <main className="notas-editorial"><PageHeading title={titulo} metricLabel="RESULTADOS EN EL LISTADO" metricValue={String(visibles.length).padStart(2,'0')} metricCaption={visibles.length===1?'RESULTADO VISIBLE':'RESULTADOS VISIBLES'}/>
     <header className="cursos-portada notas-portada"><div className="cursos-portada-principal"><span className="cursos-sobretitulo">AULA VIRTUAL — {anio}</span><h1>{titulo}<i>.</i></h1><p>{perfil.tipo==='ESTUDIANTE'?'Revisa tus calificaciones y el estado de tus actividades.':descripcion}</p></div><div className="cursos-portada-lateral"><span>RESULTADOS EN EL LISTADO</span><strong>{String(visibles.length).padStart(2,'0')}</strong><small>{visibles.length===1?'RESULTADO VISIBLE':'RESULTADOS VISIBLES'}</small></div></header>
-    <section className="notas-busqueda" aria-labelledby="notas-busqueda-titulo"><div className="tareas-seccion-cabecera"><div><span>01 / EXPLORAR</span><h2 id="notas-busqueda-titulo">Encuentra una actividad</h2><p>Busca una actividad o acota los resultados por curso y fecha.</p></div></div><div className="panel form filters"><div className="filter-grid"><label>Buscar<input value={params.get('q')||''} onChange={e=>cambiar('q',e.target.value)} placeholder="Actividad o comentario"/></label><label>Curso<select value={params.get('curso')||''} onChange={e=>cambiar('curso',e.target.value)}><option value="">Todos los cursos</option>{cursos.map(c=><option key={c.id} value={c.id}>{c.asignatura} · {c.nivel} {c.grado} {c.seccion}</option>)}</select></label><label>Desde<input type="date" value={params.get('desde')||''} onChange={e=>cambiar('desde',e.target.value)}/></label><label>Hasta<input type="date" value={params.get('hasta')||''} onChange={e=>cambiar('hasta',e.target.value)}/></label></div><button type="button" className="button secondary" onClick={()=>setParams(new URLSearchParams())}>Limpiar filtros</button></div></section>
+<section className="notas-busqueda" aria-labelledby="notas-busqueda-titulo"><div className="tareas-seccion-cabecera"><div><span>01 / EXPLORAR</span><h2 id="notas-busqueda-titulo">Encuentra una actividad</h2><p>Busca una actividad o acota los resultados por curso y fecha.</p></div></div><div className="panel form filters"><div className="filter-grid"><BusquedaConSugerencias etiqueta="Buscar" valor={params.get('q')||''} alCambiar={v=>cambiar('q',v)} candidatos={filas.flatMap(f=>[f.nota?.titulo||f.tarea?.titulo||'',f.curso.asignatura,f.nota?.comentario||''])} placeholder="Actividad o comentario"/><label>Curso<select value={params.get('curso')||''} onChange={e=>cambiar('curso',e.target.value)}><option value="">Todos los cursos</option>{cursos.map(c=><option key={c.id} value={c.id}>{c.asignatura} · {c.nivel} {c.grado} {c.seccion}</option>)}</select></label><label>Desde<input type="date" value={params.get('desde')||''} onChange={e=>cambiar('desde',e.target.value)}/></label><label>Hasta<input type="date" value={params.get('hasta')||''} onChange={e=>cambiar('hasta',e.target.value)}/></label></div><button type="button" className="button secondary" onClick={()=>setParams(new URLSearchParams())}>Limpiar filtros</button></div></section>
     <section className="notas-resultados" aria-labelledby="notas-resultados-titulo"><div className="tareas-seccion-cabecera"><div><span>02 / RESULTADOS</span><h2 id="notas-resultados-titulo">{perfil.tipo==='ESTUDIANTE'?'Calificaciones y actividades':'Actividades para evaluar'}</h2><p>{visibles.length} {visibles.length===1?'resultado encontrado':'resultados encontrados'}</p></div></div>
       {isLoading?<p className="muted">Cargando calificaciones…</p>:error?<div className="alert">No fue posible consultar las calificaciones. {String(error)}</div>:!visibles.length?<div className="empty">{cursos.length?'No hay resultados para estos filtros.':'Aún no tienes cursos asignados.'}</div>:<div className="notas-lista">{visibles.map(f=>{
         const nota=f.nota;

@@ -40,6 +40,18 @@ class PersonasHttpTest {
   @Autowired JdbcTemplate jdbc;
   ObjectMapper json = new ObjectMapper();
 
+  @Test void buscaNombresSinDistinguirTildesYCajaMientrasSeEscribe() throws Exception {
+    UUID maria=crearPersona("ESTUDIANTE",false,null,null);
+    UUID martha=crearPersona("ESTUDIANTE",false,null,null);
+    jdbc.update("UPDATE per_personas SET nombres='ZyxMaría' WHERE id=?",maria);
+    jdbc.update("UPDATE per_personas SET nombres='ZyxMartha' WHERE id=?",martha);
+    mvc.perform(get("/api/erp/v1/personas?buscar=zyxmar").with(authentication(actor("DIRECCION",null))))
+      .andExpect(status().isOk()).andExpect(jsonPath("$.resultados.length()").value(2));
+    mvc.perform(get("/api/erp/v1/personas?buscar=ZYXMARI").with(authentication(actor("DIRECCION",null))))
+      .andExpect(status().isOk()).andExpect(jsonPath("$.resultados.length()").value(1))
+      .andExpect(jsonPath("$.resultados[0].id").value(maria.toString()));
+  }
+
   private UUID crearPersona(String condicion, boolean provisional, String telefono, String correo) throws Exception {
     var cuerpo = new java.util.HashMap<String,Object>();
     cuerpo.put("nombres","Persona"); cuerpo.put("apellidos","Prueba");
@@ -188,6 +200,9 @@ class PersonasHttpTest {
     assertEquals("Persona",referencia.path("nombres").asText());
     assertEquals("DNI",referencia.path("tipoDocumento").asText());
     assertFalse(referencia.path("numeroDocumento").asText().isBlank());
+    mvc.perform(get(base+familiar).with(authentication(actor("DIRECCION",null))))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.referencias['"+estudiante+"'].sexo").value("F"));
 
     mvc.perform(post(base+estudiante+"/apoderamientos/"+vinculoFamiliar+"/desactivar")
       .with(authentication(actor("DIRECCION",null))).with(csrf())

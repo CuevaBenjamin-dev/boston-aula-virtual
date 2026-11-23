@@ -36,10 +36,11 @@ export function AsignacionesModulo({ sesion }: { sesion: Sesion }) {
     erp<Asignacion[]>(`/asignaciones?anio=${anio}`, sesion),
   ]).then(([s, a, f]) => { setSecciones(s); setAsignaturas(a); setFilas(f) }).catch(e => setError(String(e))) }, [anio, sesion])
   useEffect(() => {
-    if (busqueda.trim().length < 2 || docenteId) { setDocentes([]); return }
+    if (busqueda.trim().length < 1 || docenteId) { setDocentes([]); return }
+    let vigente = true
     const reloj = window.setTimeout(() => { void erp<Pagina>(`/personas?condicion=DOCENTE&vigente=true&buscar=${encodeURIComponent(busqueda.trim())}&tamano=8`, sesion)
-      .then(p => setDocentes(p.resultados)).catch(e => setError(String(e))) }, 250)
-    return () => window.clearTimeout(reloj)
+      .then(p => { if (vigente) setDocentes(p.resultados) }).catch(e => { if (vigente) setError(String(e)) }) }, 250)
+    return () => { vigente = false; window.clearTimeout(reloj) }
   }, [busqueda, docenteId, sesion])
   const seccion=secciones.find(s => s.id===seccionId)
   const compatibles=asignaturas.filter(a => seccion && a.nivel===seccion.nivel && a.grado===seccion.grado)
@@ -57,7 +58,7 @@ export function AsignacionesModulo({ sesion }: { sesion: Sesion }) {
   }
 
   return <section className="pagina">
-    <div className="erp-pagina-titulo"><div><p className="etiqueta">ORGANIZACIÓN DOCENTE</p><h2>Asignaciones docentes</h2>
+    <div className="erp-pagina-titulo"><div><p className="etiqueta">ORGANIZACIÓN DOCENTE</p>
       <p>Vincula un docente activo a una asignatura y sección del mismo grado y año.</p></div></div>
     {error && <p className="per-aviso" role="alert">{error}</p>}{aviso && <p className="per-aviso exito" role="status">{aviso}</p>}
     <section className="per-panel"><div className="per-panel-cabecera"><h3>Nueva asignación</h3></div>

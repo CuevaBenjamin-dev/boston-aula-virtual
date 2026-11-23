@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import pe.boston.erp.oferta.OfertaConsulta;
 import pe.boston.erp.personas.PersonasParaMatriculas;
 import pe.boston.erp.plataforma.AccesoErp;
+import pe.boston.erp.plataforma.BusquedaTexto;
 
 @RestController
 @RequestMapping("/api/erp/v1/matriculas")
@@ -64,16 +65,22 @@ public class MatriculasController {
     if (estado!=null && !estado.isBlank()) { desde.append(" AND m.estado=?"); parametros.add(estado); }
     if (seccionId!=null) { desde.append(" AND COALESCE(m.seccion_id::text,m.borrador->>'seccionId')=?"); parametros.add(seccionId.toString()); }
     if (!termino.isEmpty()) {
-      desde.append("""
-         AND (concat_ws(' ',p.nombres,p.apellidos) ILIKE ? ESCAPE '!'
-          OR concat_ws(' ',m.borrador->>'nombres',m.borrador->>'apellidos') ILIKE ? ESCAPE '!'
-          OR d.numero_normalizado ILIKE ? ESCAPE '!'
-          OR m.borrador->>'numeroDocumento' ILIKE ? ESCAPE '!')
-        """);
-      String patron="%"+termino.replace("!","!!").replace("%","!%").replace("_","!_")+"%";
-      for (int i=0;i<4;i++) parametros.add(patron);
+      desde.append(" AND (position(" + BusquedaTexto.sql("?") + " in "
+        + BusquedaTexto.sql("concat_ws(' ',p.nombres,p.apellidos)") + ")>0 OR position("
+        + BusquedaTexto.sql("?") + " in " + BusquedaTexto.sql("concat_ws(' ',m.borrador->>'nombres',m.borrador->>'apellidos')")
+        + ")>0 OR position(" + BusquedaTexto.sql("?") + " in " + BusquedaTexto.sql("d.numero_normalizado")
+        + ")>0 OR position(" + BusquedaTexto.sql("?") + " in " + BusquedaTexto.sql("m.borrador->>'numeroDocumento'") + ")>0)");
+      for (int i=0;i<4;i++) parametros.add(termino);
     }
     long total=jdbc.queryForObject("SELECT count(*) "+desde,Long.class,parametros.toArray());
+    String orden=" ORDER BY m.creado_en DESC,m.id DESC";
+    if (!termino.isEmpty()) {
+      orden=" ORDER BY CASE WHEN starts_with(" + BusquedaTexto.sql("coalesce(p.nombres,m.borrador->>'nombres')")
+        + "," + BusquedaTexto.sql("?") + ") THEN 0 WHEN starts_with("
+        + BusquedaTexto.sql("coalesce(p.apellidos,m.borrador->>'apellidos')") + ","
+        + BusquedaTexto.sql("?") + ") THEN 1 ELSE 2 END,m.creado_en DESC,m.id DESC";
+      parametros.add(termino); parametros.add(termino);
+    }
     parametros.add(tamano); parametros.add((long) pagina*tamano);
     var resultados=jdbc.query("""
       SELECT m.id,
@@ -83,7 +90,7 @@ public class MatriculasController {
         COALESCE(m.anio,s.anio,CASE WHEN m.borrador->>'anio' ~ '^[0-9]{4}$' THEN (m.borrador->>'anio')::integer END),
         CASE WHEN s.id IS NULL THEN NULL ELSE s.nivel||' · '||s.grado||'.º · '||s.nombre END,
         m.estado,m.creado_en::text
-      """+desde+" ORDER BY m.creado_en DESC,m.id DESC LIMIT ? OFFSET ?",
+      """+desde+orden+" LIMIT ? OFFSET ?",
       (r,n)->new FilaMatricula(r.getObject(1,UUID.class),r.getString(2),r.getString(3),
         r.getObject(4,Integer.class),r.getString(5),r.getString(6),r.getString(7)),parametros.toArray());
     return new PaginaMatriculas(resultados,total,pagina,tamano);

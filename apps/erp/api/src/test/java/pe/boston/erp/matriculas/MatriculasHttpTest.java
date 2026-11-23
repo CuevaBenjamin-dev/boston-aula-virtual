@@ -43,6 +43,14 @@ class MatriculasHttpTest {
   @Autowired JdbcTemplate jdbc;
   ObjectMapper json = new ObjectMapper();
 
+  @Test void buscaBorradoresSinDistinguirTildesYCaja() throws Exception {
+    String marca=UUID.randomUUID().toString().substring(0,8);
+    jdbc.update("INSERT INTO mat_matriculas(id,borrador,creado_por) VALUES(gen_random_uuid(),jsonb_build_object('nombres',?,'apellidos','Prueba'),'prueba-coordinacion')", "Sofía"+marca);
+    mvc.perform(get("/api/erp/v1/matriculas?buscar=SOFIA"+marca).with(authentication(actor())))
+      .andExpect(status().isOk()).andExpect(jsonPath("$.total").value(1))
+      .andExpect(jsonPath("$.resultados[0].estudiante").value("Sofía"+marca+" Prueba"));
+  }
+
   private OAuth2AuthenticationToken actor() {
     return actor("prueba-coordinacion");
   }

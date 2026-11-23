@@ -13,6 +13,7 @@ import org.springframework.stereotype.Repository;
 import pe.boston.erp.personas.api.PersonaDto;
 import pe.boston.erp.personas.api.PersonaDto.*;
 import pe.boston.erp.personas.domain.ReglasPersonas;
+import pe.boston.erp.plataforma.BusquedaTexto;
 
 @Repository
 public class PersonasRepositorio {
@@ -113,8 +114,12 @@ public class PersonasRepositorio {
     var donde = new StringBuilder(" WHERE 1=1");
     var params = new ArrayList<Object>();
     if (texto != null && !texto.isBlank()) {
-      donde.append(" AND (lower(p.nombres || ' ' || p.apellidos) LIKE ? OR EXISTS (SELECT 1 FROM per_documentos d WHERE d.persona_id=p.id AND d.vigente_hasta IS NULL AND d.numero_normalizado=?))");
-      params.add("%" + texto.trim().toLowerCase() + "%"); params.add(texto.trim());
+      donde.append(" AND (position(" + BusquedaTexto.sql("?") + " in "
+        + BusquedaTexto.sql("concat_ws(' ',p.nombres,p.apellidos)") + ")>0 OR position("
+        + BusquedaTexto.sql("?") + " in " + BusquedaTexto.sql("concat_ws(' ',p.apellidos,p.nombres)")
+        + ")>0 OR EXISTS (SELECT 1 FROM per_documentos d WHERE d.persona_id=p.id AND d.vigente_hasta IS NULL AND position("
+        + BusquedaTexto.sql("?") + " in " + BusquedaTexto.sql("d.numero_normalizado") + ")>0))");
+      params.add(texto.trim()); params.add(texto.trim()); params.add(texto.trim());
     }
     if (condicion != null && !condicion.isBlank()) {
       if ("APODERADO".equals(condicion)) {
@@ -133,7 +138,14 @@ public class PersonasRepositorio {
     long total = jdbc.queryForObject("SELECT count(*) FROM per_personas p" + donde, Long.class, params.toArray());
     var select = "SELECT p.id,p.nombres,p.apellidos,(SELECT d.numero_normalizado FROM per_documentos d WHERE d.persona_id=p.id AND d.principal AND d.vigente_hasta IS NULL LIMIT 1) documento, "
       + "(SELECT string_agg(DISTINCT x.tipo, ',') FROM (SELECT c.tipo FROM per_condiciones c WHERE c.persona_id=p.id AND c.periodo @> now() UNION ALL SELECT 'APODERADO' FROM per_apoderamientos a WHERE a.apoderado_id=p.id AND a.periodo @> now()) x) condiciones "
-      + "FROM per_personas p" + donde + " ORDER BY p.apellidos,p.nombres,p.id LIMIT ? OFFSET ?";
+      + "FROM per_personas p" + donde;
+    if (texto != null && !texto.isBlank()) {
+      select += " ORDER BY CASE WHEN starts_with(" + BusquedaTexto.sql("p.nombres") + ","
+        + BusquedaTexto.sql("?") + ") THEN 0 WHEN starts_with(" + BusquedaTexto.sql("p.apellidos")
+        + "," + BusquedaTexto.sql("?") + ") THEN 1 ELSE 2 END,p.apellidos,p.nombres,p.id";
+      params.add(texto.trim()); params.add(texto.trim());
+    } else select += " ORDER BY p.apellidos,p.nombres,p.id";
+    select += " LIMIT ? OFFSET ?";
     params.add(tamano); params.add(pagina * tamano);
     return new Pagina(jdbc.query(select, RESUMEN, params.toArray()), total, pagina, tamano);
   }
@@ -169,7 +181,7 @@ public class PersonasRepositorio {
     if (!relacionados.isEmpty()) {
       String lugares = String.join(",", java.util.Collections.nCopies(relacionados.size(), "?"));
       var filasRelacionadas = jdbc.query("""
-        SELECT p.id, p.nombres, p.apellidos, d.tipo_codigo, d.numero
+        SELECT p.id, p.nombres, p.apellidos, p.sexo, d.tipo_codigo, d.numero
         FROM per_personas p
         LEFT JOIN LATERAL (
           SELECT tipo_codigo, numero FROM per_documentos
@@ -179,7 +191,7 @@ public class PersonasRepositorio {
         WHERE p.id IN (
         """ + lugares + ")", (rs,n) -> java.util.Map.entry(rs.getObject("id",UUID.class),
           new ReferenciaPersona(rs.getString("nombres"),rs.getString("apellidos"),
-            rs.getString("tipo_codigo"),rs.getString("numero"))), relacionados.toArray());
+            rs.getString("tipo_codigo"),rs.getString("numero"),rs.getString("sexo"))), relacionados.toArray());
       filasRelacionadas.forEach(v -> referencias.put(v.getKey(),v.getValue()));
     }
     return new Persona(id,(String)p[0],(String)p[1],(LocalDate)p[2],(String)p[3],(String)p[4],

@@ -22,15 +22,16 @@ function BuscarPersona({ sesion, valor, alElegir, etiqueta }: { sesion: Sesion; 
   const [resultados, setResultados] = useState<Persona[]>([])
   const [error, setError] = useState('')
   useEffect(() => {
-    if (texto.trim().length < 2 || valor) { setResultados([]); return }
+    if (texto.trim().length < 1 || valor) { setResultados([]); return }
+    let vigente = true
     const reloj = window.setTimeout(() => { void erp<PaginaPersonas>(`/personas?buscar=${encodeURIComponent(texto.trim())}&tamano=8`, sesion)
-      .then(r => setResultados(r.resultados)).catch(e => setError(String(e))) }, 250)
-    return () => window.clearTimeout(reloj)
+      .then(r => { if (vigente) setResultados(r.resultados) }).catch(e => { if (vigente) setError(String(e)) }) }, 250)
+    return () => { vigente = false; window.clearTimeout(reloj) }
   }, [texto, valor, sesion])
   return <div className="per-selector"><label className="per-campo">{etiqueta}<input value={texto} onChange={e => { setTexto(e.target.value); alElegir('', '') }} placeholder="Nombre o documento" /></label>
     {valor ? <p className="per-seleccionado">Seleccionado: {texto || valor}</p> : <>
       {error && <p className="per-aviso" role="alert">{error}</p>}
-      {texto.length >= 2 && !resultados.length && <small>Sin coincidencias; revisa el documento o registra una persona nueva.</small>}
+      {texto.length >= 1 && !resultados.length && <small>Sin coincidencias; revisa el documento o registra una persona nueva.</small>}
       {!!resultados.length && <div className="per-opciones">{resultados.map(p => <button key={p.id} type="button" onClick={() => { setTexto(`${p.nombres} ${p.apellidos}`); alElegir(p.id, `${p.nombres} ${p.apellidos}`) }}>
         <strong>{p.nombres} {p.apellidos}</strong><small>{p.documento ?? 'Sin documento'}</small></button>)}</div>}</>}
   </div>
@@ -93,7 +94,7 @@ function Listado({ sesion }: { sesion: Sesion }) {
       setRevision(r => r + 1)
     } catch (e) { setError(String(e)) } finally { setCerrando(false) }
   }
-  return <section className="pagina"><div className="erp-pagina-titulo"><div><p className="etiqueta">GESTIÓN ESCOLAR</p><h2>Matrículas</h2><p>Borradores y matrículas anuales guardados en el ERP.</p></div>
+  return <section className="pagina"><div className="erp-pagina-titulo"><div><p className="etiqueta">GESTIÓN ESCOLAR</p><p>Borradores y matrículas anuales guardados en el ERP.</p></div>
     <Link className="boton-principal" to="nueva">+ Nueva matrícula</Link></div>
     <form className="per-panel per-filtros" onSubmit={e => e.preventDefault()}>
       <label className="per-campo">Nombre o documento<input value={buscar} onChange={e => { setBuscar(e.target.value); setPagina(0) }} placeholder="Buscar estudiante" /></label>

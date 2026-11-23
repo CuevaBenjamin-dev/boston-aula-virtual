@@ -48,7 +48,7 @@ export function OfertaModulo({ sesion }: { sesion: Sesion }) {
   const asignaturasGrado = asignaturas.filter(a => a.nivel === nivel && a.grado === grado)
 
   return <section className="pagina">
-    <div className="erp-pagina-titulo"><div><p className="etiqueta">ORGANIZACIÓN ACADÉMICA</p><h2>Oferta del año</h2>
+    <div className="erp-pagina-titulo"><div><p className="etiqueta">ORGANIZACIÓN ACADÉMICA</p>
       <p>Los cursos pertenecen a un grado y año; todas sus secciones comparten la misma malla.</p></div></div>
     {error && <p className="per-aviso" role="alert">{error}</p>}
     {aviso && <p className="per-aviso exito" role="status">{aviso}</p>}

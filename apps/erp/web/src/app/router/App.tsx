@@ -18,7 +18,7 @@ function Inicio({ sesion }: { sesion: Sesion }) {
   const [error, setError] = useState('')
   useEffect(() => { void erp<Resumen>('/resumen', sesion).then(setResumen).catch(e => setError(String(e))) }, [sesion])
   return <div className="pagina">
-    <div className="erp-pagina-titulo"><div><p className="etiqueta">BOSTON BILINGUAL SCHOOL</p><h2>Resumen institucional</h2>
+    <div className="erp-pagina-titulo"><div><p className="etiqueta">BOSTON BILINGUAL SCHOOL</p>
       <p>{resumen?.anio ? `Último año configurado: ${resumen.anio}` : 'Crea un año escolar en Oferta académica para comenzar.'}</p></div></div>
     {error && <p className="per-aviso" role="alert">{error}</p>}
     {!resumen && !error && <p role="status">Cargando cifras del ERP…</p>}

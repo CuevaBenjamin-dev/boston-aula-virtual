@@ -618,3 +618,10 @@
 @media(max-width:1400px){.compact-page .topbar-heading{gap:14px}.compact-page .top-title{padding-right:14px;font-size:12px}.compact-page .topbar-page-title{font-size:27px}.compact-page .topbar-metric{max-width:245px;padding:8px 12px}}
 }
 @media(max-width:900px){.compact-page .topbar-page-title,.compact-page .topbar-metric{display:none}}
+
+.busqueda-sugerencias{position:relative;display:block;width:100%}
+.busqueda-sugerencias>label{display:block;margin-bottom:7px;color:#0c2542;font-size:12px;font-weight:700}
+.busqueda-sugerencias>input{width:100%}
+.busqueda-sugerencias-lista{position:absolute;z-index:30;display:grid;top:calc(100% + 4px);left:0;right:0;max-height:240px;overflow:auto;border:1px solid #b8cee0;background:#fff;box-shadow:0 10px 24px #102e4b24}
+.busqueda-sugerencias-lista>button{padding:10px 12px;border:0;border-bottom:1px solid #e0eaf1;background:#fff;color:#102e4b;text-align:left;font:inherit;cursor:pointer}
+.busqueda-sugerencias-lista>button:hover,.busqueda-sugerencias-lista>button:focus-visible{background:#eaf4f8;outline:2px solid #235b88;outline-offset:-2px}

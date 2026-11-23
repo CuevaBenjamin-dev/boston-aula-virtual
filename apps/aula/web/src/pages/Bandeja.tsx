@@ -3,6 +3,7 @@ import {Link,useSearchParams} from 'react-router-dom';
 import {useMutation,useQuery,useQueryClient} from '@tanstack/react-query';
 import {api,post,type Curso,type NotificacionClase,type Perfil} from '../api';
 import {PageHeading} from '../PageHeading';
+import {coincideBusqueda,normalizarBusqueda} from '../components/BusquedaConSugerencias';
 
 type Destino={id:string;usuario:string;tipo:string};
 type Mensaje={id:string;asunto:string;cuerpo:string;emisor_cuenta:string;emisor_usuario:string;creado_en:string;leida_en?:string|null;destinatarios?:string|Array<{usuario:string;leida_en:string|null}>;total_destinatarios?:number};
@@ -40,7 +41,8 @@ function Componer({perfil,cerrar,responderA}:{perfil:Perfil;cerrar:()=>void;resp
   const {data:directorio=[],error}=useQuery<Destino[]>({queryKey:['directorio-mensajes'],queryFn:()=>api('/mensajes/directorio')});
   const {data:cursos=[]}=useQuery<Curso[]>({queryKey:['cursos'],queryFn:()=>api('/cursos'),enabled:perfil.tipo==='DOCENTE'});
   const enviar=useMutation({mutationFn:()=>post('/mensajes',{asunto,cuerpo,destinatarios:elegidos,cursoId:cursoCompleto?cursoId:null,cursoCompleto,grupoTipo:grupoTipo||null}),onSuccess:()=>{qc.invalidateQueries({queryKey:['mensajes']});cerrar()}});
-  const opciones=directorio.filter(d=>`${d.usuario} ${d.tipo}`.toLocaleLowerCase('es').includes(buscar.toLocaleLowerCase('es')));
+  const opciones=directorio.filter(d=>coincideBusqueda(`${d.usuario} ${d.tipo}`,buscar))
+    .sort((a,b)=>Number(normalizarBusqueda(b.usuario).startsWith(normalizarBusqueda(buscar)))-Number(normalizarBusqueda(a.usuario).startsWith(normalizarBusqueda(buscar)))||a.usuario.localeCompare(b.usuario,'es'));
   return <form className="panel form" onSubmit={e=>{e.preventDefault();enviar.mutate()}}><div className="section-head"><h2>Nuevo mensaje</h2><button type="button" className="text-link" onClick={cerrar}>Cerrar</button></div>
     <label>Destinatarios<input value={buscar} onChange={e=>setBuscar(e.target.value)} placeholder="Buscar usuario o rol"/></label>
     <div className="recipient-list">{error?<p className="error">No se pudo cargar el directorio.</p>:opciones.length?opciones.map(d=><label className="recipient" key={d.id}><input type="checkbox" checked={elegidos.includes(d.id)} onChange={e=>setElegidos(actual=>e.target.checked?[...actual,d.id]:actual.filter(id=>id!==d.id))}/><span>{d.usuario} · {d.tipo.toLowerCase()}</span></label>):<p className="muted">No hay usuarios con esa búsqueda.</p>}</div>
