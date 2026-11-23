@@ -8,6 +8,8 @@ type Persona = { id: string; nombres: string; apellidos: string; documento: stri
 type PaginaPersonas = { resultados: Persona[] }
 type Seccion = { id: string; anio: number; nivel: string; grado: number; nombre: string }
 type Matricula = { id: string; personaId: string | null; anio: number | null; seccionId: string | null; estado: string; borrador: Datos; creadoEn: string }
+type FilaMatricula = { id: string; estudiante: string; documento: string | null; anio: number | null; seccion: string | null; estado: string; creadoEn: string }
+type PaginaMatriculas = { resultados: FilaMatricula[]; total: number; pagina: number; tamano: number }
 type Apoderado = { personaId?: string; nombres?: string; apellidos?: string; telefono?: string; correo?: string;
   tipoDocumento?: string; paisEmisor?: string; numeroDocumento?: string; sinParentesco?: boolean;
   parentesco?: string; autorizador?: string; medio?: string; referencia?: string }
@@ -35,18 +37,47 @@ function BuscarPersona({ sesion, valor, alElegir, etiqueta }: { sesion: Sesion; 
 }
 
 function Listado({ sesion }: { sesion: Sesion }) {
-  const [filas, setFilas] = useState<Matricula[]>([])
+  const [datos, setDatos] = useState<PaginaMatriculas | null>(null)
   const [error, setError] = useState('')
   const [cargando, setCargando] = useState(true)
   const [anios, setAnios] = useState<number[]>([])
+  const [seccionesFiltro, setSeccionesFiltro] = useState<Seccion[]>([])
+  const [buscar, setBuscar] = useState('')
+  const [anioFiltro, setAnioFiltro] = useState('')
+  const [estadoFiltro, setEstadoFiltro] = useState('')
+  const [seccionFiltro, setSeccionFiltro] = useState('')
+  const [pagina, setPagina] = useState(0)
+  const [revision, setRevision] = useState(0)
   const [anioCierre, setAnioCierre] = useState(0)
   const [vigentes, setVigentes] = useState<number | null>(null)
   const [cerrando, setCerrando] = useState(false)
   const [avisoCierre, setAvisoCierre] = useState('')
   useEffect(() => {
-    void erp<Matricula[]>('/matriculas', sesion).then(setFilas).catch(e => setError(String(e))).finally(() => setCargando(false))
     void erp<number[]>('/oferta/anios', sesion).then(setAnios).catch(e => setError(String(e)))
   }, [sesion])
+  useEffect(() => {
+    if (!anioFiltro) { setSeccionesFiltro([]); return }
+    let vigente = true
+    void erp<Seccion[]>(`/oferta/secciones?anio=${anioFiltro}`, sesion)
+      .then(r => { if (vigente) setSeccionesFiltro(r) }).catch(e => { if (vigente) setError(String(e)) })
+    return () => { vigente = false }
+  }, [anioFiltro, sesion])
+  useEffect(() => {
+    let vigente = true
+    setCargando(true); setError('')
+    const q = new URLSearchParams({ pagina: String(pagina), tamano: '15' })
+    if (buscar.trim()) q.set('buscar', buscar.trim())
+    if (anioFiltro) q.set('anio', anioFiltro)
+    if (estadoFiltro) q.set('estado', estadoFiltro)
+    if (seccionFiltro) q.set('seccionId', seccionFiltro)
+    const reloj = window.setTimeout(() => {
+      void erp<PaginaMatriculas>(`/matriculas?${q}`, sesion)
+        .then(r => { if (vigente) setDatos(r) })
+        .catch(e => { if (vigente) setError(String(e)) })
+        .finally(() => { if (vigente) setCargando(false) })
+    }, 250)
+    return () => { vigente = false; window.clearTimeout(reloj) }
+  }, [buscar, anioFiltro, estadoFiltro, seccionFiltro, pagina, revision, sesion])
   useEffect(() => {
     if (!anioCierre) { setVigentes(null); return }
     void erp<{ vigentes: number }>(`/matriculas/finalizar-anio/${anioCierre}/resumen`, sesion)
@@ -59,18 +90,36 @@ function Listado({ sesion }: { sesion: Sesion }) {
       const resultado = await erp<{ finalizadas: number }>(`/matriculas/finalizar-anio/${anioCierre}`, sesion, 'POST')
       setAvisoCierre(`${resultado.finalizadas} matrículas finalizadas en ${anioCierre}. La sincronización con Aula puede quedar pendiente hasta su confirmación.`)
       setVigentes(0)
-      setFilas(await erp<Matricula[]>('/matriculas', sesion))
+      setRevision(r => r + 1)
     } catch (e) { setError(String(e)) } finally { setCerrando(false) }
   }
   return <section className="pagina"><div className="erp-pagina-titulo"><div><p className="etiqueta">GESTIÓN ESCOLAR</p><h2>Matrículas</h2><p>Borradores y matrículas anuales guardados en el ERP.</p></div>
     <Link className="boton-principal" to="nueva">+ Nueva matrícula</Link></div>
-    <section className="per-panel"><div className="per-panel-cabecera"><h3>Expedientes</h3><span>{filas.length} visibles</span></div>
+    <form className="per-panel per-filtros" onSubmit={e => e.preventDefault()}>
+      <label className="per-campo">Nombre o documento<input value={buscar} onChange={e => { setBuscar(e.target.value); setPagina(0) }} placeholder="Buscar estudiante" /></label>
+      <label className="per-campo">Año escolar<select value={anioFiltro} onChange={e => { setAnioFiltro(e.target.value); setSeccionFiltro(''); setPagina(0) }}>
+        <option value="">Todos</option>{anios.map(y => <option key={y} value={y}>{y}</option>)}
+      </select></label>
+      <label className="per-campo">Estado<select value={estadoFiltro} onChange={e => { setEstadoFiltro(e.target.value); setPagina(0) }}>
+        <option value="">Todos</option><option value="BORRADOR">Borrador</option><option value="VIGENTE">Vigente</option><option value="RETIRADA">Retirada</option><option value="FINALIZADA">Finalizada</option>
+      </select></label>
+      <label className="per-campo">Sección<select value={seccionFiltro} disabled={!anioFiltro} onChange={e => { setSeccionFiltro(e.target.value); setPagina(0) }}>
+        <option value="">{anioFiltro ? 'Todas' : 'Selecciona un año'}</option>
+        {seccionesFiltro.map(s => <option key={s.id} value={s.id}>{s.nivel} · {s.grado}.º · {s.nombre}</option>)}
+      </select></label>
+    </form>
+    <section className="per-panel" aria-busy={cargando}><div className="per-panel-cabecera"><h3>Expedientes</h3><span>{datos?.total ?? 0} resultados</span></div>
       {error && <p className="per-aviso" role="alert">{error}</p>}
       {cargando && <p role="status">Cargando matrículas…</p>}
-      {!cargando && !filas.length && <p className="per-vacio">Todavía no hay borradores ni matrículas.</p>}
-      {filas.map(m => <div className="per-fila" key={m.id}><div><strong>{m.borrador.nombres ? `${m.borrador.nombres} ${m.borrador.apellidos ?? ''}` : m.personaId ?? 'Alumno por identificar'}</strong>
-        <small>{m.anio ?? 'Año por elegir'} · {m.estado} · {new Date(m.creadoEn).toLocaleDateString('es-PE')}</small></div>
+      {!cargando && datos?.resultados.length === 0 && <p className="per-vacio">No hay matrículas para estos filtros.</p>}
+      {!cargando && datos?.resultados.map(m => <div className="per-fila" key={m.id}><div><strong>{m.estudiante}</strong>
+        <small>{m.documento ?? 'Sin documento'} · {m.anio ?? 'Año por elegir'} · {m.seccion ?? 'Sin sección'} · {m.estado} · {new Date(m.creadoEn).toLocaleDateString('es-PE')}</small></div>
         <Link to={m.id}>Abrir expediente →</Link></div>)}
+      {!!datos?.total && <nav className="per-paginacion" aria-label="Paginación de matrículas">
+        <button type="button" disabled={pagina === 0 || cargando} onClick={() => setPagina(p => p - 1)}>Anterior</button>
+        <span>Página {pagina + 1} de {Math.ceil(datos.total / datos.tamano)}</span>
+        <button type="button" disabled={(pagina + 1) * datos.tamano >= datos.total || cargando} onClick={() => setPagina(p => p + 1)}>Siguiente</button>
+      </nav>}
     </section>
     <section className="per-panel"><div className="per-panel-cabecera"><h3>Finalizar año escolar</h3></div>
       <div className="per-panel-cuerpo"><p>Dirección o Coordinación puede cerrar expresamente las matrículas vigentes de un año escolar concluido.</p>
@@ -99,6 +148,8 @@ function Expediente({ sesion, nuevo = false }: { sesion: Sesion; nuevo?: boolean
   const [aviso, setAviso] = useState('')
   const [guardando, setGuardando] = useState(false)
   const [cargando, setCargando] = useState(!nuevo)
+  const [confirmandoDescarte, setConfirmandoDescarte] = useState(false)
+  const [confirmacionDescarte, setConfirmacionDescarte] = useState('')
   const recargar = useCallback(async () => { if (!id) return; const m = await erp<Matricula>(`/matriculas/${id}`, sesion); setMatricula(m); setDatos(m.borrador);
     setModo(m.borrador.personaId ? 'existente' : 'nuevo'); setGuardian(m.borrador.apoderado?.personaId ? 'existente' : 'nuevo');
     setAnio(m.anio ?? m.borrador.anio ?? anio) }, [id, sesion, anio])
@@ -137,12 +188,25 @@ function Expediente({ sesion, nuevo = false }: { sesion: Sesion; nuevo?: boolean
     try { const m=await erp<Matricula>(`/matriculas/${matricula.id}/${accion}`,sesion,'POST'); setMatricula(m); setAviso('Estado institucional actualizado. Comprueba la sincronización en el expediente.') }
     catch (e) { setError(String(e)) } finally { setGuardando(false) }
   }
+  async function descartar() {
+    if (!matricula || matricula.estado !== 'BORRADOR' || confirmacionDescarte !== 'DESCARTAR') return
+    setGuardando(true); setError('')
+    try { await erp<void>(`/matriculas/${matricula.id}`,sesion,'DELETE'); navegar('/matriculas', { replace: true }) }
+    catch (e) { setError(String(e)) } finally { setGuardando(false) }
+  }
   const g=datos.apoderado ?? {}
   if (cargando) return <p role="status">Cargando borrador…</p>
   return <section className="pagina"><Link className="per-volver" to="/matriculas">← Matrículas</Link>
     <div className="erp-pagina-titulo"><div><p className="etiqueta">PROCESO ANUAL</p><h2>{matricula?.estado === 'VIGENTE' ? 'Matrícula vigente' : 'Nueva matrícula'}</h2>
-      <p>{matricula ? `Estado: ${matricula.estado}` : 'Completa el recorrido y confirma cuando los datos sean válidos.'}</p></div></div>
+      <p>{matricula ? `Estado: ${matricula.estado}` : 'Completa el recorrido y confirma cuando los datos sean válidos.'}</p></div>
+      {matricula?.estado === 'BORRADOR' && <button className="per-peligro" type="button" onClick={() => setConfirmandoDescarte(true)}>Descartar borrador</button>}</div>
     {error && <p className="per-aviso" role="alert">{error}</p>}{aviso && <p className="per-aviso exito" role="status">{aviso}</p>}
+    {confirmandoDescarte && <section className="per-panel per-confirmar-eliminacion" role="group" aria-label="Confirmar descarte del borrador">
+      <h3>Descartar este borrador</h3><p>Se retirará el borrador erróneo. Las matrículas confirmadas y los datos de Personas no cambiarán. Quedará constancia del descarte y del operador.</p>
+      <label className="per-campo">Escribe DESCARTAR para confirmar<input value={confirmacionDescarte} onChange={e => setConfirmacionDescarte(e.target.value)} /></label>
+      <div className="per-acciones"><button className="per-secundario" type="button" onClick={() => { setConfirmandoDescarte(false); setConfirmacionDescarte('') }}>Conservar borrador</button>
+        <button className="per-peligro" type="button" disabled={confirmacionDescarte !== 'DESCARTAR' || guardando} onClick={() => void descartar()}>{guardando ? 'Descartando…' : 'Descartar definitivamente'}</button></div>
+    </section>}
     {matricula && matricula.estado !== 'BORRADOR' ? <section className="per-panel"><div className="per-panel-cabecera"><h3>Expediente</h3></div>
       <dl className="per-datos"><dt>Alumno</dt><dd>{datos.nombres} {datos.apellidos || matricula.personaId}</dd><dt>Año</dt><dd>{matricula.anio}</dd><dt>Sección</dt><dd>{secciones.find(s=>s.id===matricula.seccionId)?.nombre ?? matricula.seccionId}</dd>
         <dt>Integración</dt><dd><EstadoIntegracion sesion={sesion} tipo="MATRICULA" id={matricula.id} /></dd></dl>
