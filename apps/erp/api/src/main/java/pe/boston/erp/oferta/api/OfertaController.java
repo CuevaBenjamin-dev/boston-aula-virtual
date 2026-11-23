@@ -50,9 +50,9 @@ public class OfertaController {
   }
   @PostMapping("/asignaturas") @Transactional public Asignatura crearAsignatura(@RequestBody AsignaturaEntrada p,Authentication auth) {
     AccesoErp.actor(auth); validarGrado(p.nivel(),p.grado());
-    String codigo=p.codigo()==null?"":p.codigo().trim().toUpperCase();
+    String codigo=CodigoAsignatura.normalizar(p.anio(),p.nivel(),p.grado(),p.codigo());
     String nombre=p.nombre()==null?"":p.nombre().trim();
-    if (!codigo.matches("[A-Z0-9_-]{2,30}") || nombre.isEmpty() || nombre.length()>120)
+    if (nombre.isEmpty() || nombre.length()>120)
       throw new IllegalArgumentException("Código o nombre de asignatura inválido");
     UUID id=UUID.randomUUID();
     jdbc.update("INSERT INTO ofe_asignaturas(id,anio,nivel,grado,codigo,nombre) VALUES(?,?,?,?,?,?)",
