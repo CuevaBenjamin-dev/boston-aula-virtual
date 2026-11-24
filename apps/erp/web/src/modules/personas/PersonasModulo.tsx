@@ -4,6 +4,7 @@ import type { Sesion } from '../../shared/api/sesion'
 import { api, guardar, type Capacidades, type Condicion, type Pagina, type Persona, type ReferenciaPersona, type TipoDocumento } from './api'
 import { EstadoIntegracion } from '../../shared/ui/EstadoIntegracion'
 import './directorio.css'
+import './ficha.css'
 
 const tiposCondicion: { valor: Condicion; texto: string }[] = [
   { valor: 'ESTUDIANTE', texto: 'Estudiante' }, { valor: 'DOCENTE', texto: 'Docente' },
@@ -128,7 +129,7 @@ function Directorio({ sesion, capacidades, estado }: {
 
     return () => window.clearTimeout(reloj)
   }, [ultimaPersona, listadoCargado, setUltimaPersona])
-  return <section className="per-pagina">
+  return <section className="per-pagina per-directorio-renovado">
     <div className="per-titulo"><div><p className="etiqueta">REGISTRO INSTITUCIONAL</p>
       <p>Consulta identidades, condiciones y vínculos institucionales.</p></div>
       {capacidades.registrar && <Link className="boton-principal" to="nueva">+ Registrar persona</Link>}</div>
@@ -281,132 +282,200 @@ function Registro({ sesion, capacidades }: { sesion: Sesion; capacidades: Capaci
   </section>
 }
 
+function FichaDialogo({ titulo, ocupado, cerrar, children }: {
+  titulo: string; ocupado: boolean; cerrar: () => void; children: ReactNode
+}) {
+  const ref = useRef<HTMLDialogElement>(null)
+  useEffect(() => {
+    const dialogo = ref.current
+    const anterior = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    if (dialogo && !dialogo.open) {
+      if (typeof dialogo.showModal === 'function') dialogo.showModal()
+      else dialogo.setAttribute('open', '')
+    }
+    return () => {
+      if (dialogo?.open && typeof dialogo.close === 'function') dialogo.close()
+      if (anterior?.isConnected) anterior.focus()
+    }
+  }, [])
+  return <dialog ref={ref} className="per-nuevo-dialogo" aria-labelledby="per-dialogo-titulo"
+    onCancel={e => { e.preventDefault(); if (!ocupado) cerrar() }}>
+    <div className="per-nuevo-dialogo-cabecera"><h3 id="per-dialogo-titulo">{titulo}</h3>
+      <button type="button" aria-label="Cerrar diálogo" className="per-secundario" disabled={ocupado} onClick={cerrar}>×</button></div>
+    <div className="per-nuevo-dialogo-cuerpo">{children}</div>
+  </dialog>
+}
+
 function Ficha({ sesion, capacidades }: { sesion: Sesion; capacidades: Capacidades }) {
   const { id } = useParams()
+  return <FichaContenido key={id} id={id} sesion={sesion} capacidades={capacidades} />
+}
+
+function FichaContenido({ id, sesion, capacidades }: { id: string | undefined; sesion: Sesion; capacidades: Capacidades }) {
   const navegar = useNavigate()
   const [parametros, setParametros] = useSearchParams()
   const pestana = parametros.get('tab') === 'condiciones' ? 'condiciones' : 'datos'
   const [persona, setPersona] = useState<Persona | null>(null)
   const [error, setError] = useState('')
+  const [errorEdicion, setErrorEdicion] = useState('')
   const [exito, setExito] = useState('')
   const [cargando, setCargando] = useState(true)
   const [accion, setAccion] = useState('')
-  const [editandoCondiciones, setEditandoCondiciones] = useState(false)
   const [campos, setCampos] = useState<Record<string, string>>({})
-  const [confirmandoEliminar, setConfirmandoEliminar] = useState(false)
-  const [confirmacion, setConfirmacion] = useState('')
-  const [eliminando, setEliminando] = useState(false)
+  const [ocupado, setOcupado] = useState(false)
+  const bloqueo = useRef(false)
+  const menu = useRef<HTMLDetailsElement>(null)
   const valor = (clave: string) => campos[clave] ?? ''
   const cambiar = (clave: string, v: string) => setCampos(c => ({ ...c, [clave]: v }))
+  function cancelar() { if (!bloqueo.current) { setAccion(''); setCampos({}); setErrorEdicion('') } }
+  function abrir(tipo: string, inicial: Record<string, string> = {}) {
+    if (bloqueo.current) return
+    if (menu.current) menu.current.open = false
+    setErrorEdicion(''); setExito(''); setCampos(inicial); setAccion(tipo)
+  }
   function cambiarPestana(destino: 'datos' | 'condiciones') {
-    setAccion(''); setCampos({}); setEditandoCondiciones(false)
-    setParametros(destino === 'datos' ? {} : { tab: destino })
+    if (bloqueo.current) return
+    cancelar(); setParametros(destino === 'datos' ? {} : { tab: destino })
   }
-  async function recargar() {
-    if (!id) return
-    setCargando(true); setError('')
-    try { setPersona(await api<Persona>('/' + id, sesion)) }
-    catch (e) { setError(String(e instanceof Error ? e.message : e)) }
-    finally { setCargando(false) }
-  }
-  useEffect(() => { void recargar() }, [id, sesion])
+  useEffect(() => {
+    if (!id) { setError('Persona no encontrada'); setCargando(false); return }
+    const abortar = new AbortController()
+    setCargando(true); setError(''); setPersona(null)
+    void api<Persona>('/' + id, sesion, { signal: abortar.signal })
+      .then(p => { if (!abortar.signal.aborted) setPersona(p) })
+      .catch(e => { if (!abortar.signal.aborted) setError(String(e instanceof Error ? e.message : e)) })
+      .finally(() => { if (!abortar.signal.aborted) setCargando(false) })
+    return () => abortar.abort()
+  }, [id, sesion])
+  useEffect(() => { if (!bloqueo.current) { setAccion(''); setCampos({}); setErrorEdicion('') } }, [pestana])
+  useEffect(() => { if (!exito) return; const reloj = window.setTimeout(() => setExito(''), 3500); return () => window.clearTimeout(reloj) }, [exito])
   async function operar(ruta: string, metodo: 'POST' | 'PUT', cuerpo: unknown, mensaje: string) {
-    try { setError(''); await guardar<void>(ruta, sesion, metodo, cuerpo); setExito(mensaje); setAccion(''); setCampos({}); await recargar() }
-    catch (e) { setError(String(e instanceof Error ? e.message : e)) }
+    if (bloqueo.current) return
+    bloqueo.current = true; setOcupado(true); setErrorEdicion(''); setError('')
+    try {
+      await guardar<void>(ruta, sesion, metodo, typeof cuerpo === 'function' ? await cuerpo() : cuerpo)
+      setAccion(''); setCampos({}); setExito(mensaje)
+      try { setPersona(await api<Persona>('/' + id, sesion)) }
+      catch { setPersona(null); setError('El cambio se guardó, pero no se pudo volver a consultar la ficha. Recarga la página antes de realizar otra operación.') }
+    } catch (e) { setErrorEdicion(String(e instanceof Error ? e.message : e)) }
+    finally { bloqueo.current = false; setOcupado(false) }
   }
   async function eliminarRegistro() {
-    if (!persona || confirmacion !== 'ELIMINAR') return
-    setError(''); setEliminando(true)
-    try {
-      await api<void>('/' + persona.id, sesion, { method: 'DELETE' })
-      navegar('/personas', { replace: true })
-    } catch (e) {
-      setError(String(e instanceof Error ? e.message : e))
-      setEliminando(false)
-    }
+    if (!persona || !capacidades.eliminarRegistroIncorrecto || valor('confirmacion') !== 'ELIMINAR' || bloqueo.current) return
+    bloqueo.current = true; setOcupado(true); setErrorEdicion('')
+    try { await api<void>('/' + persona.id, sesion, { method: 'DELETE' }); navegar('/personas', { replace: true }) }
+    catch (e) { setErrorEdicion(String(e instanceof Error ? e.message : e)) }
+    finally { bloqueo.current = false; setOcupado(false) }
   }
   if (cargando) return <p role="status">Cargando ficha…</p>
   if (!persona) return <Aviso mensaje={error || 'Persona no encontrada'} />
-  const documentoPrincipal = persona.documentos.find(d => d.principal && !d.vigenteHasta) ?? persona.documentos[0]
-  const editor = accion && <form className="per-editor-inline" aria-label="Editar ficha" onSubmit={e => { e.preventDefault(); const base='/' + persona.id
-      if ((accion === 'parentesco' || accion === 'apoderamiento') &&
-          (!valor('estudianteId') || !valor(accion === 'parentesco' ? 'familiarId' : 'apoderadoId'))) {
-        setError('Selecciona las dos personas del vínculo.'); return
-      }
-      if (accion === 'contacto') void operar(base + '/contacto', 'PUT', campos, 'Contacto actualizado')
-      else if (accion === 'identidad') void operar(base, 'PUT', { ...campos, fechaNacimiento: valor('fechaNacimiento') || null }, 'Identidad corregida')
-      else if (accion === 'documento') void operar(base + '/documentos', 'POST', { tipo: valor('tipo'), pais: valor('pais'), numero: valor('numero') }, 'Documento actualizado')
-      else if (accion === 'condicion') void operar(base + '/condiciones', 'POST', { tipo: valor('tipo') }, 'Condición incorporada')
-      else if (accion === 'parentesco') void operar('/parentescos', 'POST', { estudianteId: valor('estudianteId'), familiarId: valor('familiarId'), tipo: valor('tipo') }, 'Parentesco registrado')
-      else if (accion === 'apoderamiento') void operar('/apoderamientos', 'POST', { estudianteId: valor('estudianteId'), apoderadoId: valor('apoderadoId'), sinParentesco: valor('sinParentesco') === 'true', autorizacion: valor('sinParentesco') === 'true' ? { autorizador: valor('autorizador'), medio: valor('medio'), fecha: new Date().toISOString(), sustentoTipo: valor('sustentoTipo') || 'VERBAL', sustentoReferencia: valor('referencia') } : null }, 'Apoderamiento registrado')
-      else if (accion.startsWith('desactivar-condicion:')) void operar(base + '/condiciones/' + accion.split(':')[1] + '/desactivar', 'POST', { motivo: valor('motivo') }, 'Condición desactivada')
-      else if (accion.startsWith('desactivar-apoderamiento:')) void operar(base + '/apoderamientos/' + accion.split(':')[1] + '/desactivar', 'POST', { motivo: valor('motivo') }, 'Vínculo desactivado')
-    }}><h4>{accion.startsWith('desactivar') ? 'Confirmar desactivación' : 'Actualizar ficha'}</h4><div className="per-formulario">
-      {accion === 'identidad' && <><Campo titulo="Nombres"><input required value={valor('nombres')} onChange={e => cambiar('nombres',e.target.value)} /></Campo><Campo titulo="Apellidos"><input required value={valor('apellidos')} onChange={e => cambiar('apellidos',e.target.value)} /></Campo><Campo titulo="Nacimiento"><input type="date" required={persona.condiciones.some(c=>c.tipo==='ESTUDIANTE' && !c.vigenteHasta)} value={valor('fechaNacimiento')} onChange={e => cambiar('fechaNacimiento', e.target.value)} /></Campo></>}
-      {(accion === 'identidad' || accion === 'contacto') && <><Campo titulo="Teléfono"><input value={valor('telefono')} onChange={e => cambiar('telefono', e.target.value)} /></Campo><Campo titulo="Correo"><input type="email" value={valor('correo')} onChange={e => cambiar('correo', e.target.value)} /></Campo><Campo titulo="Dirección"><input value={valor('direccion')} onChange={e => cambiar('direccion', e.target.value)} /></Campo></>}
-      {accion === 'documento' && <><Campo titulo="Tipo"><select required value={valor('tipo')} onChange={e => cambiar('tipo',e.target.value)}><option value="">Seleccionar</option><option>DNI</option><option>CE</option><option>PASAPORTE</option></select></Campo><Campo titulo="País ISO 2"><input required maxLength={2} value={valor('pais')} onChange={e => cambiar('pais',e.target.value.toUpperCase())} /></Campo><Campo titulo="Número"><input required value={valor('numero')} onChange={e => cambiar('numero',e.target.value)} /></Campo></>}
-      {accion === 'condicion' && <Campo titulo="Condición"><select required value={valor('tipo')} onChange={e => cambiar('tipo',e.target.value)}><option value="">Seleccionar</option>{tiposCondicion.filter(t => t.valor !== 'APODERADO').map(t => <option value={t.valor} key={t.valor}>{t.texto}</option>)}</select></Campo>}
-      {(accion === 'parentesco' || accion === 'apoderamiento') && <><SelectorPersona sesion={sesion} titulo="Estudiante" condicion="ESTUDIANTE" valor={valor('estudianteId')} alElegir={id => cambiar('estudianteId',id)} /><SelectorPersona sesion={sesion} titulo={accion === 'parentesco' ? 'Familiar' : 'Apoderado'} valor={valor(accion === 'parentesco' ? 'familiarId' : 'apoderadoId')} alElegir={id => cambiar(accion === 'parentesco' ? 'familiarId' : 'apoderadoId',id)} /></>}
-      {accion === 'parentesco' && <Campo titulo="Tipo de parentesco"><input required value={valor('tipo')} onChange={e => cambiar('tipo',e.target.value)} /></Campo>}
-      {accion === 'apoderamiento' && <><Campo titulo="Parentesco"><select value={valor('sinParentesco')} onChange={e => cambiar('sinParentesco',e.target.value)}><option value="">Con parentesco registrado</option><option value="true">Sin parentesco, autorización institucional</option></select></Campo>{valor('sinParentesco') === 'true' && <><Campo titulo="Autorizador"><input required value={valor('autorizador')} onChange={e => cambiar('autorizador',e.target.value)} /></Campo><Campo titulo="Medio"><input required value={valor('medio')} onChange={e => cambiar('medio',e.target.value)} /></Campo><Campo titulo="Tipo de sustento"><input value={valor('sustentoTipo')} onChange={e => cambiar('sustentoTipo',e.target.value)} placeholder="VERBAL" /></Campo><Campo titulo="Referencia"><input required value={valor('referencia')} onChange={e => cambiar('referencia',e.target.value)} /></Campo></>}</>}
-      {accion.startsWith('desactivar') && <Campo titulo="Motivo"><input required value={valor('motivo')} onChange={e => cambiar('motivo',e.target.value)} /></Campo>}
-    </div><div className="per-acciones"><button className="per-secundario" type="button" onClick={() => setAccion('')}>Cancelar</button><button className="boton-principal">Guardar cambios</button></div></form>
-  return <section className="per-pagina"><Link className="per-volver" to="/personas">← Directorio</Link>
-    <div className="per-titulo"><div><p className="etiqueta">FICHA INSTITUCIONAL</p><h2>{persona.nombres} {persona.apellidos}</h2><p>{documentoPrincipal ? `${documentoPrincipal.tipo} · ${documentoPrincipal.numero}` : 'Identificación provisional'}</p></div>
-      {capacidades.eliminarRegistroIncorrecto && <button className="per-peligro" type="button" onClick={() => setConfirmandoEliminar(true)}>Eliminar registro incorrecto</button>}</div>
+  const p = persona
+  const base = '/' + p.id
+  const documentoPrincipal = p.documentos.find(d => d.principal && !d.vigenteHasta)
+  const apoderadoActivo = p.apoderamientos.some(a => a.apoderadoId === p.id && !a.vigenteHasta)
+  const condicionesActivas = [...new Set([...p.condiciones.filter(c => !c.vigenteHasta).map(c => c.tipo), ...(apoderadoActivo ? ['APODERADO'] : [])])]
+  const nombreCondicion = (tipo: string) => tiposCondicion.find(t => t.valor === tipo)?.texto ?? tipo
+  const contacto = { telefono: p.telefono ?? '', correo: p.correo ?? '', direccion: p.direccion ?? '' }
+  const estudianteActivo = p.condiciones.some(c => c.tipo === 'ESTUDIANTE' && !c.vigenteHasta)
+  const idsVinculados = [...new Set([...p.parentescos.map(v => v.estudianteId === p.id ? v.familiarId : v.estudianteId),
+    ...p.apoderamientos.map(v => v.estudianteId === p.id ? v.apoderadoId : v.estudianteId)])]
+  const nombreOtro = (otro: string) => p.referencias[otro] ? `${p.referencias[otro].nombres} ${p.referencias[otro].apellidos}` : 'Persona vinculada'
+  const abrirVinculo = (tipo: 'parentesco' | 'apoderamiento', otro?: string, direccion?: string) => abrir(tipo, {
+    direccion: direccion ?? (estudianteActivo ? 'estudiante' : 'relacionada'), otroId: otro ?? '', otroNombre: otro ? nombreOtro(otro) : '',
+  })
+  const abrirIdentidad = () => abrir('identidad', { nombres: p.nombres, apellidos: p.apellidos, fechaNacimiento: p.fechaNacimiento ?? '', sexo: p.sexo ?? '', nacionalidad: p.nacionalidad ?? '' })
+  const tituloAccion = accion === 'identidad' ? 'Editar identidad' : accion === 'contacto' ? 'Editar contacto' : accion === 'documento' ? 'Corregir o regularizar documento' : accion === 'condicion' ? (valor('tipo') && p.condiciones.some(c => c.tipo === valor('tipo') && c.vigenteHasta) ? 'Reactivar condición' : 'Incorporar condición') : accion === 'parentesco' ? 'Vincular parentesco' : accion === 'apoderamiento' ? 'Vincular apoderamiento' : accion.startsWith('desactivar-condicion:') ? 'Desactivar condición' : accion.startsWith('desactivar-parentesco:') ? 'Desactivar parentesco' : accion.startsWith('desactivar-apoderamiento:') ? 'Desactivar autorización' : 'Eliminar registro incorrecto'
+  function enviar(e: FormEvent) {
+    e.preventDefault()
+    if (bloqueo.current) return
+    if (accion === 'identidad' && capacidades.corregirIdentidad) void operar(base, 'PUT', async () => {
+      const actual = await api<Persona>(base, sesion)
+      return { telefono: actual.telefono, correo: actual.correo, direccion: actual.direccion, ...campos, fechaNacimiento: valor('fechaNacimiento') || null }
+    }, 'Identidad corregida')
+    else if (accion === 'contacto' && (capacidades.editarContacto || capacidades.corregirIdentidad)) {
+      // El PUT /contacto actual solo persiste teléfono y correo; la dirección exige permiso de identidad.
+      if (capacidades.corregirIdentidad && (!capacidades.editarContacto || valor('direccion') !== contacto.direccion)) {
+        void operar(base, 'PUT', async () => {
+          const actual = await api<Persona>(base, sesion)
+          return { nombres: actual.nombres, apellidos: actual.apellidos, fechaNacimiento: actual.fechaNacimiento,
+            sexo: actual.sexo, nacionalidad: actual.nacionalidad, ...campos }
+        }, 'Contacto actualizado')
+      } else void operar(base + '/contacto', 'PUT', { telefono: valor('telefono'), correo: valor('correo') }, 'Contacto actualizado')
+    }
+    else if (accion === 'documento' && capacidades.corregirIdentidad) void operar(base + '/documentos', 'POST', { tipo: valor('tipo'), pais: valor('pais'), numero: valor('numero') }, 'Documento actualizado')
+    else if (accion === 'condicion' && capacidades.gestionarCondiciones) void operar(base + '/condiciones', 'POST', { tipo: valor('tipo') }, 'Condición incorporada')
+    else if ((accion === 'parentesco' || accion === 'apoderamiento') && capacidades.gestionarVinculos) {
+      const otro = valor('otroId')
+      if (!otro || otro === p.id) { setErrorEdicion('Selecciona otra persona para el vínculo.'); return }
+      const estudianteId = valor('direccion') === 'estudiante' ? p.id : otro
+      const relacionadaId = estudianteId === p.id ? otro : p.id
+      if (accion === 'parentesco') void operar('/parentescos', 'POST', { estudianteId, familiarId: relacionadaId, tipo: valor('tipo') }, 'Parentesco registrado')
+      else void operar('/apoderamientos', 'POST', { estudianteId, apoderadoId: relacionadaId, sinParentesco: valor('sinParentesco') === 'true', autorizacion: valor('sinParentesco') === 'true' ? { autorizador: valor('autorizador'), medio: valor('medio'), fecha: new Date().toISOString(), sustentoTipo: valor('sustentoTipo') || 'VERBAL', sustentoReferencia: valor('referencia') } : null }, 'Apoderamiento registrado')
+    } else if (accion.startsWith('desactivar-condicion:') && capacidades.gestionarCondiciones) void operar(base + '/condiciones/' + accion.split(':')[1] + '/desactivar', 'POST', { motivo: valor('motivo') }, 'Condición desactivada')
+    else if (accion.startsWith('desactivar-parentesco:') && capacidades.gestionarVinculos) void operar(base + '/parentescos/' + accion.split(':')[1] + '/desactivar', 'POST', {}, 'Parentesco desactivado')
+    else if (accion.startsWith('desactivar-apoderamiento:') && capacidades.gestionarVinculos) void operar(base + '/apoderamientos/' + accion.split(':')[1] + '/desactivar', 'POST', { motivo: valor('motivo') }, 'Vínculo desactivado')
+    else if (accion === 'eliminar') void eliminarRegistro()
+  }
+  const editor = <form className="per-nuevo-editor" aria-label={tituloAccion} onSubmit={enviar}>
+    <fieldset disabled={ocupado} className="per-nuevo-campos">
+      {accion === 'identidad' && <><Campo titulo="Nombres"><input required value={valor('nombres')} onChange={e => cambiar('nombres', e.target.value)} /></Campo>
+        <Campo titulo="Apellidos"><input required value={valor('apellidos')} onChange={e => cambiar('apellidos', e.target.value)} /></Campo>
+        <Campo titulo="Nacimiento"><input type="date" required={estudianteActivo} value={valor('fechaNacimiento')} onChange={e => cambiar('fechaNacimiento', e.target.value)} /></Campo></>}
+      {accion === 'contacto' && <><Campo titulo="Teléfono"><input value={valor('telefono')} onChange={e => cambiar('telefono', e.target.value)} /></Campo><Campo titulo="Correo"><input type="email" value={valor('correo')} onChange={e => cambiar('correo', e.target.value)} /></Campo><Campo titulo="Dirección"><input readOnly={!capacidades.corregirIdentidad} value={valor('direccion')} onChange={e => cambiar('direccion', e.target.value)} /></Campo></>}
+      {accion === 'documento' && <><p className="per-texto per-nuevo-ancho">La corrección conserva la ficha institucional. La actualización de accesos se gestiona por la integración existente.</p><Campo titulo="Tipo"><select required value={valor('tipo')} onChange={e => cambiar('tipo',e.target.value)}><option value="">Seleccionar</option><option>DNI</option><option>CE</option><option>PASAPORTE</option></select></Campo><Campo titulo="País ISO 2"><input required maxLength={2} value={valor('pais')} onChange={e => cambiar('pais',e.target.value.toUpperCase())} /></Campo><Campo titulo="Número"><input required value={valor('numero')} onChange={e => cambiar('numero',e.target.value)} /></Campo></>}
+      {accion === 'condicion' && <><Campo titulo="Condición"><select required value={valor('tipo')} onChange={e => cambiar('tipo',e.target.value)}><option value="">Seleccionar</option>{tiposCondicion.filter(t => t.valor !== 'APODERADO' && !condicionesActivas.includes(t.valor)).map(t => <option value={t.valor} key={t.valor}>{t.texto}</option>)}</select></Campo><p className="per-texto per-nuevo-ancho">La condición de apoderado se deriva de un vínculo vigente.</p></>}
+      {(accion === 'parentesco' || accion === 'apoderamiento') && <><div className="per-nuevo-ancho"><Campo titulo="Papel de esta persona en el vínculo"><select value={valor('direccion')} onChange={e => setCampos(c => ({ ...c, direccion: e.target.value, otroId: '', otroNombre: '' }))}><option value="estudiante">Estudiante</option><option value="relacionada">{accion === 'parentesco' ? 'Familiar' : 'Apoderado'}</option></select></Campo></div>
+        <div className="per-nuevo-ancho">{valor('otroNombre') ? <div className="per-nuevo-elegida"><strong>{valor('otroNombre')}</strong><button type="button" className="per-secundario" onClick={() => setCampos(c => ({ ...c, otroId: '', otroNombre: '' }))}>Cambiar persona</button></div> : <SelectorPersona key={valor('direccion')} sesion={sesion} titulo={valor('direccion') === 'estudiante' ? accion === 'parentesco' ? 'Familiar' : 'Apoderado' : 'Estudiante'} condicion={valor('direccion') === 'estudiante' ? undefined : 'ESTUDIANTE'} valor={valor('otroId')} alElegir={v => cambiar('otroId', v)} />}</div></>}
+      {accion === 'parentesco' && <Campo titulo="Tipo de parentesco (desde el estudiante)"><input required value={valor('tipo')} onChange={e => cambiar('tipo', e.target.value)} /></Campo>}
+      {accion === 'apoderamiento' && <><div className="per-nuevo-ancho"><Campo titulo="Parentesco"><select value={valor('sinParentesco')} onChange={e => cambiar('sinParentesco',e.target.value)}><option value="">Con parentesco registrado</option><option value="true">Sin parentesco, autorización institucional</option></select></Campo></div>{valor('sinParentesco') === 'true' && <><Campo titulo="Autorizador"><input required value={valor('autorizador')} onChange={e => cambiar('autorizador',e.target.value)} /></Campo><Campo titulo="Medio"><input required value={valor('medio')} onChange={e => cambiar('medio',e.target.value)} /></Campo><Campo titulo="Tipo de sustento"><input value={valor('sustentoTipo')} onChange={e => cambiar('sustentoTipo',e.target.value)} placeholder="VERBAL" /></Campo><Campo titulo="Referencia"><input required value={valor('referencia')} onChange={e => cambiar('referencia',e.target.value)} /></Campo></>}</>}
+      {accion.startsWith('desactivar') && <p className="per-texto per-nuevo-ancho">Confirma la finalización de este registro: {valor('objetivo')}. Se conserva su historial.</p>}
+      {(accion.startsWith('desactivar-condicion:') || accion.startsWith('desactivar-apoderamiento:')) && <Campo titulo="Motivo"><input required value={valor('motivo')} onChange={e => cambiar('motivo',e.target.value)} /></Campo>}
+      {accion === 'eliminar' && <><p className="per-texto per-nuevo-ancho">Esta acción libera el documento y no se puede deshacer. Solo se permite si la persona no tiene matrículas, vínculos, asignaciones ni cambios posteriores a su registro. No es la forma de desactivar una condición.</p><div className="per-nuevo-ancho"><Campo titulo="Escribe ELIMINAR para confirmar"><input autoComplete="off" value={valor('confirmacion')} onChange={e => cambiar('confirmacion',e.target.value)} /></Campo></div></>}
+    </fieldset>
+    <Aviso mensaje={errorEdicion} />
+    <div className="per-nuevo-acciones"><button className="per-secundario" type="button" disabled={ocupado} onClick={cancelar}>Cancelar</button><button className={accion === 'eliminar' ? 'per-peligro' : 'boton-principal'} disabled={ocupado || (accion === 'eliminar' && valor('confirmacion') !== 'ELIMINAR')}>{ocupado ? 'Guardando…' : accion === 'eliminar' ? 'Eliminar definitivamente' : accion.startsWith('desactivar') ? 'Confirmar desactivación' : 'Guardar cambios'}</button></div>
+  </form>
+  const campoVisible = (titulo: string, dato: string | null, ancho = false) => <div className={ancho ? 'per-nuevo-ancho' : undefined}><dt>{titulo}</dt><dd>{dato || '—'}</dd></div>
+  return <section className="per-pagina per-nueva-ficha"><Link className="per-volver" to="/personas">← Directorio</Link>
+    <header className="per-nuevo-perfil"><div><p className="etiqueta">FICHA INSTITUCIONAL</p><h2>{p.nombres} {p.apellidos}</h2><div className="per-nuevo-identidadlinea"><span>{documentoPrincipal ? `${documentoPrincipal.tipo} · ${documentoPrincipal.numero}` : p.provisional && !p.provisional.regularizadaEn ? 'Identificación provisional' : 'Sin documento principal vigente'}</span><span className="etiqueta">{condicionesActivas.map(nombreCondicion).join(' · ') || 'Sin condición vigente'}</span></div></div>
+      {capacidades.eliminarRegistroIncorrecto && <details className="per-nuevo-menu" ref={menu}><summary>Más acciones</summary><div><button type="button" className="per-peligro" disabled={ocupado} onClick={() => abrir('eliminar')}>Eliminar registro incorrecto</button></div></details>}
+    </header>
     <Aviso mensaje={error} /><Aviso mensaje={exito} tipo="exito" />
-    {confirmandoEliminar && <section className="per-panel per-confirmar-eliminacion" aria-label="Confirmar eliminación de registro incorrecto">
-      <h3>Eliminar registro incorrecto</h3>
-      <p>Esta acción libera el documento y no se puede deshacer. Solo se permite si la persona no tiene matrículas, vínculos, asignaciones ni cambios posteriores a su registro.</p>
-      <Campo titulo="Escribe ELIMINAR para confirmar"><input value={confirmacion} onChange={e => setConfirmacion(e.target.value)} autoComplete="off" /></Campo>
-      <div className="per-acciones"><button className="per-secundario" type="button" onClick={() => { setConfirmandoEliminar(false); setConfirmacion('') }}>Conservar registro</button>
-        <button className="per-peligro" type="button" disabled={confirmacion !== 'ELIMINAR' || eliminando} onClick={() => void eliminarRegistro()}>{eliminando ? 'Eliminando…' : 'Eliminar definitivamente'}</button></div>
+    <nav className="per-nuevo-pestanas" aria-label="Secciones de la ficha"><button type="button" disabled={ocupado} className={pestana === 'datos' ? 'active' : ''} aria-current={pestana === 'datos' ? 'page' : undefined} onClick={() => cambiarPestana('datos')}>Datos personales</button><button type="button" disabled={ocupado} className={pestana === 'condiciones' ? 'active' : ''} aria-current={pestana === 'condiciones' ? 'page' : undefined} onClick={() => cambiarPestana('condiciones')}>Condiciones institucionales</button></nav>
+    {pestana === 'datos' ? <section className="per-nuevo-grid" aria-label="Datos personales">
+      <div className="per-nuevo-panel">
+        <section className="per-nuevo-bloque"><div className="per-nuevo-cabecera"><h3>Identidad</h3>{capacidades.corregirIdentidad && <button type="button" className="per-secundario" disabled={ocupado} onClick={accion === 'identidad' ? cancelar : abrirIdentidad}>{accion === 'identidad' ? 'Cancelar edición' : 'Editar identidad'}</button>}</div>
+          {accion === 'identidad' ? editor : <dl className="per-nuevo-datos">{campoVisible('Nombres',p.nombres)}{campoVisible('Apellidos',p.apellidos)}{campoVisible('Nacimiento',p.fechaNacimiento)}{campoVisible('Sexo registrado',p.sexo)}</dl>}</section>
+        <section className="per-nuevo-bloque"><div className="per-nuevo-cabecera"><h3>Contacto</h3>{(capacidades.editarContacto || capacidades.corregirIdentidad) && <button type="button" className="per-secundario" disabled={ocupado} onClick={() => accion === 'contacto' ? cancelar() : abrir('contacto', contacto)}>{accion === 'contacto' ? 'Cancelar edición' : 'Editar contacto'}</button>}</div>
+          {accion === 'contacto' ? editor : <dl className="per-nuevo-datos">{campoVisible('Teléfono',p.telefono)}{campoVisible('Correo',p.correo)}{campoVisible('Dirección',p.direccion,true)}</dl>}</section>
+      </div>
+      <section className="per-nuevo-panel per-nuevo-bloque"><div className="per-nuevo-cabecera"><h3>Identificación</h3></div>
+        {!p.documentos.length && <p className="per-texto">Sin documentos registrados.</p>}
+        {p.documentos.map(d => <div className="per-nuevo-documento" key={d.id}><div className="per-nuevo-cabecera"><span className="etiqueta">{d.tipo} · {d.pais}</span><span className={d.vigenteHasta ? 'per-nuevo-inactivo' : 'per-nuevo-vigente'}>{d.vigenteHasta ? 'Histórico' : d.principal ? 'Principal' : 'Vigente'}</span></div><strong>{d.numero}</strong><small><Fecha valor={d.vigenteDesde} /> — <Fecha valor={d.vigenteHasta} /></small></div>)}
+        {p.provisional && <p className="per-texto">Identificación provisional: {p.provisional.motivo} · {p.provisional.sustentoReferencia} {p.provisional.regularizadaEn && '(regularizada)'}</p>}
+        {capacidades.corregirIdentidad && <button className="per-secundario" type="button" disabled={ocupado} onClick={() => abrir('documento', { tipo: documentoPrincipal?.tipo ?? 'DNI', pais: documentoPrincipal?.pais ?? 'PE', numero: documentoPrincipal?.numero ?? '' })}>Corregir o regularizar documento</button>}
+      </section>
+    </section> : <section className="per-nuevo-pila" aria-label="Condiciones institucionales">
+      <section className="per-nuevo-panel"><div className="per-nuevo-franja"><div><h3>Condiciones institucionales</h3><p>Una persona puede tener más de una condición.</p></div>{capacidades.gestionarCondiciones && <button className="per-secundario" type="button" disabled={ocupado} onClick={() => abrir('condicion')}>+ Incorporar</button>}</div>
+        <div className="per-nuevo-bloque">{p.condiciones.map(c => <div className="per-nuevo-condicion" key={c.id}><div><strong className="etiqueta">{nombreCondicion(c.tipo)}</strong><small className={c.vigenteHasta ? 'per-nuevo-inactivo' : 'per-nuevo-vigente'}><Fecha valor={c.vigenteDesde} /> — <Fecha valor={c.vigenteHasta} />{c.motivoDesactivacion && ' · ' + c.motivoDesactivacion}</small></div>{!c.vigenteHasta && capacidades.gestionarCondiciones && <button className="per-secundario" type="button" disabled={ocupado} onClick={() => abrir('desactivar-condicion:' + c.id, { objetivo: nombreCondicion(c.tipo) })}>Desactivar condición</button>}{c.vigenteHasta && c.tipo !== 'APODERADO' && !condicionesActivas.includes(c.tipo) && p.condiciones.find(v => v.tipo === c.tipo)?.id === c.id && capacidades.gestionarCondiciones && <button className="per-secundario" type="button" disabled={ocupado} onClick={() => abrir('condicion', { tipo: c.tipo })}>Reactivar condición</button>}</div>)}
+          {apoderadoActivo && <div className="per-nuevo-condicion"><div><strong className="etiqueta">APODERADO</strong><small className="per-nuevo-vigente">Activo por vínculo vigente</small></div><span className="per-texto">Gestionar en vínculos</span></div>}
+          {!p.condiciones.length && !apoderadoActivo && <p className="per-texto">Sin condiciones registradas.</p>}
+        </div>
+      </section>
+      <section className="per-nuevo-panel"><div className="per-nuevo-franja"><div><h3>Vínculos institucionales</h3><p>Parentescos y autorizaciones, sin duplicar personas.</p></div>{capacidades.gestionarVinculos && <div className="per-nuevo-botones"><button className="per-secundario" type="button" disabled={ocupado} onClick={() => abrirVinculo('parentesco')}>+ Parentesco</button><button className="per-secundario" type="button" disabled={ocupado} onClick={() => abrirVinculo('apoderamiento')}>+ Apoderamiento</button></div>}</div>
+        {!idsVinculados.length ? <p className="per-vacio">Sin vínculos registrados.</p> : <div className="per-nuevo-scroll" role="region" aria-label="Listado de vínculos" tabIndex={0}><table className="per-nuevo-tabla"><thead><tr><th scope="col">Persona vinculada</th><th scope="col">Parentesco</th><th scope="col">Apoderamiento</th></tr></thead><tbody>
+          {idsVinculados.map(otro => { const referencia = p.referencias[otro]; const parentescos = p.parentescos.filter(v => (v.estudianteId === p.id ? v.familiarId : v.estudianteId) === otro); const apoderamientos = p.apoderamientos.filter(v => (v.estudianteId === p.id ? v.apoderadoId : v.estudianteId) === otro); const orientacion = parentescos[0]?.estudianteId ?? apoderamientos[0]?.estudianteId; const direccion = orientacion === p.id ? 'estudiante' : 'relacionada'; return <tr key={otro}>
+            <td><strong><NombreVinculado id={otro} referencia={referencia} /></strong><small>{referencia?.numeroDocumento ? <><DocumentoVinculado referencia={referencia} />Ficha institucional</> : 'Ficha institucional'}</small></td>
+            <td>{parentescos.length ? parentescos.map(v => <div className="per-nuevo-vinculo" key={v.id}><strong>{parentescoVisible(v.tipo,v.estudianteId === p.id,referencia?.sexo)}</strong>{v.estudianteId !== p.id && <small>Relación registrada: {v.tipo} del estudiante</small>}<small className={v.vigenteHasta ? 'per-nuevo-inactivo' : 'per-nuevo-vigente'}>{v.vigenteHasta ? 'Finalizado' : 'Vigente'} · <Fecha valor={v.vigenteDesde} />{v.vigenteHasta && <> — <Fecha valor={v.vigenteHasta} /></>}</small>{!v.vigenteHasta && capacidades.gestionarVinculos && <button type="button" className="per-secundario" disabled={ocupado} onClick={() => abrir('desactivar-parentesco:' + v.id, { objetivo: nombreOtro(otro) })}>Desactivar parentesco</button>}</div>) : <span className="per-texto">Sin parentesco registrado</span>}
+              {!parentescos.some(v => !v.vigenteHasta) && capacidades.gestionarVinculos && <button type="button" className="per-secundario" disabled={ocupado} onClick={() => abrirVinculo('parentesco',otro,direccion)}>Vincular parentesco</button>}</td>
+            <td>{apoderamientos.length ? apoderamientos.map(v => <div className="per-nuevo-vinculo" key={v.id}><strong>{v.estudianteId === p.id ? 'Apoderado' : 'Estudiante'} · {v.sinParentesco ? 'Autorización verificada' : 'Con parentesco'}</strong><small className={v.vigenteHasta ? 'per-nuevo-inactivo' : 'per-nuevo-vigente'}>{v.vigenteHasta ? 'Finalizado' : 'Vigente'} · <Fecha valor={v.vigenteDesde} />{v.vigenteHasta && <> — <Fecha valor={v.vigenteHasta} /></>}</small>{v.autorizador && <small>Autorizador: {v.autorizador}{v.medio && ' · ' + v.medio}</small>}{v.verificadoEn && <small>Verificado: <Fecha valor={v.verificadoEn} /></small>}{!v.vigenteHasta && capacidades.gestionarVinculos && <button className="per-secundario" type="button" disabled={ocupado} onClick={() => abrir('desactivar-apoderamiento:' + v.id, { objetivo: nombreOtro(otro) })}>Desactivar autorización</button>}</div>) : <span className="per-texto">Sin apoderamiento registrado</span>}
+              {!apoderamientos.some(v => !v.vigenteHasta) && capacidades.gestionarVinculos && <button type="button" className="per-secundario" disabled={ocupado} onClick={() => abrirVinculo('apoderamiento',otro,direccion)}>Vincular autorización</button>}</td>
+          </tr> })}</tbody></table></div>}
+        <p className="per-nuevo-nota">El parentesco y el apoderamiento son independientes. Un parentesco por sí solo no concede autorización.</p>
+      </section>
+      {p.condiciones.some(c => c.tipo === 'DOCENTE') && <section className="per-nuevo-panel per-nuevo-bloque"><h3>Cuenta docente de Aula</h3><EstadoIntegracion sesion={sesion} tipo="PERSONA" id={p.id} /></section>}
     </section>}
-    <nav className="per-ficha-pestanas" aria-label="Secciones de la ficha">
-      <button type="button" className={pestana === 'datos' ? 'active' : ''} aria-current={pestana === 'datos' ? 'page' : undefined} onClick={() => cambiarPestana('datos')}><span>01</span> Datos personales</button>
-      <button type="button" className={pestana === 'condiciones' ? 'active' : ''} aria-current={pestana === 'condiciones' ? 'page' : undefined} onClick={() => cambiarPestana('condiciones')}><span>02</span> Condiciones institucionales</button>
-    </nav>
-    {pestana === 'datos' ? <section className="per-panel per-ficha-panel" aria-label="Datos personales"><div className="per-ficha-toolbar"><p>Identidad, contacto y documentos</p>{(capacidades.editarContacto || capacidades.corregirIdentidad) && <button className="per-secundario" type="button" onClick={() => {
-      if (accion === 'identidad' || accion === 'contacto') { setAccion(''); setCampos({}); return }
-      setAccion(capacidades.corregirIdentidad ? 'identidad' : 'contacto')
-      setCampos({ nombres: persona.nombres, apellidos: persona.apellidos, fechaNacimiento: persona.fechaNacimiento ?? '', sexo: persona.sexo ?? '', nacionalidad: persona.nacionalidad ?? '', telefono: persona.telefono ?? '', correo: persona.correo ?? '', direccion: persona.direccion ?? '' })
-    }}>{accion === 'identidad' || accion === 'contacto' ? 'Cancelar edición' : 'Editar datos'}</button>}</div>
-      <div className="per-ficha-identidad-grid"><div>
-        {accion === 'identidad' || accion === 'contacto' ? editor : <dl className="per-ficha-datos-grid">
-          <div><dt>Nombres</dt><dd>{persona.nombres}</dd></div><div><dt>Apellidos</dt><dd>{persona.apellidos}</dd></div>
-          <div><dt>Nacimiento</dt><dd>{persona.fechaNacimiento || '—'}</dd></div><div><dt>Sexo registrado</dt><dd>{persona.sexo || '—'}</dd></div>
-          <div><dt>Teléfono</dt><dd>{persona.telefono || '—'}</dd></div><div><dt>Correo</dt><dd>{persona.correo || '—'}</dd></div>
-          <div className="per-ficha-dato-ancho"><dt>Dirección</dt><dd>{persona.direccion || '—'}</dd></div>
-        </dl>}
-      </div><div className="per-ficha-documentos"><h3>Identificación</h3>
-        {persona.documentos.map(d => <div className="per-fila" key={d.id}><div><strong>{d.tipo} · {d.pais} · {d.numero}</strong><small><Fecha valor={d.vigenteDesde} /> — <Fecha valor={d.vigenteHasta} /></small></div>{d.principal && !d.vigenteHasta && <span className="per-chip">Principal</span>}</div>)}
-        {persona.provisional && <p className="per-texto">Identificación provisional: {persona.provisional.motivo} · {persona.provisional.sustentoReferencia} {persona.provisional.regularizadaEn && '(regularizada)'}</p>}
-        {capacidades.corregirIdentidad && <button className="per-secundario" type="button" onClick={() => { setAccion(accion === 'documento' ? '' : 'documento'); setCampos({ tipo: documentoPrincipal?.tipo ?? '', pais: documentoPrincipal?.pais ?? 'PE', numero: documentoPrincipal?.numero ?? '' }) }}>{accion === 'documento' ? 'Cancelar edición' : 'Corregir o regularizar documento'}</button>}
-        {accion === 'documento' && editor}
-      </div></div>
-    </section> : <section className="per-panel per-ficha-panel" aria-label="Condiciones institucionales"><div className="per-ficha-toolbar"><p>Condiciones y vínculos de esta persona</p>{(capacidades.gestionarCondiciones || capacidades.gestionarVinculos) && <button className="per-secundario" type="button" onClick={() => { setEditandoCondiciones(!editandoCondiciones); setAccion(''); setCampos({}) }}>{editandoCondiciones ? 'Terminar edición' : 'Editar datos'}</button>}</div>
-      <div className="per-ficha-relaciones">
-      <div className="per-ficha-grupo"><div className="per-ficha-grupo-cabecera"><h4>Condiciones</h4>{editandoCondiciones && capacidades.gestionarCondiciones && <button className="per-secundario" type="button" onClick={() => { setAccion('condicion'); setCampos({}) }}>+ Incorporar</button>}</div>
-        {persona.condiciones.map(c => <div className="per-fila" key={c.id}><div><strong>{c.tipo}</strong><small><Fecha valor={c.vigenteDesde} /> — <Fecha valor={c.vigenteHasta} /> {c.motivoDesactivacion && '· ' + c.motivoDesactivacion}</small></div>
-          {!c.vigenteHasta && editandoCondiciones && capacidades.gestionarCondiciones && <button className="per-secundario" type="button" onClick={() => { setAccion('desactivar-condicion:' + c.id); setCampos({}) }}>Desactivar</button>}</div>)}
-        {persona.apoderamientos.some(a => a.apoderadoId === persona.id && !a.vigenteHasta) && <div className="per-fila"><strong>APODERADO · activo por vínculo vigente</strong></div>}
-        {!persona.condiciones.length && !persona.apoderamientos.length && <p className="per-vacio">Sin condiciones registradas.</p>}
-        {editandoCondiciones && (accion === 'condicion' || accion.startsWith('desactivar-condicion:')) && editor}
-      </div>
-      <div className="per-ficha-grupo"><div className="per-ficha-grupo-cabecera"><h4>Parentescos</h4>{editandoCondiciones && capacidades.gestionarVinculos && <button className="per-secundario" type="button" onClick={() => { setAccion('parentesco'); setCampos({}) }}>+ Vincular</button>}</div>
-        {persona.parentescos.map(p => { const esEstudiante = p.estudianteId === persona.id; const otroId = esEstudiante ? p.familiarId : p.estudianteId; const referencia = persona.referencias[otroId]; return <div className="per-fila per-vinculo" key={p.id}><div><strong>{parentescoVisible(p.tipo, esEstudiante, referencia?.sexo)} · <NombreVinculado id={otroId} referencia={referencia} /></strong><small>{esEstudiante ? 'Familiar' : 'Estudiante'} · <DocumentoVinculado referencia={referencia} />{p.vigenteHasta ? 'Finalizado' : 'Vigente'}{!esEstudiante && <span title={`Parentesco registrado desde la perspectiva del estudiante: ${p.tipo}`}> · Relación registrada: {p.tipo} del estudiante</span>}</small></div>{!p.vigenteHasta && editandoCondiciones && capacidades.gestionarVinculos && <button className="per-secundario" type="button" onClick={() => void operar('/' + persona.id + '/parentescos/' + p.id + '/desactivar', 'POST', {}, 'Parentesco desactivado')}>Desactivar</button>}</div> })}
-        {!persona.parentescos.length && <p className="per-vacio">Sin parentescos.</p>}
-        {editandoCondiciones && accion === 'parentesco' && editor}
-      </div>
-      <div className="per-ficha-grupo"><div className="per-ficha-grupo-cabecera"><h4>Apoderamientos</h4>{editandoCondiciones && capacidades.gestionarVinculos && <button className="per-secundario" type="button" onClick={() => { setAccion('apoderamiento'); setCampos({}) }}>+ Vincular</button>}</div>
-        {persona.apoderamientos.map(a => { const esEstudiante = a.estudianteId === persona.id; const otroId = esEstudiante ? a.apoderadoId : a.estudianteId; const referencia = persona.referencias[otroId]; return <div className="per-fila per-vinculo" key={a.id}><div><strong>{esEstudiante ? 'Apoderado' : 'Estudiante'} · <NombreVinculado id={otroId} referencia={referencia} /></strong><small><DocumentoVinculado referencia={referencia} />{a.sinParentesco ? 'Autorización verificada' : 'Con parentesco'} · {a.vigenteHasta ? 'Finalizado' : 'Vigente'}</small></div>{!a.vigenteHasta && editandoCondiciones && capacidades.gestionarVinculos && <button className="per-secundario" type="button" onClick={() => { setAccion('desactivar-apoderamiento:' + a.id); setCampos({}) }}>Desactivar</button>}</div> })}
-        {!persona.apoderamientos.length && <p className="per-vacio">Sin apoderamientos.</p>}
-        {editandoCondiciones && (accion === 'apoderamiento' || accion.startsWith('desactivar-apoderamiento:')) && editor}
-      </div>
-      </div>
-      {persona.condiciones.some(c => c.tipo === 'DOCENTE') && <div className="per-ficha-integracion"><h3>Cuenta docente de Aula</h3><EstadoIntegracion sesion={sesion} tipo="PERSONA" id={persona.id} /></div>}
-    </section>}
-
+    {accion && accion !== 'identidad' && accion !== 'contacto' && <FichaDialogo titulo={tituloAccion} ocupado={ocupado} cerrar={cancelar}>{editor}</FichaDialogo>}
   </section>
 }
 

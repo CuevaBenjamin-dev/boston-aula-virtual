@@ -53,13 +53,13 @@
 
 /* Marcador temporal de la última ficha visitada. */
 .per-directorio-tabla tbody tr.per-directorio-visitada td {
-  animation: per-marcador-fondo 350ms ease-out 1s both;
+  animation: per-marcador-fondo 350ms ease-out 2s both;
 }
 
 .per-directorio-tabla tbody tr.per-directorio-visitada td:first-child {
   animation:
-    per-marcador-fondo 350ms ease-out 1s both,
-    per-marcador-linea 350ms ease-out 1s both;
+    per-marcador-fondo 350ms ease-out 2s both,
+    per-marcador-linea 350ms ease-out 2s both;
 }
 
 @keyframes per-marcador-fondo {

@@ -147,7 +147,7 @@ describe('Personas ERP Web', () => {
     expect(screen.getByRole('textbox', { name: 'Correo (opcional)' })).toHaveProperty('required', false)
   })
 
-  it('agrupa la ficha en dos pestañas y edita dentro de la sección activa', async () => {
+  it('agrupa la ficha en dos pestañas con edición directa por bloque', async () => {
     const persona = { id: '11111111-1111-1111-1111-111111111111', nombres: 'Ana', apellidos: 'Lagos',
       fechaNacimiento: null, telefono: '900000011', correo: null, direccion: null,
       documentos: [{ id: 'doc-1', tipo: 'DNI', pais: 'PE', numero: '00000011',
@@ -159,24 +159,102 @@ describe('Personas ERP Web', () => {
     const pestanas = await screen.findByRole('navigation', { name: 'Secciones de la ficha' })
     expect(within(pestanas).getAllByRole('button')).toHaveLength(2)
     expect(screen.getByRole('heading', { name: 'Identificación' })).toBeTruthy()
-    expect(screen.queryByRole('heading', { name: 'Parentescos' })).toBeNull()
-
+    expect(screen.queryByRole('heading', { name: 'Vínculos institucionales' })).toBeNull()
     await userEvent.click(within(pestanas).getByRole('button', { name: /condiciones institucionales/i }))
     const condiciones = screen.getByRole('region', { name: 'Condiciones institucionales' })
-    expect(within(condiciones).queryByRole('heading', { name: 'Condiciones institucionales' })).toBeNull()
-    expect(within(condiciones).getByRole('heading', { name: 'Parentescos' })).toBeTruthy()
-    expect(within(condiciones).getByRole('heading', { name: 'Apoderamientos' })).toBeTruthy()
-    await userEvent.click(within(condiciones).getByRole('button', { name: 'Editar datos' }))
+    expect(within(condiciones).getByRole('heading', { name: 'Vínculos institucionales' })).toBeTruthy()
     await userEvent.click(within(condiciones).getByRole('button', { name: '+ Incorporar' }))
-    expect(within(condiciones).getByRole('form')).toBeTruthy()
-
+    const dialogo = screen.getByRole('dialog', { name: 'Incorporar condición' })
+    expect(within(dialogo).getByRole('combobox', { name: 'Condición' })).toBeTruthy()
+    await userEvent.click(within(dialogo).getByRole('button', { name: 'Cancelar' }))
     await userEvent.click(within(pestanas).getByRole('button', { name: /datos personales/i }))
     const datos = screen.getByRole('region', { name: 'Datos personales' })
-    expect(within(datos).queryByRole('heading', { name: 'Datos personales' })).toBeNull()
     expect(within(datos).queryByRole('form')).toBeNull()
-    await userEvent.click(within(datos).getByRole('button', { name: 'Editar datos' }))
-    expect(within(datos).getByRole('form')).toBeTruthy()
+    await userEvent.click(within(datos).getByRole('button', { name: 'Editar identidad' }))
+    expect(within(datos).getByRole('form', { name: 'Editar identidad' })).toBeTruthy()
     expect(within(datos).getByRole('textbox', { name: 'Nombres' })).toHaveProperty('value', 'Ana')
+    expect(within(datos).queryByRole('textbox', { name: 'Teléfono' })).toBeNull()
+  })
+
+  it('edita contacto sin alterar identidad y conserva el formulario ante error de API', async () => {
+    const persona = { id: '11111111-1111-1111-1111-111111111111', nombres: 'Ana', apellidos: 'Ensayo',
+      fechaNacimiento: null, sexo: null, nacionalidad: null, telefono: '900000011', correo: null, direccion: 'Dirección de ensayo',
+      documentos: [], condiciones: [], parentescos: [], apoderamientos: [], referencias: {}, provisional: null }
+    let fallar = true
+    const llamadas = vi.fn((entrada: RequestInfo | URL, init?: RequestInit) => {
+      if (String(entrada).endsWith('/capacidades')) return respuesta(capacidades)
+      if (init?.method === 'PUT') {
+        if (fallar) return Promise.resolve(new Response(JSON.stringify({ mensaje: 'Contacto rechazado' }), { status: 400 }))
+        Object.assign(persona, JSON.parse(String(init.body)))
+        return Promise.resolve(new Response(null, { status: 204 }))
+      }
+      return respuesta(persona)
+    })
+    vi.stubGlobal('fetch', llamadas)
+    montar('/personas/' + persona.id)
+    await userEvent.click(await screen.findByRole('button', { name: 'Editar contacto' }))
+    const campo = screen.getByRole('textbox', { name: 'Teléfono' })
+    await userEvent.clear(campo); await userEvent.type(campo, '900000022')
+    await userEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+    expect(await screen.findByText('Contacto rechazado')).toBeTruthy()
+    expect(campo).toHaveProperty('value', '900000022')
+    fallar = false
+    await userEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+    expect(await screen.findByText('900000022')).toBeTruthy()
+    const envio = llamadas.mock.calls.filter(c => c[1]?.method === 'PUT').at(-1)
+    expect(String(envio?.[0])).toMatch(/\/contacto$/)
+    expect(JSON.parse(String(envio?.[1]?.body))).toEqual({ telefono: '900000022', correo: '' })
+    expect(persona.nombres).toBe('Ana')
+  })
+
+  it('agrupa vínculos por persona sin perder históricos ni mezclar sus operaciones', async () => {
+    const familiar = '33333333-3333-3333-3333-333333333333'
+    const estudiante = '22222222-2222-2222-2222-222222222222'
+    const fecha = '2026-01-01T00:00:00Z'
+    const persona = { id: familiar, nombres: 'Familiar', apellidos: 'Ensayo', fechaNacimiento: null,
+      sexo: null, telefono: '900000011', correo: null, direccion: null, documentos: [], condiciones: [], provisional: null,
+      parentescos: [{ id: 'rel-1', estudianteId: estudiante, familiarId: familiar, tipo: 'Madre', vigenteDesde: fecha, vigenteHasta: null },
+        { id: 'rel-2', estudianteId: estudiante, familiarId: familiar, tipo: 'Madre', vigenteDesde: fecha, vigenteHasta: fecha }],
+      apoderamientos: [{ id: 'aut-1', estudianteId: estudiante, apoderadoId: familiar, sinParentesco: false, vigenteDesde: fecha, vigenteHasta: null as string | null }],
+      referencias: { [estudiante]: { nombres: 'Alumno', apellidos: 'Ensayo', sexo: 'M', tipoDocumento: 'DNI', numeroDocumento: '00009111' } } }
+    const llamadas = vi.fn((entrada: RequestInfo | URL, init?: RequestInit) => {
+      const ruta = String(entrada)
+      if (ruta.endsWith('/capacidades')) return respuesta(capacidades)
+      if (init?.method === 'POST') { persona.apoderamientos[0].vigenteHasta = fecha; return Promise.resolve(new Response(null, { status: 204 })) }
+      return respuesta(persona)
+    })
+    vi.stubGlobal('fetch', llamadas)
+    montar('/personas/' + familiar + '?tab=condiciones')
+    const fila = (await screen.findByRole('link', { name: 'Alumno Ensayo' })).closest('tr')!
+    expect(within(fila).getAllByText('Hijo')).toHaveLength(2)
+    expect(within(fila).getAllByRole('button', { name: 'Desactivar parentesco' })).toHaveLength(1)
+    await userEvent.click(within(fila).getByRole('button', { name: 'Desactivar autorización' }))
+    const dialogo = screen.getByRole('dialog', { name: 'Desactivar autorización' })
+    await userEvent.type(within(dialogo).getByRole('textbox', { name: 'Motivo' }), 'Ensayo')
+    await userEvent.click(within(dialogo).getByRole('button', { name: 'Confirmar desactivación' }))
+    await screen.findByText('Vínculo desactivado')
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Desactivar autorización' })).toBeNull())
+    expect(screen.getByRole('button', { name: 'Desactivar parentesco' })).toBeTruthy()
+    expect(llamadas.mock.calls.filter(c => c[1]?.method === 'POST').map(c => String(c[0]))).toEqual([
+      '/api/erp/v1/personas/' + familiar + '/apoderamientos/aut-1/desactivar',
+    ])
+  })
+
+  it('mantiene los permisos de edición y no ofrece corregir dirección al acceso de solo contacto', async () => {
+    const persona = { id: '11111111-1111-1111-1111-111111111111', nombres: 'Ana', apellidos: 'Ensayo',
+      fechaNacimiento: null, sexo: null, telefono: '900000011', correo: null, direccion: 'Dirección de ensayo',
+      documentos: [], condiciones: [], parentescos: [], apoderamientos: [], referencias: {}, provisional: null }
+    vi.stubGlobal('fetch', vi.fn((entrada: RequestInfo | URL) => respuesta(String(entrada).endsWith('/capacidades') ? {
+      ...capacidades, corregirIdentidad: false, gestionarVinculos: false, gestionarCondiciones: false, eliminarRegistroIncorrecto: false,
+    } : persona)))
+    montar('/personas/' + persona.id)
+    await userEvent.click(await screen.findByRole('button', { name: 'Editar contacto' }))
+    expect(screen.queryByRole('button', { name: 'Editar identidad' })).toBeNull()
+    expect(screen.queryByRole('button', { name: /corregir o regularizar/i })).toBeNull()
+    expect(screen.getByRole('textbox', { name: 'Dirección' })).toHaveProperty('readOnly', true)
+    await userEvent.click(screen.getByRole('button', { name: 'Condiciones institucionales' }))
+    expect(screen.queryByRole('button', { name: '+ Incorporar' })).toBeNull()
+    expect(screen.queryByRole('button', { name: '+ Apoderamiento' })).toBeNull()
   })
 
   it('muestra el parentesco desde la persona consultada y evita inferir sexo por nombre', async () => {
@@ -199,8 +277,8 @@ describe('Personas ERP Web', () => {
     vi.stubGlobal('fetch', llamadas)
     montar('/personas/' + familiar + '?tab=condiciones')
     const seccion = await screen.findByRole('region', { name: 'Condiciones institucionales' })
-    expect(within(seccion).getByRole('link', { name: 'Sofía Rojas' }).closest('strong')?.textContent).toBe('Hija · Sofía Rojas')
-    expect(within(seccion).getByRole('link', { name: 'Luis Rojas' }).closest('strong')?.textContent).toBe('Hijo · Luis Rojas')
+    expect(within(within(seccion).getByRole('link', { name: 'Sofía Rojas' }).closest('tr')!).getByText('Hija')).toBeTruthy()
+    expect(within(within(seccion).getByRole('link', { name: 'Luis Rojas' }).closest('tr')!).getByText('Hijo')).toBeTruthy()
 
     cleanup()
     vi.stubGlobal('fetch', vi.fn((entrada: RequestInfo | URL) =>
@@ -212,7 +290,7 @@ describe('Personas ERP Web', () => {
       })))
     montar('/personas/' + estudiante + '?tab=condiciones')
     const seccionEstudiante = await screen.findByRole('region', { name: 'Condiciones institucionales' })
-    expect(within(seccionEstudiante).getByRole('link', { name: 'Carla Campos' }).closest('strong')?.textContent).toBe('Madre · Carla Campos')
+    expect(within(within(seccionEstudiante).getByRole('link', { name: 'Carla Campos' }).closest('tr')!).getByText('Madre')).toBeTruthy()
 
     cleanup()
     vi.stubGlobal('fetch', vi.fn((entrada: RequestInfo | URL) =>
@@ -222,7 +300,7 @@ describe('Personas ERP Web', () => {
       })))
     montar('/personas/' + familiar + '?tab=condiciones')
     const seccionSinDato = await screen.findByRole('region', { name: 'Condiciones institucionales' })
-    expect(within(seccionSinDato).getByRole('link', { name: 'Sofía Rojas' }).closest('strong')?.textContent).toBe('Hijo/a · Sofía Rojas')
+    expect(within(within(seccionSinDato).getByRole('link', { name: 'Sofía Rojas' }).closest('tr')!).getByText('Hijo/a')).toBeTruthy()
   })
 
   it('no presenta infracciones automáticas de etiquetas y atributos ARIA en el registro', async () => {
