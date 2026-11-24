@@ -1,271 +1,111 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom'
 import type { Sesion } from '../../shared/api/sesion'
 import { erp } from '../../shared/api/erp'
 import { EstadoIntegracion } from '../../shared/ui/EstadoIntegracion'
+import type { Persona, Resumen, Pagina } from '../personas/api'
+import './matriculas.css'
 
-type Persona = { id: string; nombres: string; apellidos: string; documento: string | null }
-type PaginaPersonas = { resultados: Persona[] }
 type Seccion = { id: string; anio: number; nivel: string; grado: number; nombre: string }
-type Matricula = { id: string; personaId: string | null; anio: number | null; seccionId: string | null; estado: string; borrador: Datos; creadoEn: string }
-type FilaMatricula = { id: string; estudiante: string; documento: string | null; anio: number | null; seccion: string | null; estado: string; creadoEn: string }
-type PaginaMatriculas = { resultados: FilaMatricula[]; total: number; pagina: number; tamano: number }
-type Apoderado = { personaId?: string; nombres?: string; apellidos?: string; telefono?: string; correo?: string;
-  tipoDocumento?: string; paisEmisor?: string; numeroDocumento?: string; sinParentesco?: boolean;
-  parentesco?: string; autorizador?: string; medio?: string; referencia?: string }
-type Datos = { personaId?: string; nombres?: string; apellidos?: string; fechaNacimiento?: string;
-  tipoDocumento?: string; paisEmisor?: string; numeroDocumento?: string; telefono?: string; correo?: string;
-  anio?: number; seccionId?: string; apoderado?: Apoderado }
-
-function BuscarPersona({ sesion, valor, alElegir, etiqueta }: { sesion: Sesion; valor: string; alElegir: (id: string, nombre: string) => void; etiqueta: string }) {
-  const [texto, setTexto] = useState('')
-  const [resultados, setResultados] = useState<Persona[]>([])
-  const [error, setError] = useState('')
-  useEffect(() => {
-    if (texto.trim().length < 1 || valor) { setResultados([]); return }
-    let vigente = true
-    const reloj = window.setTimeout(() => { void erp<PaginaPersonas>(`/personas?buscar=${encodeURIComponent(texto.trim())}&tamano=8`, sesion)
-      .then(r => { if (vigente) setResultados(r.resultados) }).catch(e => { if (vigente) setError(String(e)) }) }, 250)
-    return () => { vigente = false; window.clearTimeout(reloj) }
-  }, [texto, valor, sesion])
-  return <div className="per-selector"><label className="per-campo">{etiqueta}<input value={texto} onChange={e => { setTexto(e.target.value); alElegir('', '') }} placeholder="Nombre o documento" /></label>
-    {valor ? <p className="per-seleccionado">Seleccionado: {texto || valor}</p> : <>
-      {error && <p className="per-aviso" role="alert">{error}</p>}
-      {texto.length >= 1 && !resultados.length && <small>Sin coincidencias; revisa el documento o registra una persona nueva.</small>}
-      {!!resultados.length && <div className="per-opciones">{resultados.map(p => <button key={p.id} type="button" onClick={() => { setTexto(`${p.nombres} ${p.apellidos}`); alElegir(p.id, `${p.nombres} ${p.apellidos}`) }}>
-        <strong>{p.nombres} {p.apellidos}</strong><small>{p.documento ?? 'Sin documento'}</small></button>)}</div>}</>}
-  </div>
+type DatosPersona = { personaId?: string; nombres?: string; apellidos?: string; fechaNacimiento?: string; tipoDocumento?: string; paisEmisor?: string; numeroDocumento?: string; telefono?: string; correo?: string }
+type Apoderado = DatosPersona & { sinParentesco?: boolean; parentesco?: string; autorizador?: string; medio?: string; referencia?: string }
+type Datos = DatosPersona & { anio?: number; seccionId?: string; apoderado?: Apoderado }
+type Matricula = { id: string; personaId: string | null; anio: number | null; seccionId: string | null; estado: string; borrador: Datos; creadoEn: string; confirmadoEn?: string | null }
+type Fila = { id: string; estudiante: string; documento: string | null; anio: number | null; seccion: string | null; estado: string; creadoEn: string }
+type PaginaMat = { resultados: Fila[]; total: number; pagina: number; tamano: number }
+type Contexto = { personaId: string | null; estudianteValido: boolean; menor: boolean | null; expedientes: { id: string; estado: string }[]; apoderados: string[] }
+type Filtros = { anio: string; buscar: string; estado: string; nivel: string; grado: string; seccion: string; pagina: number }
+const estados = [['','Expedientes'],['VIGENTE','Vigentes'],['BORRADOR','Borradores'],['RETIRADA','Retiradas'],['FINALIZADA','Finalizadas']]
+const ANIOS_VACIOS:number[]=[]
+const inicial: Filtros = { anio: '', buscar: '', estado: '', nivel: '', grado: '', seccion: '', pagina: 0 }
+const nuevo = (): DatosPersona => ({ tipoDocumento: 'DNI', paisEmisor: 'PE' })
+const nombre = (p?: {nombres?: string|null; apellidos?: string|null} | null) => [p?.nombres,p?.apellidos].filter(Boolean).join(' ') || 'Por identificar'
+const nivelTexto = (n: string) => n === 'PRIMARIA' ? 'Primaria' : n === 'SECUNDARIA' ? 'Secundaria' : n
+const ubicacion = (s?: Seccion) => s ? `${nivelTexto(s.nivel)} · ${s.grado}.º ${s.nombre}` : 'Por definir'
+const fecha = (s?: string | null) => s ? new Date(s).toLocaleDateString('es-PE') : '—'
+const doc = (p?: Persona | null) => !p ? 'Por consultar' : p.documentos.find(d=>d.principal && !d.vigenteHasta)?.numero ?? 'Sin documento'
+const estadoTexto = (s: string) => s ? s[0]+s.slice(1).toLowerCase() : ''
+function consulta(ruta: string, valores: Record<string,string|number|undefined>) { const q=new URLSearchParams(); Object.entries(valores).forEach(([k,v])=>{if(v!==undefined && v!=='')q.set(k,String(v))}); return `${ruta}?${q}` }
+function useGet<T>(ruta: string | null, sesion: Sesion, revision=0, demora=0) {
+  const [r,setR]=useState<{clave:string; datos?:T; error?:string}>({clave:''})
+  const clave=ruta ? `${revision}:${ruta}` : ''
+  useEffect(()=>{if(!ruta)return;let vivo=true; const t=window.setTimeout(()=>{void erp<T>(ruta,sesion).then(datos=>{if(vivo)setR({clave,datos})}).catch(e=>{if(vivo)setR({clave,error:String(e)})})},demora);return()=>{vivo=false;window.clearTimeout(t)}},[ruta,sesion,clave,demora])
+  return {datos: r.clave===clave?r.datos:undefined,error:r.clave===clave?r.error:undefined,cargando:!!ruta && r.clave!==clave}
 }
-
-function Listado({ sesion }: { sesion: Sesion }) {
-  const [datos, setDatos] = useState<PaginaMatriculas | null>(null)
-  const [error, setError] = useState('')
-  const [cargando, setCargando] = useState(true)
-  const [anios, setAnios] = useState<number[]>([])
-  const [seccionesFiltro, setSeccionesFiltro] = useState<Seccion[]>([])
-  const [buscar, setBuscar] = useState('')
-  const [anioFiltro, setAnioFiltro] = useState('')
-  const [estadoFiltro, setEstadoFiltro] = useState('')
-  const [seccionFiltro, setSeccionFiltro] = useState('')
-  const [pagina, setPagina] = useState(0)
-  const [revision, setRevision] = useState(0)
-  const [anioCierre, setAnioCierre] = useState(0)
-  const [vigentes, setVigentes] = useState<number | null>(null)
-  const [cerrando, setCerrando] = useState(false)
-  const [avisoCierre, setAvisoCierre] = useState('')
-  useEffect(() => {
-    void erp<number[]>('/oferta/anios', sesion).then(setAnios).catch(e => setError(String(e)))
-  }, [sesion])
-  useEffect(() => {
-    if (!anioFiltro) { setSeccionesFiltro([]); return }
-    let vigente = true
-    void erp<Seccion[]>(`/oferta/secciones?anio=${anioFiltro}`, sesion)
-      .then(r => { if (vigente) setSeccionesFiltro(r) }).catch(e => { if (vigente) setError(String(e)) })
-    return () => { vigente = false }
-  }, [anioFiltro, sesion])
-  useEffect(() => {
-    let vigente = true
-    setCargando(true); setError('')
-    const q = new URLSearchParams({ pagina: String(pagina), tamano: '15' })
-    if (buscar.trim()) q.set('buscar', buscar.trim())
-    if (anioFiltro) q.set('anio', anioFiltro)
-    if (estadoFiltro) q.set('estado', estadoFiltro)
-    if (seccionFiltro) q.set('seccionId', seccionFiltro)
-    const reloj = window.setTimeout(() => {
-      void erp<PaginaMatriculas>(`/matriculas?${q}`, sesion)
-        .then(r => { if (vigente) setDatos(r) })
-        .catch(e => { if (vigente) setError(String(e)) })
-        .finally(() => { if (vigente) setCargando(false) })
-    }, 250)
-    return () => { vigente = false; window.clearTimeout(reloj) }
-  }, [buscar, anioFiltro, estadoFiltro, seccionFiltro, pagina, revision, sesion])
-  useEffect(() => {
-    if (!anioCierre) { setVigentes(null); return }
-    void erp<{ vigentes: number }>(`/matriculas/finalizar-anio/${anioCierre}/resumen`, sesion)
-      .then(r => setVigentes(r.vigentes)).catch(e => setError(String(e)))
-  }, [anioCierre, sesion])
-  async function finalizarAnio() {
-    if (!anioCierre || !vigentes || !window.confirm(`Finalizar ${vigentes} matrículas vigentes de ${anioCierre}? Se conservarán cursos, entregas y calificaciones. Esta operación no se puede deshacer.`)) return
-    setError(''); setAvisoCierre(''); setCerrando(true)
-    try {
-      const resultado = await erp<{ finalizadas: number }>(`/matriculas/finalizar-anio/${anioCierre}`, sesion, 'POST')
-      setAvisoCierre(`${resultado.finalizadas} matrículas finalizadas en ${anioCierre}. La sincronización con Aula puede quedar pendiente hasta su confirmación.`)
-      setVigentes(0)
-      setRevision(r => r + 1)
-    } catch (e) { setError(String(e)) } finally { setCerrando(false) }
-  }
-  return <section className="pagina"><div className="erp-pagina-titulo"><div><p className="etiqueta">GESTIÓN ESCOLAR</p><p>Borradores y matrículas anuales guardados en el ERP.</p></div>
-    <Link className="boton-principal" to="nueva">+ Nueva matrícula</Link></div>
-    <form className="per-panel per-filtros" onSubmit={e => e.preventDefault()}>
-      <label className="per-campo">Nombre o documento<input value={buscar} onChange={e => { setBuscar(e.target.value); setPagina(0) }} placeholder="Buscar estudiante" /></label>
-      <label className="per-campo">Año escolar<select value={anioFiltro} onChange={e => { setAnioFiltro(e.target.value); setSeccionFiltro(''); setPagina(0) }}>
-        <option value="">Todos</option>{anios.map(y => <option key={y} value={y}>{y}</option>)}
-      </select></label>
-      <label className="per-campo">Estado<select value={estadoFiltro} onChange={e => { setEstadoFiltro(e.target.value); setPagina(0) }}>
-        <option value="">Todos</option><option value="BORRADOR">Borrador</option><option value="VIGENTE">Vigente</option><option value="RETIRADA">Retirada</option><option value="FINALIZADA">Finalizada</option>
-      </select></label>
-      <label className="per-campo">Sección<select value={seccionFiltro} disabled={!anioFiltro} onChange={e => { setSeccionFiltro(e.target.value); setPagina(0) }}>
-        <option value="">{anioFiltro ? 'Todas' : 'Selecciona un año'}</option>
-        {seccionesFiltro.map(s => <option key={s.id} value={s.id}>{s.nivel} · {s.grado}.º · {s.nombre}</option>)}
-      </select></label>
-    </form>
-    <section className="per-panel" aria-busy={cargando}><div className="per-panel-cabecera"><h3>Expedientes</h3><span>{datos?.total ?? 0} resultados</span></div>
-      {error && <p className="per-aviso" role="alert">{error}</p>}
-      {cargando && <p role="status">Cargando matrículas…</p>}
-      {!cargando && datos?.resultados.length === 0 && <p className="per-vacio">No hay matrículas para estos filtros.</p>}
-      {!cargando && datos?.resultados.map(m => <div className="per-fila" key={m.id}><div><strong>{m.estudiante}</strong>
-        <small>{m.documento ?? 'Sin documento'} · {m.anio ?? 'Año por elegir'} · {m.seccion ?? 'Sin sección'} · {m.estado} · {new Date(m.creadoEn).toLocaleDateString('es-PE')}</small></div>
-        <Link to={m.id}>Abrir expediente →</Link></div>)}
-      {!!datos?.total && <nav className="per-paginacion" aria-label="Paginación de matrículas">
-        <button type="button" disabled={pagina === 0 || cargando} onClick={() => setPagina(p => p - 1)}>Anterior</button>
-        <span>Página {pagina + 1} de {Math.ceil(datos.total / datos.tamano)}</span>
-        <button type="button" disabled={(pagina + 1) * datos.tamano >= datos.total || cargando} onClick={() => setPagina(p => p + 1)}>Siguiente</button>
-      </nav>}
-    </section>
-    <section className="per-panel"><div className="per-panel-cabecera"><h3>Finalizar año escolar</h3></div>
-      <div className="per-panel-cuerpo"><p>Dirección o Coordinación puede cerrar expresamente las matrículas vigentes de un año escolar concluido.</p>
-        <label className="per-campo">Año escolar<select value={anioCierre || ''} onChange={e => { setAnioCierre(Number(e.target.value)); setAvisoCierre('') }}><option value="">Seleccionar año</option>
-          {anios.filter(y => y < new Date().getFullYear()).map(y => <option key={y} value={y}>{y}</option>)}</select></label>
-        {anioCierre > 0 && <p>{vigentes === null ? 'Consultando…' : `${vigentes} matrículas vigentes serán finalizadas en ${anioCierre}. Las matrículas Borrador, Retirada y Finalizada no cambiarán.`}</p>}
-        <button type="button" className="boton-principal" disabled={!vigentes || cerrando} onClick={() => void finalizarAnio()}>{cerrando ? 'Finalizando…' : 'Finalizar matrículas del año'}</button>
-        {avisoCierre && <p role="status">{avisoCierre}</p>}
-      </div>
-    </section></section>
+function Estado({valor}:{valor:string}) {return <span className={`mat-estado ${valor.toLowerCase()}`}>{estadoTexto(valor)}</span>}
+function Panel({titulo,extra,children}:{titulo:string;extra?:ReactNode;children:ReactNode}) {return <section className="mat-panel"><header><h3>{titulo}</h3>{extra}</header>{children}</section>}
+function Campo({titulo,children}:{titulo:string;children:ReactNode}) {return <label className="mat-campo">{titulo}{children}</label>}
+function Aviso({children,error=false}:{children:ReactNode;error?:boolean}) {return <p className={error?'mat-error':'mat-aviso'} role={error?'alert':'status'}>{children}</p>}
+function Dialogo({titulo,children,cerrar}:{titulo:string;children:ReactNode;cerrar:()=>void}) {const ref=useRef<HTMLDialogElement>(null);useEffect(()=>{const d=ref.current;d?.showModal();return()=>d?.close()},[]);return <dialog ref={ref} className="mat-dialogo" onCancel={e=>{e.preventDefault();cerrar()}} aria-label={titulo}><h3>{titulo}</h3>{children}</dialog>}
+function SelectorUbicacion({secciones,nivel,grado,seccion,cambiar,filtrar=false}:{secciones:Seccion[];nivel:string;grado:string;seccion:string;cambiar:(n:string,g:string,s:string)=>void;filtrar?:boolean}) {
+  const ns=[...new Set(secciones.map(s=>s.nivel))].sort(), gs=[...new Set(secciones.filter(s=>s.nivel===nivel).map(s=>s.grado))].sort((a,b)=>a-b)
+  return <><Campo titulo="Nivel"><select value={nivel} onChange={e=>cambiar(e.target.value,'','')}><option value="">{filtrar?'Todos':'Seleccionar'}</option>{ns.map(n=><option key={n} value={n}>{nivelTexto(n)}</option>)}</select></Campo><Campo titulo="Grado"><select value={grado} disabled={!nivel} onChange={e=>cambiar(nivel,e.target.value,'')}><option value="">{filtrar?'Todos':'Seleccionar'}</option>{gs.map(g=><option key={g} value={g}>{g}.º</option>)}</select></Campo><Campo titulo="Sección"><select value={seccion} disabled={!grado} onChange={e=>cambiar(nivel,grado,e.target.value)}><option value="">{filtrar?'Todas':'Seleccionar'}</option>{secciones.filter(s=>s.nivel===nivel&&String(s.grado)===grado).sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(s=><option key={s.id} value={s.id}>{s.nombre}</option>)}</select></Campo></>
 }
-
-function Expediente({ sesion, nuevo = false }: { sesion: Sesion; nuevo?: boolean }) {
-  const { id } = useParams()
-  const navegar = useNavigate()
-  const ubicacion = useLocation()
-  const [matricula, setMatricula] = useState<Matricula | null>(null)
-  const [datos, setDatos] = useState<Datos>({ paisEmisor: 'PE', tipoDocumento: 'DNI' })
-  const [modo, setModo] = useState<'nuevo' | 'existente'>('nuevo')
-  const [guardian, setGuardian] = useState<'nuevo' | 'existente'>('nuevo')
-  const [paso, setPaso] = useState<number>(() => ubicacion.state?.paso ?? 0)
-  const [anios, setAnios] = useState<number[]>([])
-  const [anio, setAnio] = useState<number>(new Date().getFullYear())
-  const [secciones, setSecciones] = useState<Seccion[]>([])
-  const [error, setError] = useState('')
-  const [aviso, setAviso] = useState('')
-  const [guardando, setGuardando] = useState(false)
-  const [cargando, setCargando] = useState(!nuevo)
-  const [confirmandoDescarte, setConfirmandoDescarte] = useState(false)
-  const [confirmacionDescarte, setConfirmacionDescarte] = useState('')
-  const recargar = useCallback(async () => { if (!id) return; const m = await erp<Matricula>(`/matriculas/${id}`, sesion); setMatricula(m); setDatos(m.borrador);
-    setModo(m.borrador.personaId ? 'existente' : 'nuevo'); setGuardian(m.borrador.apoderado?.personaId ? 'existente' : 'nuevo');
-    setAnio(m.anio ?? m.borrador.anio ?? anio) }, [id, sesion, anio])
-  useEffect(() => { if (!nuevo) void recargar().catch(e => setError(String(e))).finally(() => setCargando(false)) }, [nuevo, recargar])
-  useEffect(() => { void erp<number[]>('/oferta/anios', sesion).then(y => { setAnios(y); if (y.length && !y.includes(anio)) setAnio(y[0]) }).catch(e => setError(String(e))) }, [sesion])
-  useEffect(() => { void erp<Seccion[]>(`/oferta/secciones?anio=${anio}`, sesion).then(setSecciones).catch(e => setError(String(e))) }, [sesion, anio])
-  const actualizar = (clave: keyof Datos, valor: string) => setDatos(d => ({ ...d, [clave]: valor }))
-  const actualizarGuardian = (clave: keyof Apoderado, valor: string | boolean) => setDatos(d => ({ ...d, apoderado: { ...d.apoderado, [clave]: valor } }))
-  async function guardarBorrador() {
-    const ruta=matricula ? `/matriculas/${matricula.id}` : '/matriculas'
-    const completo = { ...datos, anio, tipoDocumento: datos.tipoDocumento ?? 'DNI', paisEmisor: datos.paisEmisor ?? 'PE',
-      apoderado: datos.apoderado && Object.values(datos.apoderado).some(Boolean)
-        ? { tipoDocumento: 'DNI', paisEmisor: 'PE', ...datos.apoderado } : undefined }
-    const m=await erp<Matricula>(ruta, sesion, matricula ? 'PUT' : 'POST', { datos: completo })
-    setMatricula(m)
-    if (!matricula) navegar(`/matriculas/${m.id}`, { replace: true, state: { paso: Math.min(paso+1,2) } })
-    return m
-  }
-  async function siguiente(e: FormEvent) {
-    e.preventDefault(); setError(''); setAviso(''); setGuardando(true)
-    try { await guardarBorrador(); setPaso(p => Math.min(p+1,2)); setAviso('Borrador guardado. Puedes volver y corregir los datos.') }
-    catch (e) { setError(String(e instanceof Error ? e.message : e)) }
-    finally { setGuardando(false) }
-  }
-  async function confirmar() {
-    if (!matricula) return
-    setError(''); setGuardando(true)
-    try { await guardarBorrador(); const m=await erp<Matricula>(`/matriculas/${matricula.id}/confirmar`,sesion,'POST');
-      setMatricula(m); setAviso('Matrícula vigente en ERP. Comprueba la confirmación de Identidad y Aula en el expediente.') }
-    catch (e) { setError(String(e instanceof Error ? e.message : e)) }
-    finally { setGuardando(false) }
-  }
-  async function cambiar(accion: 'retirar' | 'reincorporar') {
-    if (!matricula || !window.confirm(`¿Confirmar ${accion} esta matrícula?`)) return
-    setGuardando(true); setError('')
-    try { const m=await erp<Matricula>(`/matriculas/${matricula.id}/${accion}`,sesion,'POST'); setMatricula(m); setAviso('Estado institucional actualizado. Comprueba la sincronización en el expediente.') }
-    catch (e) { setError(String(e)) } finally { setGuardando(false) }
-  }
-  async function descartar() {
-    if (!matricula || matricula.estado !== 'BORRADOR' || confirmacionDescarte !== 'DESCARTAR') return
-    setGuardando(true); setError('')
-    try { await erp<void>(`/matriculas/${matricula.id}`,sesion,'DELETE'); navegar('/matriculas', { replace: true }) }
-    catch (e) { setError(String(e)) } finally { setGuardando(false) }
-  }
-  const g=datos.apoderado ?? {}
-  if (cargando) return <p role="status">Cargando borrador…</p>
-  return <section className="pagina"><Link className="per-volver" to="/matriculas">← Matrículas</Link>
-    <div className="erp-pagina-titulo"><div><p className="etiqueta">PROCESO ANUAL</p><h2>{matricula?.estado === 'VIGENTE' ? 'Matrícula vigente' : 'Nueva matrícula'}</h2>
-      <p>{matricula ? `Estado: ${matricula.estado}` : 'Completa el recorrido y confirma cuando los datos sean válidos.'}</p></div>
-      {matricula?.estado === 'BORRADOR' && <button className="per-peligro" type="button" onClick={() => setConfirmandoDescarte(true)}>Descartar borrador</button>}</div>
-    {error && <p className="per-aviso" role="alert">{error}</p>}{aviso && <p className="per-aviso exito" role="status">{aviso}</p>}
-    {confirmandoDescarte && <section className="per-panel per-confirmar-eliminacion" role="group" aria-label="Confirmar descarte del borrador">
-      <h3>Descartar este borrador</h3><p>Se retirará el borrador erróneo. Las matrículas confirmadas y los datos de Personas no cambiarán. Quedará constancia del descarte y del operador.</p>
-      <label className="per-campo">Escribe DESCARTAR para confirmar<input value={confirmacionDescarte} onChange={e => setConfirmacionDescarte(e.target.value)} /></label>
-      <div className="per-acciones"><button className="per-secundario" type="button" onClick={() => { setConfirmandoDescarte(false); setConfirmacionDescarte('') }}>Conservar borrador</button>
-        <button className="per-peligro" type="button" disabled={confirmacionDescarte !== 'DESCARTAR' || guardando} onClick={() => void descartar()}>{guardando ? 'Descartando…' : 'Descartar definitivamente'}</button></div>
-    </section>}
-    {matricula && matricula.estado !== 'BORRADOR' ? <section className="per-panel"><div className="per-panel-cabecera"><h3>Expediente</h3></div>
-      <dl className="per-datos"><dt>Alumno</dt><dd>{datos.nombres} {datos.apellidos || matricula.personaId}</dd><dt>Año</dt><dd>{matricula.anio}</dd><dt>Sección</dt><dd>{secciones.find(s=>s.id===matricula.seccionId)?.nombre ?? matricula.seccionId}</dd>
-        <dt>Integración</dt><dd><EstadoIntegracion sesion={sesion} tipo="MATRICULA" id={matricula.id} /></dd></dl>
-      {matricula.estado === 'VIGENTE' && <button className="per-secundario" disabled={guardando} onClick={() => void cambiar('retirar')}>Retirar</button>}
-      {matricula.estado === 'RETIRADA' && <button className="boton-principal" disabled={guardando} onClick={() => void cambiar('reincorporar')}>Reincorporar</button>}
-    </section> : <>
-      <nav className="erp-pasos" aria-label="Etapas de la matrícula">{['Alumno','Apoderado','Revisión'].map((n,i) => <button type="button" key={n} className={paso===i?'actual':''} disabled={i>paso} onClick={() => { if (i<paso) setPaso(i) }}>{String(i+1).padStart(2,'0')} · {n}</button>)}</nav>
-      {paso===0 && <form className="per-panel" onSubmit={e => void siguiente(e)}><div className="per-panel-cabecera"><h3>01 · Datos del alumno</h3></div>
-        <div className="erp-opciones"><button type="button" className={modo==='nuevo'?'seleccionado':''} onClick={() => { setModo('nuevo'); actualizar('personaId','') }}>Registrar nuevo</button>
-          <button type="button" className={modo==='existente'?'seleccionado':''} onClick={() => setModo('existente')}>Usar estudiante registrado</button></div>
-        {modo==='existente' ? <BuscarPersona sesion={sesion} valor={datos.personaId ?? ''} alElegir={id => actualizar('personaId',id)} etiqueta="Buscar estudiante" /> : <div className="per-formulario">
-          <label className="per-campo">Nombres<input value={datos.nombres ?? ''} onChange={e=>actualizar('nombres',e.target.value)} /></label>
-          <label className="per-campo">Apellidos<input value={datos.apellidos ?? ''} onChange={e=>actualizar('apellidos',e.target.value)} /></label>
-          <label className="per-campo">Nacimiento<input type="date" value={datos.fechaNacimiento ?? ''} onChange={e=>actualizar('fechaNacimiento',e.target.value)} /></label>
-          <label className="per-campo">Documento<select value={datos.tipoDocumento ?? 'DNI'} onChange={e=>actualizar('tipoDocumento',e.target.value)}><option>DNI</option><option>CE</option><option>PASAPORTE</option></select></label>
-          <label className="per-campo">País emisor<input maxLength={2} value={datos.paisEmisor ?? 'PE'} onChange={e=>actualizar('paisEmisor',e.target.value.toUpperCase())} /></label>
-          <label className="per-campo">Número<input value={datos.numeroDocumento ?? ''} onChange={e=>actualizar('numeroDocumento',e.target.value)} /></label>
-          <label className="per-campo">Teléfono (opcional)<input value={datos.telefono ?? ''} onChange={e=>actualizar('telefono',e.target.value)} /></label>
-          <label className="per-campo">Correo (opcional)<input type="email" value={datos.correo ?? ''} onChange={e=>actualizar('correo',e.target.value)} /></label>
-        </div>}
-        <div className="per-formulario erp-espacio"><label className="per-campo">Año escolar<select value={anio} onChange={e=>{setAnio(Number(e.target.value)); setDatos(d=>({...d,anio:Number(e.target.value),seccionId:''}))}}>{anios.map(y=><option key={y}>{y}</option>)}</select></label>
-          <label className="per-campo">Sección<select value={datos.seccionId ?? ''} onChange={e=>actualizar('seccionId',e.target.value)}><option value="">Seleccionar</option>
-            {secciones.map(s=><option key={s.id} value={s.id}>{s.nivel} · {s.grado}.º · {s.nombre}</option>)}</select></label></div>
-        {!anios.length && <p className="per-aviso">Primero crea un año y una sección en Oferta académica.</p>}
-        <div className="per-acciones"><small>Al continuar se guarda un borrador; aún no se crea una cuenta de Aula.</small><button className="boton-principal" disabled={guardando}>Siguiente: apoderado →</button></div>
-      </form>}
-      {paso===1 && <form className="per-panel" onSubmit={e => void siguiente(e)}><div className="per-panel-cabecera"><h3>02 · Apoderado</h3></div>
-        <p className="per-texto">Si el alumno es menor, se verificará un apoderado autorizado vigente al confirmar. Para un mayor, este paso es opcional. Los vínculos existentes se reutilizan.</p>
-        <div className="erp-opciones"><button type="button" className={guardian==='nuevo'?'seleccionado':''} onClick={()=>{setGuardian('nuevo');actualizarGuardian('personaId','')}}>Nuevo apoderado</button><button type="button" className={guardian==='existente'?'seleccionado':''} onClick={()=>{setGuardian('existente');setDatos(d=>({...d,apoderado:{personaId:''}}))}}>Apoderado registrado</button></div>
-        {guardian==='existente' ? <BuscarPersona sesion={sesion} valor={g.personaId ?? ''} alElegir={id=>actualizarGuardian('personaId',id)} etiqueta="Buscar apoderado" /> : <div className="per-formulario">
-          <label className="per-campo">Nombres<input value={g.nombres ?? ''} onChange={e=>actualizarGuardian('nombres',e.target.value)} /></label>
-          <label className="per-campo">Apellidos<input value={g.apellidos ?? ''} onChange={e=>actualizarGuardian('apellidos',e.target.value)} /></label>
-          <label className="per-campo">Teléfono<input value={g.telefono ?? ''} onChange={e=>actualizarGuardian('telefono',e.target.value)} /></label>
-          <label className="per-campo">Correo (opcional)<input type="email" value={g.correo ?? ''} onChange={e=>actualizarGuardian('correo',e.target.value)} /></label>
-          <label className="per-campo">Documento<select value={g.tipoDocumento ?? 'DNI'} onChange={e=>actualizarGuardian('tipoDocumento',e.target.value)}><option>DNI</option><option>CE</option><option>PASAPORTE</option></select></label>
-          <label className="per-campo">País emisor<input maxLength={2} value={g.paisEmisor ?? 'PE'} onChange={e=>actualizarGuardian('paisEmisor',e.target.value.toUpperCase())} /></label>
-          <label className="per-campo">Número<input value={g.numeroDocumento ?? ''} onChange={e=>actualizarGuardian('numeroDocumento',e.target.value)} /></label>
-        </div>}
-        <label className="per-check erp-espacio"><input type="checkbox" checked={g.sinParentesco ?? false} onChange={e=>actualizarGuardian('sinParentesco',e.target.checked)} /> Sin parentesco familiar; autorización institucional comprobada</label>
-        {g.sinParentesco ? <div className="per-formulario"><label className="per-campo">Quién autorizó<input value={g.autorizador ?? ''} onChange={e=>actualizarGuardian('autorizador',e.target.value)} /></label>
-          <label className="per-campo">Medio de comprobación<input value={g.medio ?? ''} onChange={e=>actualizarGuardian('medio',e.target.value)} placeholder="Presencial o teléfono" /></label>
-          <label className="per-campo">Referencia del sustento<input value={g.referencia ?? ''} onChange={e=>actualizarGuardian('referencia',e.target.value)} /></label></div>
-          : <label className="per-campo erp-espacio">Parentesco<input value={g.parentesco ?? ''} onChange={e=>actualizarGuardian('parentesco',e.target.value)} placeholder="Madre, padre, familiar…" /></label>}
-        <div className="per-acciones"><button type="button" className="per-secundario" onClick={()=>setPaso(0)}>← Anterior</button><button className="boton-principal" disabled={guardando}>Siguiente: revisión →</button></div>
-      </form>}
-      {paso===2 && <section className="per-panel"><div className="per-panel-cabecera"><h3>03 · Revisión</h3></div>
-        <dl className="per-datos"><dt>Estudiante</dt><dd>{datos.personaId || `${datos.nombres ?? 'Sin nombre'} ${datos.apellidos ?? ''}`}</dd>
-          <dt>Documento</dt><dd>{datos.personaId ? 'Persona registrada' : `${datos.tipoDocumento ?? '—'} · ${datos.numeroDocumento ?? '—'}`}</dd>
-          <dt>Oferta</dt><dd>{anio} · {secciones.find(s=>s.id===datos.seccionId)?.nombre ?? 'Sin sección'}</dd>
-          <dt>Apoderado</dt><dd>{g.personaId || `${g.nombres ?? ''} ${g.apellidos ?? ''}` || 'No indicado / vínculo existente'}</dd></dl>
-        <p className="per-texto">Confirmar crea la Persona definitiva si es nueva, valida la matrícula anual y registra solicitudes pendientes para Identidad y Aula. No declara acceso externo completado.</p>
-        <div className="per-acciones"><button className="per-secundario" type="button" onClick={()=>setPaso(1)}>← Anterior</button><button className="per-secundario" type="button" disabled={guardando} onClick={()=>void guardarBorrador().then(()=>setAviso('Borrador guardado.'))}>Guardar borrador</button>
-          <button className="boton-principal" type="button" disabled={guardando || !matricula} onClick={()=>void confirmar()}>Confirmar matrícula</button></div>
-      </section>}
-    </>}
+function Listado({sesion,f,setF,anios,ultimo,marcar}:{sesion:Sesion;f:Filtros;setF:(f:Filtros)=>void;anios:number[];ultimo:string;marcar:(id:string)=>void}) {
+  const [rev,setRev]=useState(0),[cierre,setCierre]=useState(false),[anioCierre,setAnioCierre]=useState(''),[ocupado,setOcupado]=useState(false),[error,setError]=useState(''),[aviso,setAviso]=useState('')
+  const lista=useGet<PaginaMat>(consulta('/matriculas',{pagina:f.pagina,tamano:15,anio:f.anio,estado:f.estado,buscar:f.buscar.trim(),nivel:f.nivel,grado:f.grado,seccionId:f.seccion}),sesion,rev,250)
+  const resumen=useGet<Record<string,number>>(consulta('/matriculas/resumen',{anio:f.anio}),sesion,rev)
+  const secciones=useGet<Seccion[]>(f.anio?`/oferta/secciones?anio=${f.anio}`:null,sesion)
+  const alcance=useGet<{vigentes:number}>(cierre&&anioCierre?`/matriculas/finalizar-anio/${anioCierre}/resumen`:null,sesion,rev)
+  const cambiar=(p:Partial<Filtros>)=>setF({...f,...p,pagina:0})
+  const fila=useRef<HTMLTableRowElement>(null)
+  useEffect(()=>{if(!lista.datos||!ultimo)return;fila.current?.scrollIntoView?.({block:'nearest'});const t=window.setTimeout(()=>marcar(''),2350);return()=>window.clearTimeout(t)},[lista.datos,ultimo,marcar])
+  useEffect(()=>{if(lista.datos && f.pagina>0 && !lista.datos.resultados.length)setF({...f,pagina:Math.max(0,Math.ceil(lista.datos.total/15)-1)})},[lista.datos,f,setF])
+  async function finalizar(){setOcupado(true);setError('');try{const r=await erp<{finalizadas:number}>(`/matriculas/finalizar-anio/${anioCierre}`,sesion,'POST');setAviso(`${r.finalizadas} matrículas finalizadas en ${anioCierre}. Consulta la sincronización en cada expediente.`);setCierre(false);setRev(x=>x+1)}catch(e){setError(String(e))}finally{setOcupado(false)}}
+  return <section className="pagina mat-bbs"><div className="mat-intro"><div><p className="etiqueta">GESTIÓN ESCOLAR</p><h2>Registro de matrículas</h2><p>Consulta expedientes, continúa borradores y registra nuevas matrículas.</p></div><div className="mat-acciones"><details className="mat-menu"><summary>Más acciones ▾</summary><button type="button" onClick={()=>{setError('');setAnioCierre('');setCierre(true)}}>Finalizar matrículas de un año</button></details><Link className="mat-primary" to="nueva" state={{anio:f.anio}}>+ Nueva matrícula</Link></div></div>
+  {aviso&&<Aviso>{aviso}</Aviso>}<div className="mat-anual"><Campo titulo="Año escolar de trabajo"><select value={f.anio} onChange={e=>cambiar({anio:e.target.value,nivel:'',grado:'',seccion:''})}><option value="">Todos los años</option>{anios.map(a=><option key={a}>{a}</option>)}</select></Campo><div className="mat-metricas">{estados.map(([k,t])=><button key={k} className={f.estado===k?'activo':''} aria-pressed={f.estado===k} onClick={()=>cambiar({estado:k})}><strong>{resumen.datos?(k?resumen.datos[k]??0:estados.slice(1).reduce((n,[s])=>n+(resumen.datos?.[s]??0),0)):'—'}</strong><span>{t}</span></button>)}</div></div>
+  {resumen.error&&<Aviso error>{resumen.error}</Aviso>}<Panel titulo="Expedientes" extra={<small>{lista.datos?`${lista.datos.total} resultados`:'Consultando…'}</small>}><div className="mat-filtros"><Campo titulo="Nombre o documento"><input value={f.buscar} maxLength={120} onChange={e=>cambiar({buscar:e.target.value})} placeholder="Buscar estudiante"/></Campo><SelectorUbicacion filtrar secciones={secciones.datos??[]} nivel={f.nivel} grado={f.grado} seccion={f.seccion} cambiar={(nivel,grado,seccion)=>cambiar({nivel,grado,seccion})}/><button className="mat-link" onClick={()=>cambiar({buscar:'',estado:'',nivel:'',grado:'',seccion:''})}>Limpiar filtros</button></div>{secciones.error&&<Aviso error>{secciones.error}</Aviso>}{lista.error&&<Aviso error>{lista.error} <button onClick={()=>setRev(x=>x+1)}>Reintentar</button></Aviso>}
+  {lista.cargando?<p className="mat-vacio" role="status">Cargando matrículas…</p>:lista.datos?.resultados.length?<div className="mat-scroll"><table><thead><tr>{['Estudiante','Documento','Año','Nivel · Grado / sección','Estado','Registro'].map(t=><th key={t}>{t}</th>)}</tr></thead><tbody>{lista.datos.resultados.map(m=><tr key={m.id} ref={ultimo===m.id?fila:undefined} className={ultimo===m.id?'mat-visitada':''}><td><Link to={m.id} onClick={e=>{if(!e.ctrlKey&&!e.metaKey&&!e.shiftKey&&!e.altKey)marcar(m.id)}}>{m.estudiante}</Link></td><td>{m.documento??'—'}</td><td>{m.anio??'—'}</td><td>{m.seccion?.replace('PRIMARIA','Primaria').replace('SECUNDARIA','Secundaria')??'Por definir'}</td><td><Estado valor={m.estado}/></td><td>{fecha(m.creadoEn)}</td></tr>)}</tbody></table></div>:!lista.error&&<p className="mat-vacio">No hay matrículas para estos filtros.</p>}
+  {lista.datos&&<footer className="mat-paginacion"><small>{lista.datos.total?`Mostrando ${f.pagina*15+1}–${Math.min((f.pagina+1)*15,lista.datos.total)} de ${lista.datos.total}`:'0 resultados'}</small><div className="mat-acciones"><button disabled={!f.pagina} onClick={()=>setF({...f,pagina:f.pagina-1})}>Anterior</button><small>Página {f.pagina+1} de {Math.max(1,Math.ceil(lista.datos.total/15))}</small><button disabled={(f.pagina+1)*15>=lista.datos.total} onClick={()=>setF({...f,pagina:f.pagina+1})}>Siguiente</button></div></footer>}</Panel>
+  {cierre&&<Dialogo titulo="Finalizar matrículas de un año" cerrar={()=>{if(!ocupado)setCierre(false)}}><p>Solo las matrículas vigentes de un año concluido pasarán a Finalizada. Se conserva el historial; los demás estados no cambian.</p><Campo titulo="Año escolar"><select disabled={ocupado} value={anioCierre} onChange={e=>setAnioCierre(e.target.value)}><option value="">Seleccionar</option>{anios.filter(a=>a<new Date().getFullYear()).map(a=><option key={a}>{a}</option>)}</select></Campo>{alcance.datos&&<Aviso>{alcance.datos.vigentes} matrículas vigentes serán finalizadas. Esta operación no se puede deshacer.</Aviso>}{alcance.error&&<Aviso error>{alcance.error}</Aviso>}{error&&<Aviso error>{error}</Aviso>}<p className="mat-muted">La consulta de pendientes de asistencia y justificaciones aún no está disponible.</p><div className="mat-acciones"><button disabled={ocupado} onClick={()=>setCierre(false)}>Cancelar</button><button className="mat-danger" disabled={ocupado||!alcance.datos?.vigentes} onClick={()=>void finalizar()}>Finalizar matrículas</button></div></Dialogo>}
   </section>
 }
-
-export function MatriculasModulo({ sesion }: { sesion: Sesion }) {
-  return <Routes><Route index element={<Listado sesion={sesion} />} /><Route path="nueva" element={<Expediente sesion={sesion} nuevo />} /><Route path=":id" element={<Expediente sesion={sesion} />} /></Routes>
+function Buscar({sesion,tipo,excluir,elegir}:{sesion:Sesion;tipo:string;excluir?:string;elegir:(id:string)=>void}) {const [q,setQ]=useState('');const r=useGet<Pagina>(q.trim()?consulta('/personas',{buscar:q.trim(),tamano:8,...(tipo==='estudiante'?{condicion:'ESTUDIANTE',vigente:'true'}:{})}):null,sesion,0,250);return <div className="mat-buscar"><Campo titulo={`Buscar ${tipo}`}><input value={q} maxLength={120} onChange={e=>setQ(e.target.value)} placeholder="Nombre o documento"/></Campo>{r.cargando&&<p>Buscando…</p>}{r.error&&<Aviso error>{r.error}</Aviso>}{r.datos&&(!r.datos.resultados.filter(p=>p.id!==excluir).length?<p>Sin coincidencias. Comprueba los datos antes de registrar.</p>:<div className="mat-coincidencias">{r.datos.resultados.filter(p=>p.id!==excluir).map((p:Resumen)=><button key={p.id} onClick={()=>elegir(p.id)}><strong>{nombre(p)}</strong><small>{p.documento??'Sin documento'}</small></button>)}</div>)}</div>}
+function FormPersona({valor,cambiar,alumno}:{valor:DatosPersona;cambiar:(p:DatosPersona)=>void;alumno:boolean}) {const campo=(k:keyof DatosPersona,t:string,tipo='text')=><Campo titulo={t}><input type={tipo} value={valor[k]??''} onChange={e=>cambiar({...valor,[k]:k==='paisEmisor'?e.target.value.toUpperCase():e.target.value})} maxLength={k==='paisEmisor'?2:undefined}/></Campo>;return <><h4>Identificación</h4><div className="mat-grid tres"><Campo titulo="Tipo de documento"><select value={valor.tipoDocumento??'DNI'} onChange={e=>cambiar({...valor,tipoDocumento:e.target.value})}><option>DNI</option><option>CE</option><option>PASAPORTE</option></select></Campo>{campo('paisEmisor','País emisor')}{campo('numeroDocumento','Número de documento')}</div><h4>Datos personales</h4><div className="mat-grid tres">{campo('nombres','Nombres')}{campo('apellidos','Apellidos')}{alumno&&campo('fechaNacimiento','Nacimiento','date')}{campo('telefono',alumno?'Teléfono (opcional)':'Teléfono','tel')}{campo('correo','Correo (opcional)','email')}</div></>}
+function FichaPersona({p,quitar}:{p:Persona;quitar?:()=>void}) {return <div className="mat-seleccion"><div><strong>{nombre(p)}</strong><small>{doc(p)}{p.telefono?` · ${p.telefono}`:''}</small></div>{quitar&&<button className="mat-link" onClick={quitar}>Cambiar</button>}</div>}
+function DatosFicha({campos}:{campos:[string,ReactNode][]}) {return <dl className="mat-datos">{campos.map(([k,v])=><div key={k}><dt>{k}</dt><dd>{v||'—'}</dd></div>)}</dl>}
+function validarPersona(p:DatosPersona,alumno:boolean) {if(!p.nombres?.trim()||!p.apellidos?.trim()||!p.numeroDocumento?.trim()||p.paisEmisor?.length!==2)return 'Completa la identificación y los nombres.';if(p.tipoDocumento==='DNI'&&(p.paisEmisor!=='PE'||!/^\d{8}$/.test(p.numeroDocumento.trim())))return 'El DNI peruano debe tener ocho dígitos.';if(alumno&&(!p.fechaNacimiento||p.fechaNacimiento>new Date().toLocaleDateString('sv-SE')))return 'Indica una fecha real de nacimiento.';if(!alumno&&!p.telefono?.trim())return 'Falta el teléfono del apoderado.';if(p.correo&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.correo))return 'Revisa el correo electrónico.';return ''}
+function rutaContexto(d:DatosPersona,anio:number,soloPersona=false) {if(d.personaId)return consulta('/matriculas/contexto',{personaId:d.personaId,anio:soloPersona?undefined:anio,tipo:d.tipoDocumento,pais:d.paisEmisor,numero:d.numeroDocumento});if(d.numeroDocumento?.trim()&&d.paisEmisor?.length===2&&d.tipoDocumento&&(d.tipoDocumento!=='DNI'||d.paisEmisor==='PE'&&/^\d{8}$/.test(d.numeroDocumento.trim())))return consulta('/matriculas/contexto',{tipo:d.tipoDocumento,pais:d.paisEmisor,numero:d.numeroDocumento.trim(),anio:soloPersona?undefined:anio});return null}
+function Expediente({sesion,anios,anioTrabajo,marcar,trabajo}:{sesion:Sesion;anios:number[];anioTrabajo:string;marcar:(id:string)=>void;trabajo:(anio:string)=>void}) {
+  const {id}=useParams(),nav=useNavigate(),loc=useLocation();const [m,setM]=useState<Matricula|null>(null),[d,setD]=useState<Datos>({...nuevo(),anio:Number(loc.state?.anio||anioTrabajo)||undefined}),[paso,setPaso]=useState(0),[modo,setModo]=useState<'buscar'|'nuevo'|'existente'>('buscar'),[gm,setGm]=useState<'buscar'|'nuevo'|'existente'>('buscar'),[nivel,setNivel]=useState(''),[grado,setGrado]=useState(''),[busy,setBusy]=useState(false),[err,setErr]=useState(''),[aviso,setAviso]=useState(''),[accion,setAccion]=useState(''),[texto,setTexto]=useState(''),[rev,setRev]=useState(0),[listo,setListo]=useState(!id),[sucio,setSucio]=useState(false)
+  const lock=useRef(false)
+  const anio=(m?.anio??d.anio??Number(anioTrabajo))||0
+  const secciones=useGet<Seccion[]>(anio?`/oferta/secciones?anio=${anio}`:null,sesion)
+  const s=secciones.datos?.find(x=>x.id===(m?.seccionId??d.seccionId));const pid=m?.personaId??d.personaId
+  const p=useGet<Persona>(pid?`/personas/${pid}`:null,sesion,rev),g=d.apoderado??{}
+  const tieneGuardian=!!(g.personaId||g.nombres?.trim()||g.apellidos?.trim()||g.numeroDocumento?.trim()||g.telefono?.trim()||g.correo?.trim()||g.parentesco?.trim()||g.sinParentesco||g.autorizador?.trim()||g.medio?.trim()||g.referencia?.trim())
+  const gp=useGet<Persona>(g.personaId?`/personas/${g.personaId}`:null,sesion,rev)
+  const principal=p.datos?.documentos?.find(x=>x.principal&&!x.vigenteHasta)
+  const ctx=useGet<Contexto>(listo&&anio&&(!pid||p.datos)?rutaContexto(pid?{personaId:pid,tipoDocumento:principal?.tipo,paisEmisor:principal?.pais,numeroDocumento:principal?.numero}:d,anio):null,sesion,rev,250)
+  const gc=useGet<Contexto>(gm==='nuevo'?rutaContexto(g,anio,true):null,sesion,rev,250)
+  const dup=ctx.datos?.expedientes.filter(x=>x.id!==(m?.id??id))??[]
+  const vinculados=ctx.datos?.apoderados??[];const reutiliza=!!g.personaId&&vinculados.includes(g.personaId)
+  const menor=pid?ctx.datos?.menor:d.fechaNacimiento?(()=>{const hoy=new Date();const n=new Date(d.fechaNacimiento+'T00:00:00');n.setFullYear(n.getFullYear()+18);return n>hoy})():null
+  const confirmado=!!m&&m.estado!=='BORRADOR'
+  useEffect(()=>{if(!id)return;let vivo=true;void erp<Matricula>(`/matriculas/${id}`,sesion).then(x=>{if(!vivo)return;setM(x);setD({...nuevo(),...x.borrador,apoderado:x.borrador.apoderado?{...nuevo(),...x.borrador.apoderado}:undefined});setModo(x.personaId||x.borrador.personaId?'existente':x.borrador.nombres||x.borrador.numeroDocumento?'nuevo':'buscar');setGm(x.borrador.apoderado?.personaId?'existente':x.borrador.apoderado&&Object.keys(x.borrador.apoderado).length?'nuevo':'buscar');setPaso(Math.max(0,Math.min(2,Number(loc.state?.paso)||0)));setListo(true)}).catch(e=>{if(vivo)setErr(String(e))});return()=>{vivo=false}},[id,sesion])
+  useEffect(()=>{if(s){setNivel(s.nivel);setGrado(String(s.grado))}},[s?.id])
+  useEffect(()=>{if(!id&&!d.anio&&anios.length)setD(x=>({...x,anio:Number(anioTrabajo)||Math.max(...anios)}))},[anios,id,d.anio,anioTrabajo])
+  function actualizar(x:Datos){setD(x);setSucio(true);setErr('')}
+  function apoderado(x:Apoderado|undefined){actualizar({...d,apoderado:x})}
+  function estudiante(id?:string){actualizar({...nuevo(),personaId:id,anio:d.anio,seccionId:d.seccionId});setModo(id?'existente':'nuevo');setGm('buscar')}
+  function guardian(id?:string){apoderado(id?{personaId:id}:nuevo());setGm(id?'existente':'nuevo')}
+  const se=()=>{if(!pid&&modo==='nuevo'){const e=validarPersona(d,true);if(e)return e}if(!anio||!s)return 'Selecciona un año y una sección de la oferta.';if(ctx.cargando||ctx.error||!ctx.datos)return 'Espera la comprobación de identidad y expediente o revisa el error.';if(dup.length)return 'Ya existe un expediente de este estudiante y año.';if(pid)return p.datos&&ctx.datos.estudianteValido?'':'La persona requiere condición Estudiante e identificación vigente y fecha de nacimiento.';if(modo!=='nuevo')return 'Busca o registra al estudiante.';if(ctx.datos.personaId)return 'El documento ya existe. Selecciona la persona registrada.';return validarPersona(d,true)}
+  const ge=()=>{if(!tieneGuardian)return menor===false||vinculados.length?'':'El menor requiere un apoderado autorizado vigente con teléfono.';if(reutiliza)return '';if(g.personaId){if(g.personaId===pid)return 'El estudiante no puede ser su propio apoderado.';if(!gp.datos?.telefono?.trim())return 'El apoderado requiere teléfono registrado en Personas.'}else{const e=validarPersona(g,false);if(e)return e;if(gc.cargando||gc.error||!gc.datos)return 'Espera la verificación del documento del apoderado.';if(gc.datos.personaId)return 'El documento del apoderado ya existe. Reutiliza su ficha.';if(g.numeroDocumento===d.numeroDocumento&&g.tipoDocumento===d.tipoDocumento&&g.paisEmisor===d.paisEmisor)return 'El estudiante no puede ser su propio apoderado.'}return g.sinParentesco?(!g.autorizador?.trim()||!g.medio?.trim()||!g.referencia?.trim()?'Completa el sustento de autorización.':''):!g.parentesco?.trim()?'Indica el parentesco.':''}
+  async function operar(fn:()=>Promise<void>){if(lock.current)return;lock.current=true;setBusy(true);setErr('');try{await fn()}catch(e){setErr(String(e))}finally{lock.current=false;setBusy(false)}}
+  async function guardar(){const datos={...d,anio:anio||undefined,apoderado:reutiliza?{personaId:g.personaId}:tieneGuardian?{tipoDocumento:'DNI',paisEmisor:'PE',...g}:undefined};const x=await erp<Matricula>(m?`/matriculas/${m.id}`:'/matriculas',sesion,m?'PUT':'POST',{datos});setM(x);setSucio(false);return x}
+  function siguiente(salida=false){const error=salida?(!pid&&!d.nombres?.trim()&&!d.numeroDocumento?.trim()?'Identifica al estudiante antes de guardar.':dup.length?'Abre el expediente existente.':ctx.cargando||ctx.error||pid&&(!ctx.datos||!p.datos)?'Espera la comprobación del expediente o revisa el error.':ctx.datos?.personaId&&!pid?'Usa la ficha existente antes de guardar.':''):paso===0?se():'';if(error){setErr(error);return}void operar(async()=>{const x=await guardar();if(!id&&anio)trabajo(String(anio));if(salida){marcar(x.id);nav('/matriculas',{replace:true});return}const sig=Math.min(2,paso+1);if(!id)nav(`/matriculas/${x.id}`,{replace:true,state:{paso:sig}});else setPaso(sig);setAviso('Borrador guardado.');setRev(v=>v+1)})}
+  async function ejecutar(){if(accion==='salir'){nav('/matriculas');return}if(accion==='confirmar'){const e=se()||ge();if(e){setErr(e);setAccion('');return}await operar(async()=>{const x=await guardar();const r=await erp<Matricula>(`/matriculas/${x.id}/confirmar`,sesion,'POST');setM(r);setD(r.borrador);setAviso('Matrícula vigente en ERP. Consulta el estado de Identidad y Aula.');setAccion('');setRev(v=>v+1)});return}if(!m)return;await operar(async()=>{if(accion==='descartar'){await erp<void>(`/matriculas/${m.id}`,sesion,'DELETE');marcar('');nav('/matriculas',{replace:true});return}const r=await erp<Matricula>(`/matriculas/${m.id}/${accion}`,sesion,'POST');setM(r);setAviso('Estado institucional actualizado.');setAccion('');setRev(v=>v+1)})}
+  const volver=()=>{if(sucio&&!confirmado)setAccion('salir');else nav('/matriculas')}
+  const estudianteNombre=pid?(p.datos?nombre(p.datos):'Consultando estudiante…'):nombre(d)
+  const apoderadoNombre=g.personaId?(gp.datos?nombre(gp.datos):'Consultando apoderado…'):g.nombres?nombre(g):vinculados.length?'Vínculo vigente registrado':'Por definir'
+  if(!listo)return <section className="mat-bbs"><Link to="/matriculas">← Matrículas</Link>{err?<Aviso error>{err}</Aviso>:<p role="status">Cargando expediente…</p>}</section>
+  return <section className="pagina mat-bbs"><button className="mat-link mat-volver" disabled={busy} onClick={volver}>← Matrículas</button><div className="mat-intro"><div><p className="etiqueta">{confirmado?'EXPEDIENTE DE MATRÍCULA':'PROCESO ANUAL'}{anio?` · ${anio}`:''}</p><h2>{confirmado?estudianteNombre:m?'Continuar matrícula':'Nueva matrícula'}</h2><p>{confirmado?`${pid?doc(p.datos):d.numeroDocumento??'—'} · ${ubicacion(s)}`:'Identifica al estudiante y confirma su ubicación académica.'}</p></div><div className="mat-acciones">{m&&<Estado valor={m.estado}/>} {confirmado&&<Link className="mat-primary" to="/matriculas/nueva" state={{anio}}>+ Nueva matrícula</Link>}{m&&m.estado!=='FINALIZADA'&&<details className="mat-menu"><summary>Más acciones ▾</summary>{m.estado==='BORRADOR'?<button onClick={()=>{setTexto('');setAccion('descartar')}}>Descartar borrador</button>:<button onClick={()=>setAccion(m.estado==='VIGENTE'?'retirar':'reincorporar')}>{m.estado==='VIGENTE'?'Retirar matrícula':'Reincorporar matrícula'}</button>}</details>}</div></div>
+  {aviso&&<Aviso>{aviso}</Aviso>}{err&&<Aviso error>{err}</Aviso>}{p.error&&<Aviso error>{p.error} <button onClick={()=>setRev(x=>x+1)}>Reintentar</button></Aviso>}{gp.error&&<Aviso error>{gp.error} <button onClick={()=>setRev(x=>x+1)}>Reintentar</button></Aviso>}{ctx.error&&<Aviso error>{ctx.error} <button onClick={()=>setRev(x=>x+1)}>Reintentar</button></Aviso>}{secciones.error&&<Aviso error>{secciones.error}</Aviso>}
+  {confirmado&&m?<div className="mat-layout"><div className="mat-stack"><Panel titulo="Información académica"><div className="mat-block"><DatosFicha campos={ [['Estudiante',estudianteNombre],['Año escolar',anio],['Nivel',s?nivelTexto(s.nivel):'Por consultar'],['Grado / sección',s?`${s.grado}.º ${s.nombre}`:'Por consultar'],['Registro',fecha(m.creadoEn)],['Confirmación',fecha(m.confirmadoEn)]]}/>{pid&&<Link className="mat-link" to={`/personas/${pid}`}>Consultar ficha de Personas</Link>}</div></Panel><Panel titulo="Apoderamiento vigente"><div className="mat-block">{ctx.cargando?'Consultando vínculos…':ctx.error?'No se pudo consultar el apoderamiento.':vinculados.length?vinculados.map(a=><div className="mat-seleccion" key={a}><Link to={`/personas/${a}`}>{p.datos?.referencias?.[a]?nombre(p.datos!.referencias[a]):'Consultar apoderado'}</Link><small>Vínculo autorizado vigente</small></div>):'No se encontró un apoderado vigente con teléfono.'}{menor&&ctx.datos&&!vinculados.length&&<Aviso>Regularización pendiente. No modifica la matrícula ni el acceso académico.</Aviso>}</div></Panel></div><Panel titulo="Integración institucional"><div className="mat-block"><EstadoIntegracion sesion={sesion} tipo="MATRICULA" id={m.id}/><p className="mat-muted">El estado de matrícula en ERP es independiente de la confirmación externa.</p></div></Panel></div>:<><nav className="mat-pasos" aria-label="Etapas de la matrícula">{['Estudiante','Apoderado','Revisión'].map((t,i)=><button disabled={busy||i>paso} className={paso===i?'activo':''} key={t} onClick={()=>setPaso(i)}><b>{i+1}</b>{t}</button>)}</nav><div className="mat-layout"><fieldset className="mat-fieldset" disabled={busy}><Panel titulo={['01 · Datos del estudiante','02 · Apoderado','03 · Revisión'][paso]}>
+  {paso===0?<><div className="mat-block">{modo==='buscar'?<><Buscar sesion={sesion} tipo="estudiante" elegir={estudiante}/><button className="mat-link" onClick={()=>estudiante()}>+ Registrar estudiante nuevo</button></>:modo==='existente'?p.datos?<FichaPersona p={p.datos} quitar={()=>{estudiante();setModo('buscar')}}/>:<p>Consultando ficha…</p>:<><button className="mat-link" onClick={()=>{estudiante();setModo('buscar')}}>← Buscar estudiante registrado</button><FormPersona alumno valor={d} cambiar={x=>actualizar({...d,...x})}/></>}{ctx.datos?.personaId&&!pid&&<Aviso>Documento registrado. <button className="mat-link" onClick={()=>estudiante(ctx.datos!.personaId!)}>Usar ficha existente</button></Aviso>}{dup.map(x=><Aviso key={x.id} error>Ya existe un expediente {estadoTexto(x.estado)} en {anio}. <Link to={`/matriculas/${x.id}`} onClick={()=>marcar(x.id)}>Abrir expediente existente</Link></Aviso>)}</div><div className="mat-block"><h4>Ubicación académica</h4><div className="mat-grid cuatro"><Campo titulo="Año escolar"><select value={anio||''} onChange={e=>{setNivel('');setGrado('');actualizar({...d,anio:Number(e.target.value),seccionId:''})}}><option value="">Seleccionar</option>{anios.map(a=><option key={a}>{a}</option>)}</select></Campo><SelectorUbicacion secciones={secciones.datos??[]} nivel={nivel} grado={grado} seccion={d.seccionId??''} cambiar={(n,g,s)=>{setNivel(n);setGrado(g);actualizar({...d,seccionId:s})}}/></div>{secciones.datos?.length===0&&<Aviso>No hay secciones para este año. Configúralas en Oferta académica.</Aviso>}</div></>:paso===1?<div className="mat-block">{menor===false&&<Aviso>Estudiante mayor de edad. El apoderado es opcional.</Aviso>}{vinculados.length>0&&<><h4>Apoderados autorizados vigentes</h4>{vinculados.map(a=><button className="mat-vinculo" key={a} onClick={()=>guardian(a)}>{p.datos?.referencias?.[a]?nombre(p.datos!.referencias[a]):'Apoderado vigente'} · {g.personaId===a?'Seleccionado':'Reutilizar'}</button>)}</>}{gm==='buscar'?<><Buscar sesion={sesion} tipo="apoderado" excluir={pid??undefined} elegir={guardian}/><button className="mat-link" onClick={()=>guardian()}>+ Registrar apoderado nuevo</button></>:gm==='existente'?gp.datos?<FichaPersona p={gp.datos} quitar={()=>{apoderado(undefined);setGm('buscar')}}/>:<p>Consultando ficha…</p>:<><button className="mat-link" onClick={()=>{apoderado(undefined);setGm('buscar')}}>← Buscar apoderado registrado</button><FormPersona alumno={false} valor={g} cambiar={x=>apoderado({...g,...x})}/>{gc.datos?.personaId&&<Aviso>Documento registrado. <button className="mat-link" onClick={()=>guardian(gc.datos!.personaId!)}>Usar ficha existente</button></Aviso>}{gc.error&&<Aviso error>{gc.error}</Aviso>}</>}{gm!=='buscar'&&!reutiliza&&<><h4>Vínculo con el estudiante</h4><label className="mat-check"><input type="checkbox" checked={!!g.sinParentesco} onChange={e=>apoderado({...g,sinParentesco:e.target.checked})}/> Sin parentesco familiar; autorización institucional comprobada</label>{g.sinParentesco?<div className="mat-grid tres">{(['autorizador','medio','referencia'] as const).map((k,i)=><Campo key={k} titulo={['Quién autorizó','Medio de comprobación','Referencia del sustento'][i]}><input value={g[k]??''} onChange={e=>apoderado({...g,[k]:e.target.value})}/></Campo>)}</div>:<Campo titulo="Parentesco"><input value={g.parentesco??''} onChange={e=>apoderado({...g,parentesco:e.target.value})}/></Campo>}</>}{reutiliza&&<Aviso>Se reutilizará el vínculo vigente, sin renovar ni duplicar autorizaciones.</Aviso>}{menor===false&&<button className="mat-link" onClick={()=>{apoderado(undefined);setGm('buscar')}}>Continuar sin apoderado</button>}</div>:<><div className="mat-block"><div className="mat-intro"><h4>Estudiante y ubicación académica</h4><button className="mat-link" onClick={()=>setPaso(0)}>Editar</button></div><DatosFicha campos={ [['Estudiante',estudianteNombre],['Documento',pid?doc(p.datos):d.numeroDocumento],['Año escolar',anio],['Ubicación',ubicacion(s)]]}/></div><div className="mat-block"><div className="mat-intro"><h4>Apoderamiento</h4><button className="mat-link" onClick={()=>setPaso(1)}>Editar</button></div><DatosFicha campos={ [['Apoderado',apoderadoNombre],['Teléfono',g.personaId?gp.datos?.telefono:g.telefono],['Vínculo',reutiliza?'Autorización vigente':g.sinParentesco?'Sin parentesco':g.parentesco]]}/>{(se()||ge())?<Aviso error>{se()||ge()}</Aviso>:<Aviso>Datos listos para solicitar la confirmación al ERP.</Aviso>}<p className="mat-muted">Confirmar solicita la creación o reutilización de la cuenta y los accesos de Aula. La integración se comprueba después.</p></div></>}
+  <footer className="mat-pie"><button disabled={paso===0} onClick={()=>setPaso(paso-1)}>← Anterior</button><div className="mat-acciones"><button onClick={()=>siguiente(true)}>Guardar borrador y salir</button>{paso<2?<button className="mat-primary" onClick={()=>siguiente()}>Siguiente: {paso===0?'apoderado':'revisión'} →</button>:<button className="mat-primary" disabled={!!(se()||ge())} onClick={()=>setAccion('confirmar')}>Confirmar matrícula</button>}</div></footer></Panel></fieldset><Panel titulo="Resumen de matrícula"><div className="mat-block mat-resumen"><DatosFicha campos={ [['Año escolar',anio||'Por elegir'],['Estudiante',estudianteNombre],['Ubicación',ubicacion(s)],['Apoderado',apoderadoNombre],['Estado',m?'Borrador':'Sin guardar']]}/><Aviso>Un borrador no genera acceso académico.</Aviso></div></Panel></div></>}
+  {accion&&<Dialogo titulo={{salir:'Volver a matrículas',confirmar:'Confirmar matrícula',descartar:'Descartar borrador',retirar:'Retirar matrícula',reincorporar:'Reincorporar matrícula'}[accion]??'Confirmar operación'} cerrar={()=>{if(!busy)setAccion('')}}><p>{accion==='salir'?'Los datos guardados se conservan. Las modificaciones no guardadas se perderán.':accion==='descartar'?'Solo se descarta este borrador. No se eliminan Personas ni matrículas confirmadas.':`${estudianteNombre} · ${anio} · ${ubicacion(s)}`}</p>{accion==='confirmar'&&<Aviso>La matrícula será vigente cuando el ERP la confirme. La integración puede quedar pendiente.</Aviso>}{accion==='retirar'&&<Aviso>Se solicitará suspender el acceso académico correspondiente; se conserva la historia.</Aviso>}{accion==='descartar'&&<Campo titulo="Escribe DESCARTAR para confirmar"><input value={texto} onChange={e=>setTexto(e.target.value)}/></Campo>}{err&&<Aviso error>{err}</Aviso>}<div className="mat-acciones"><button disabled={busy} onClick={()=>setAccion('')}>Cancelar</button><button disabled={busy||(accion==='descartar'&&texto!=='DESCARTAR')} className={['retirar','descartar'].includes(accion)?'mat-danger':'mat-primary'} onClick={()=>void ejecutar()}>{busy?'Procesando…':accion==='descartar'?'Descartar definitivamente':accion==='salir'?'Salir sin guardar':accion==='confirmar'?'Confirmar matrícula':'Confirmar operación'}</button></div></Dialogo>}
+  </section>
 }
+function RutaExpediente(props:Parameters<typeof Expediente>[0]) {const {id}=useParams();return <Expediente key={id??'nuevo'} {...props}/>}
+export function MatriculasModulo({sesion}:{sesion:Sesion}) {const [f,setF]=useState<Filtros>(inicial),[ultimo,marcar]=useState(''),[elegido,setElegido]=useState(false);const a=useGet<number[]>('/oferta/anios',sesion);const anios=a.datos??ANIOS_VACIOS;useEffect(()=>{if(!elegido&&anios.length){setF(x=>({...x,anio:String(Math.max(...anios))}));setElegido(true)}},[anios,elegido]);const props={sesion,anios,anioTrabajo:f.anio,marcar,trabajo:(anio:string)=>{setElegido(true);setF(x=>x.anio===anio?x:{...x,anio,nivel:'',grado:'',seccion:'',pagina:0})}};return <>{a.error&&<Aviso error>{a.error}</Aviso>}<Routes><Route index element={<Listado sesion={sesion} f={f} setF={x=>{setElegido(true);setF(x)}} anios={anios} ultimo={ultimo} marcar={marcar}/>}/><Route path="nueva" element={<RutaExpediente {...props}/>}/><Route path=":id" element={<RutaExpediente {...props}/>}/></Routes></>}

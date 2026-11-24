@@ -79,6 +79,14 @@ class MatriculasHttpTest {
     jdbc.update("INSERT INTO mat_matriculas(id,persona_id,anio,seccion_id,estado,borrador,creado_por,confirmado_en) VALUES(?,?,2027,?,'VIGENTE','{}'::jsonb,'prueba-coordinacion',now())",
       vigenteId,personaId,seccionId);
 
+    mvc.perform(get("/api/erp/v1/matriculas/contexto").param("tipo","DNI").param("pais","PE")
+        .param("numero",numero).param("anio","2027").with(authentication(actor())))
+      .andExpect(status().isOk()).andExpect(jsonPath("$.personaId").value(personaId.toString()))
+      .andExpect(jsonPath("$.expedientes[0].id").value(vigenteId.toString()))
+      .andExpect(jsonPath("$.expedientes[0].estado").value("VIGENTE"));
+    mvc.perform(get("/api/erp/v1/matriculas/resumen?anio=2027").with(authentication(actor())))
+      .andExpect(status().isOk()).andExpect(jsonPath("$.VIGENTE").value(1));
+
     var datos=Map.of("personaId",personaId.toString(),"anio",2027,"seccionId",seccionId.toString());
     var cuerpo=json.writeValueAsBytes(Map.of("datos",datos));
     mvc.perform(post("/api/erp/v1/matriculas").with(authentication(actor())).with(csrf())
@@ -117,6 +125,12 @@ class MatriculasHttpTest {
       .andExpect(jsonPath("$.resultados.length()").value(5));
     mvc.perform(get("/api/erp/v1/matriculas?buscar="+documento+"&anio=2028&tamano=50").with(authentication(actor())))
       .andExpect(status().isOk()).andExpect(jsonPath("$.total").value(125));
+    mvc.perform(get("/api/erp/v1/matriculas?buscar="+marca+"&anio=2028&nivel=PRIMARIA&grado=2").with(authentication(actor())))
+      .andExpect(status().isOk()).andExpect(jsonPath("$.total").value(125));
+    mvc.perform(get("/api/erp/v1/matriculas?buscar="+marca+"&anio=2028&nivel=SECUNDARIA&grado=2").with(authentication(actor())))
+      .andExpect(status().isOk()).andExpect(jsonPath("$.total").value(0));
+    mvc.perform(get("/api/erp/v1/matriculas/resumen?anio=2028").with(authentication(actor())))
+      .andExpect(status().isOk()).andExpect(jsonPath("$.BORRADOR").value(125));
     mvc.perform(get("/api/erp/v1/matriculas?tamano=51").with(authentication(actor())))
       .andExpect(status().isBadRequest());
   }

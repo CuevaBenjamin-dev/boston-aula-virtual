@@ -44,8 +44,10 @@ public class MatriculasController {
   @GetMapping public PaginaMatriculas listar(@RequestParam(defaultValue="0") int pagina,
       @RequestParam(defaultValue="15") int tamano, @RequestParam(required=false) Integer anio,
       @RequestParam(required=false) String estado, @RequestParam(required=false) UUID seccionId,
+      @RequestParam(required=false) String nivel, @RequestParam(required=false) Integer grado,
       @RequestParam(required=false) String buscar, Authentication auth) {
     AccesoErp.actor(auth);
+    if (nivel!=null && !List.of("PRIMARIA","SECUNDARIA").contains(nivel)) throw new IllegalArgumentException("Nivel inválido");
     if (pagina<0 || pagina>1_000_000 || tamano<1 || tamano>50)
       throw new IllegalArgumentException("La página o el tamaño solicitado no es válido");
     if (anio!=null && (anio<2000 || anio>2100)) throw new IllegalArgumentException("Año escolar inválido");
@@ -64,6 +66,9 @@ public class MatriculasController {
     if (anio!=null) { desde.append(" AND COALESCE(m.anio::text,m.borrador->>'anio')=?"); parametros.add(anio.toString()); }
     if (estado!=null && !estado.isBlank()) { desde.append(" AND m.estado=?"); parametros.add(estado); }
     if (seccionId!=null) { desde.append(" AND COALESCE(m.seccion_id::text,m.borrador->>'seccionId')=?"); parametros.add(seccionId.toString()); }
+    if (grado!=null && (grado<1 || grado>6)) throw new IllegalArgumentException("Grado inválido");
+    if (nivel!=null) { desde.append(" AND s.nivel=?"); parametros.add(nivel); }
+    if (grado!=null) { desde.append(" AND s.grado=?"); parametros.add(grado); }
     if (!termino.isEmpty()) {
       desde.append(" AND (position(" + BusquedaTexto.sql("?") + " in "
         + BusquedaTexto.sql("concat_ws(' ',p.nombres,p.apellidos)") + ")>0 OR position("
