@@ -50,3 +50,30 @@
 .per-directorio-tabla .per-directorio-persona:focus-visible {
   text-decoration: none;
 }
+
+/* Marcador temporal de la última ficha visitada. */
+.per-directorio-tabla tbody tr.per-directorio-visitada td {
+  animation: per-marcador-fondo 350ms ease-out 1s both;
+}
+
+.per-directorio-tabla tbody tr.per-directorio-visitada td:first-child {
+  animation:
+    per-marcador-fondo 350ms ease-out 1s both,
+    per-marcador-linea 350ms ease-out 1s both;
+}
+
+@keyframes per-marcador-fondo {
+  from { background-color: #e5eff7; }
+  to { background-color: transparent; }
+}
+
+@keyframes per-marcador-linea {
+  from { box-shadow: inset 3px 0 0 #20578d; }
+  to { box-shadow: inset 3px 0 0 transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .per-directorio-tabla tbody tr.per-directorio-visitada td {
+    animation-timing-function: steps(1, end);
+  }
+}

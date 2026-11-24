@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { Link, Route, Routes, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import type { Sesion } from '../../shared/api/sesion'
 import { api, guardar, type Capacidades, type Condicion, type Pagina, type Persona, type ReferenciaPersona, type TipoDocumento } from './api'
@@ -75,11 +75,23 @@ function SelectorPersona({ sesion, titulo, condicion, valor, alElegir }: {
   </div>
 }
 
-function Directorio({ sesion, capacidades }: { sesion: Sesion; capacidades: Capacidades }) {
+function useEstadoDirectorio() {
   const [buscar, setBuscar] = useState('')
   const [condicion, setCondicion] = useState('')
   const [vigente, setVigente] = useState('')
   const [pagina, setPagina] = useState(0)
+  const [ultimaPersona, setUltimaPersona] = useState<string | null>(null)
+  return { buscar, setBuscar, condicion, setCondicion, vigente, setVigente, pagina, setPagina,
+    ultimaPersona, setUltimaPersona }
+}
+
+function Directorio({ sesion, capacidades, estado }: {
+  sesion: Sesion; capacidades: Capacidades; estado: ReturnType<typeof useEstadoDirectorio>
+}) {
+  const { buscar, setBuscar, condicion, setCondicion, vigente, setVigente, pagina, setPagina,
+    ultimaPersona, setUltimaPersona } = estado
+  const filaVisitada = useRef<HTMLTableRowElement>(null)
+  const restaurarPosicion = useRef(true)
   const [datos, setDatos] = useState<Pagina | null>(null)
   const [error, setError] = useState('')
   const [cargando, setCargando] = useState(false)
@@ -98,6 +110,24 @@ function Directorio({ sesion, capacidades }: { sesion: Sesion; capacidades: Capa
     }, 250)
     return () => { window.clearTimeout(reloj); abortar.abort() }
   }, [buscar, condicion, vigente, pagina, sesion, capacidades.consultar])
+  useEffect(() => {
+    if (!restaurarPosicion.current || cargando || error || !datos) return
+    restaurarPosicion.current = false
+    filaVisitada.current?.scrollIntoView?.({ block: 'nearest', inline: 'nearest', behavior: 'instant' })
+  }, [datos, cargando, error])
+    const listadoCargado = datos !== null
+
+  useEffect(() => {
+    if (!ultimaPersona || !listadoCargado) return
+
+    const reloj = window.setTimeout(() => {
+      setUltimaPersona(actual =>
+        actual === ultimaPersona ? null : actual
+      )
+    }, 2350)
+
+    return () => window.clearTimeout(reloj)
+  }, [ultimaPersona, listadoCargado, setUltimaPersona])
   return <section className="per-pagina">
     <div className="per-titulo"><div><p className="etiqueta">REGISTRO INSTITUCIONAL</p>
       <p>Consulta identidades, condiciones y vínculos institucionales.</p></div>
@@ -133,8 +163,14 @@ function Directorio({ sesion, capacidades }: { sesion: Sesion; capacidades: Capa
           <table className="per-directorio-tabla" aria-labelledby="per-resultados-titulo">
             <colgroup><col className="per-directorio-col-nombre" /><col className="per-directorio-col-doc" /><col /></colgroup>
             <thead><tr><th scope="col">Apellidos y nombres</th><th scope="col">Documento</th><th scope="col">Condiciones vigentes</th></tr></thead>
-            <tbody>{datos.resultados.map(p => <tr key={p.id}>
-              <td><Link className="per-directorio-persona" to={p.id}>
+            <tbody>{datos.resultados.map(p => <tr key={p.id}
+              className={ultimaPersona === p.id ? 'per-directorio-visitada' : undefined}
+              ref={ultimaPersona === p.id ? filaVisitada : undefined}>
+              <td><Link className="per-directorio-persona" to={p.id} onClick={e => {
+                if (!e.defaultPrevented && e.button === 0 && !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey) {
+                  setUltimaPersona(p.id)
+                }
+              }}>
                 {p.apellidos}, {p.nombres}
               </Link></td>
               <td className="per-directorio-documento">{p.documento ?? <span className="per-directorio-neutro">Sin documento principal</span>}</td>
@@ -375,12 +411,13 @@ function Ficha({ sesion, capacidades }: { sesion: Sesion; capacidades: Capacidad
 }
 
 export function PersonasModulo({ sesion }: { sesion: Sesion }) {
+  const estadoDirectorio = useEstadoDirectorio()
   const [capacidades, setCapacidades] = useState<Capacidades | null>(null)
   const [error, setError] = useState('')
   useEffect(() => { void api<Capacidades>('/capacidades', sesion).then(setCapacidades).catch(e => setError(String(e.message ?? e))) }, [sesion])
   if (error) return <Aviso mensaje={error} />
   if (!capacidades) return <p role="status">Cargando Personas…</p>
-  return <Routes><Route index element={<Directorio sesion={sesion} capacidades={capacidades} />} />
+  return <Routes><Route index element={<Directorio sesion={sesion} capacidades={capacidades} estado={estadoDirectorio} />} />
     <Route path="nueva" element={<Registro sesion={sesion} capacidades={capacidades} />} />
     <Route path=":id" element={<Ficha sesion={sesion} capacidades={capacidades} />} /></Routes>
 }

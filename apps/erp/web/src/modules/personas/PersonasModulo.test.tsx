@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import axe from 'axe-core'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom'
 import { PersonasModulo } from './PersonasModulo'
 import type { Sesion } from '../../shared/api/sesion'
 
@@ -73,6 +73,62 @@ describe('Personas ERP Web', () => {
     expect(within(fila).getAllByRole('link')).toHaveLength(1)
     await userEvent.click(screen.getByRole('button', { name: 'Limpiar filtros' }))
     expect(campo).toHaveProperty('value', '')
+  })
+
+  it('recuerda la última fila, filtros y página al volver de una ficha', async () => {
+    const primera = '11111111-1111-1111-1111-111111111111'
+    const segunda = '22222222-2222-2222-2222-222222222222'
+    const resultados = [
+      { id: primera, nombres: 'Ana', apellidos: 'Ensayo', documento: '00009101', condiciones: ['ESTUDIANTE'] },
+      { id: segunda, nombres: 'Luis', apellidos: 'Ensayo', documento: '00009102', condiciones: ['ESTUDIANTE'] },
+    ]
+    const detalle = { fechaNacimiento: null, telefono: null, correo: null, direccion: null,
+      documentos: [], condiciones: [], parentescos: [], apoderamientos: [], referencias: {}, provisional: null }
+    vi.stubGlobal('fetch', vi.fn((entrada: RequestInfo | URL) => {
+      const ruta = String(entrada)
+      if (ruta.endsWith('/capacidades')) return respuesta(capacidades)
+      const persona = resultados.find(p => ruta.endsWith('/' + p.id))
+      if (persona) return respuesta({ ...persona, ...detalle })
+      const q = new URLSearchParams(ruta.split('?')[1])
+      const pagina = Number(q.get('pagina') ?? '0')
+      if (q.get('buscar') === 'fuera') return respuesta({ resultados: [], total: 0, pagina: 0, tamano: 15 })
+      const filas = pagina === 0 ? Array.from({ length: 15 }, (_, i) => ({
+        id: `00000000-0000-0000-0000-${String(i + 1).padStart(12, '0')}`,
+        nombres: `Prueba ${i + 1}`, apellidos: 'Ensayo', documento: null, condiciones: ['ESTUDIANTE'],
+      })) : resultados
+      return respuesta({ resultados: filas, total: 17, pagina, tamano: 15 })
+    }))
+    function Atras() {
+      const navegar = useNavigate()
+      return <button onClick={() => navegar(-1)}>Atrás del navegador</button>
+    }
+    render(<MemoryRouter initialEntries={['/personas']}><Atras /><Routes>
+      <Route path="/personas/*" element={<PersonasModulo sesion={sesion} />} />
+    </Routes></MemoryRouter>)
+    await userEvent.type(await screen.findByRole('textbox', { name: 'Nombre o documento' }), 'Ensayo')
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Condición' }), 'ESTUDIANTE')
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Vigencia' }), 'true')
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Siguiente' })).toHaveProperty('disabled', false))
+    await userEvent.click(screen.getByRole('button', { name: 'Siguiente' }))
+    await userEvent.click(await screen.findByRole('link', { name: 'Ensayo, Ana' }))
+    await userEvent.click(await screen.findByRole('link', { name: /directorio/i }))
+    const filaAna = await screen.findByRole('row', { name: /Ensayo, Ana/ })
+    expect(filaAna.classList.contains('per-directorio-visitada')).toBe(true)
+    expect(screen.getByRole('textbox', { name: 'Nombre o documento' })).toHaveProperty('value', 'Ensayo')
+    expect(screen.getByRole('combobox', { name: 'Condición' })).toHaveProperty('value', 'ESTUDIANTE')
+    expect(screen.getByRole('combobox', { name: 'Vigencia' })).toHaveProperty('value', 'true')
+    expect(screen.getByText('Página 2 de 2')).toBeTruthy()
+    await userEvent.click(screen.getByRole('link', { name: 'Ensayo, Luis' }))
+    await screen.findByRole('link', { name: /directorio/i })
+    await userEvent.click(screen.getByRole('button', { name: 'Atrás del navegador' }))
+    const filaLuis = await screen.findByRole('row', { name: /Ensayo, Luis/ })
+    expect(filaLuis.classList.contains('per-directorio-visitada')).toBe(true)
+    expect(screen.getByRole('row', { name: /Ensayo, Ana/ }).classList.contains('per-directorio-visitada')).toBe(false)
+    const campo = screen.getByRole('textbox', { name: 'Nombre o documento' })
+    await userEvent.clear(campo)
+    await userEvent.type(campo, 'fuera')
+    await screen.findByText('No hay personas para estos filtros.')
+    expect(document.querySelector('.per-directorio-visitada')).toBeNull()
   })
 
   it('muestra identificación provisional solo para estudiante y filtra apoderado sin facultad', async () => {
