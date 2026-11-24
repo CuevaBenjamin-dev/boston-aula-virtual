@@ -254,7 +254,7 @@ class PersonasHttpTest {
     String seccion=json.readTree(seccionJson).path("id").asText();
     String asignaturaJson=mvc.perform(post("/api/erp/v1/oferta/asignaturas").with(auth).with(csrf())
       .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsBytes(
-        Map.of("anio",anio,"nivel","PRIMARIA","grado",1,"codigo","PRI-01-MAT","nombre","Matemática"))))
+        Map.of("anio",anio,"nivel","PRIMARIA","grado",1,"codigo","MAT","nombre","Matemática"))))
       .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
     String asignatura=json.readTree(asignaturaJson).path("id").asText();
     String numero=String.format("%08d",Math.abs(UUID.randomUUID().hashCode())%100000000);
