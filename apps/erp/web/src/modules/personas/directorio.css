@@ -1,0 +1,52 @@
+/* Directorio de Personas: estilos aislados de las fichas y de otros módulos. */
+.per-panel.per-directorio-resultados { padding: 0; border-radius: 8px; overflow: hidden; }
+.per-directorio-resultados .per-panel-cabecera { margin: 0; padding: 16px 22px; }
+.per-directorio-resultados > .per-aviso { margin: 16px 22px; }
+.per-directorio-resumen { display: flex; align-items: center; justify-content: flex-end; gap: 14px; flex-wrap: wrap; }
+.per-directorio-limpiar { border: 0; background: transparent; color: #20578d; font-size: 12px; font-weight: 700; padding: 6px 0; }
+.per-directorio-limpiar:hover { text-decoration: underline; }
+.per-directorio-scroll { width: 100%; overflow-x: auto; }
+.per-directorio-scroll:focus-visible { outline: 3px solid #24b3cb; outline-offset: -3px; }
+.per-directorio-tabla { width: 100%; min-width: 600px; border-collapse: collapse; table-layout: fixed; font-size: 13px; }
+.per-directorio-col-nombre { width: 49%; }
+.per-directorio-col-doc { width: 21%; }
+.per-directorio-tabla th { background: #f7f9fc; color: #526b85; text-align: left; font-size: 11px; font-weight: 700; padding: 13px 18px; border-bottom: 1px solid #dce5ef; }
+.per-directorio-tabla td { padding: 12px 18px; border-bottom: 1px solid #e1e8f0; vertical-align: middle; overflow-wrap: anywhere; transition: background-color .15s ease; }
+.per-directorio-tabla tbody tr:last-child td { border-bottom: 0; }
+.per-directorio-tabla tbody tr:hover td, .per-directorio-tabla tbody tr:focus-within td { background: #f4f8fc; }
+.per-directorio-persona { display: inline-block; color: #102847; text-decoration: none; font-weight: 700; line-height: 1.4; max-width: 100%; }
+.per-directorio-persona:hover, .per-directorio-persona:focus-visible { text-decoration: underline; }
+.per-directorio-documento { font-variant-numeric: tabular-nums; font-weight: 600; color: #344c65; }
+.per-directorio-neutro { color: #526b85; font-size: 12px; font-weight: 400; }
+.per-directorio-tabla .per-directorio-condicion { margin: 0; color: inherit; line-height: 1.6; text-transform: uppercase; }
+.per-directorio-pie { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 22px; border-top: 1px solid #dce5ef; background: #fff; }
+.per-directorio-pie .per-paginacion { margin: 0; flex-wrap: wrap; }
+@media (max-width: 700px) {
+  .per-directorio-resultados .per-panel-cabecera, .per-directorio-pie { padding: 14px; }
+  .per-directorio-tabla th, .per-directorio-tabla td { padding-left: 12px; padding-right: 12px; }
+}
+@media (prefers-reduced-motion: reduce) { .per-directorio-tabla td { transition: none; } }
+/* Toda la fila abre la ficha de la persona. */
+.per-directorio-tabla tbody tr {
+  position: relative;
+  cursor: pointer;
+}
+
+.per-directorio-tabla .per-directorio-persona::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.per-directorio-tabla tbody tr:hover td,
+.per-directorio-tabla tbody tr:focus-within td {
+  background: #edf4f8;
+}
+
+/* Mantener el nombre sin subrayado al interactuar con la fila. */
+.per-directorio-tabla .per-directorio-persona,
+.per-directorio-tabla .per-directorio-persona:hover,
+.per-directorio-tabla .per-directorio-persona:focus-visible {
+  text-decoration: none;
+}

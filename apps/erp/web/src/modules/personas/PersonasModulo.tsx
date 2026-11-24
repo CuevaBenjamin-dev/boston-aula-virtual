@@ -3,6 +3,7 @@ import { Link, Route, Routes, useNavigate, useParams, useSearchParams } from 're
 import type { Sesion } from '../../shared/api/sesion'
 import { api, guardar, type Capacidades, type Condicion, type Pagina, type Persona, type ReferenciaPersona, type TipoDocumento } from './api'
 import { EstadoIntegracion } from '../../shared/ui/EstadoIntegracion'
+import './directorio.css'
 
 const tiposCondicion: { valor: Condicion; texto: string }[] = [
   { valor: 'ESTUDIANTE', texto: 'Estudiante' }, { valor: 'DOCENTE', texto: 'Docente' },
@@ -115,20 +116,42 @@ function Directorio({ sesion, capacidades }: { sesion: Sesion; capacidades: Capa
           <option value="">Todas</option><option value="true">Activa</option><option value="false">Histórica</option>
         </select></Campo>
       </form>
-      <section className="per-panel" aria-busy={cargando}>
-        <div className="per-panel-cabecera"><h3>Resultados</h3><span>{datos?.total ?? 0} personas</span></div>
+      <section className="per-panel per-directorio-resultados" aria-busy={cargando} aria-labelledby="per-resultados-titulo">
+        <div className="per-panel-cabecera">
+          <h3 id="per-resultados-titulo">Resultados</h3>
+          <div className="per-directorio-resumen">
+            {(buscar || condicion || vigente) && <button type="button" className="per-directorio-limpiar" onClick={() => {
+              setBuscar(''); setCondicion(''); setVigente(''); setPagina(0)
+            }}>Limpiar filtros</button>}
+            <span aria-live="polite">{cargando ? 'Buscando…' : error ? 'Consulta no disponible' : datos ? `${datos.total} ${datos.total === 1 ? 'persona' : 'personas'}` : '—'}</span>
+          </div>
+        </div>
         <Aviso mensaje={error} />
-        {cargando && <p role="status">Buscando personas…</p>}
-        {!cargando && datos?.resultados.length === 0 && <p className="per-vacio">No hay personas para estos filtros.</p>}
-        {!cargando && datos?.resultados.map(p => <div className="per-fila" key={p.id}>
-          <div><strong>{p.apellidos}, {p.nombres}</strong><small>{p.documento ?? 'Identificación provisional'} · {p.condiciones.join(', ') || 'Sin condición vigente'}</small></div>
-          <Link to={p.id}>Ver ficha <span aria-hidden="true">→</span></Link>
-        </div>)}
-        {!!datos?.total && <nav className="per-paginacion" aria-label="Paginación">
-          <button type="button" disabled={pagina === 0 || cargando} onClick={() => setPagina(pagina - 1)}>Anterior</button>
-          <span>Página {pagina + 1} de {Math.ceil(datos.total / datos.tamano)}</span>
-          <button type="button" disabled={(pagina + 1) * datos.tamano >= datos.total || cargando} onClick={() => setPagina(pagina + 1)}>Siguiente</button>
-        </nav>}
+        {cargando && <p className="per-vacio" role="status">Buscando personas…</p>}
+        {!cargando && !error && datos?.resultados.length === 0 && <p className="per-vacio">No hay personas para estos filtros.</p>}
+        {!cargando && !error && !!datos?.resultados.length && <div className="per-directorio-scroll" role="region" aria-label="Listado de personas" tabIndex={0}>
+          <table className="per-directorio-tabla" aria-labelledby="per-resultados-titulo">
+            <colgroup><col className="per-directorio-col-nombre" /><col className="per-directorio-col-doc" /><col /></colgroup>
+            <thead><tr><th scope="col">Apellidos y nombres</th><th scope="col">Documento</th><th scope="col">Condiciones vigentes</th></tr></thead>
+            <tbody>{datos.resultados.map(p => <tr key={p.id}>
+              <td><Link className="per-directorio-persona" to={p.id}>
+                {p.apellidos}, {p.nombres}
+              </Link></td>
+              <td className="per-directorio-documento">{p.documento ?? <span className="per-directorio-neutro">Sin documento principal</span>}</td>
+              <td><span className="etiqueta per-directorio-condicion">
+                {(p.condiciones.map(c => tiposCondicion.find(t => t.valor === c)?.texto ?? c).join(' · ') || 'Sin condición vigente').toLocaleUpperCase('es-PE')}
+              </span></td>
+            </tr>)}</tbody>
+          </table>
+        </div>}
+        {!error && !!datos?.total && <div className="per-directorio-pie">
+          <span className="per-directorio-neutro">{cargando ? 'Actualizando resultados…' : datos.resultados.length ? `Mostrando ${datos.pagina * datos.tamano + 1}–${datos.pagina * datos.tamano + datos.resultados.length} de ${datos.total}` : `Total: ${datos.total}`}</span>
+          <nav className="per-paginacion" aria-label="Paginación">
+            <button type="button" disabled={pagina === 0 || cargando} onClick={() => setPagina(pagina - 1)}>Anterior</button>
+            <span>Página {pagina + 1} de {Math.ceil(datos.total / datos.tamano)}</span>
+            <button type="button" disabled={(pagina + 1) * datos.tamano >= datos.total || cargando} onClick={() => setPagina(pagina + 1)}>Siguiente</button>
+          </nav>
+        </div>}
       </section>
     </>}
   </section>

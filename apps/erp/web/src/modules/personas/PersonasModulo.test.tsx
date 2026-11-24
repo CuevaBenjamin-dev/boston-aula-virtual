@@ -60,8 +60,19 @@ describe('Personas ERP Web', () => {
     await waitFor(() => expect(llamadas.mock.calls.some(c => String(c[0]).includes('buscar=Luc'))).toBe(true))
     expect(await screen.findByText('Paredes, Lucía')).toBeTruthy()
     expect(screen.queryByRole('listbox')).toBeNull()
+    const tabla = screen.getByRole('table', { name: 'Resultados' })
+    expect(within(tabla).getAllByRole('columnheader').map(c => c.textContent)).toEqual([
+      'Apellidos y nombres', 'Documento', 'Condiciones vigentes',
+    ])
+    const fila = within(tabla).getByRole('row', { name: /Paredes, Lucía/ })
+    expect(within(fila).getByRole('cell', { name: 'DNI 12345678' })).toBeTruthy()
+    expect(within(fila).getByRole('cell', { name: 'ESTUDIANTE' })).toBeTruthy()
+    expect(within(fila).getByRole('link', { name: 'Paredes, Lucía' }).getAttribute('href')).toBe('/personas/11111111-1111-1111-1111-111111111111')
     expect(screen.getByRole('navigation', { name: 'Paginación' })).toBeTruthy()
-    expect(screen.getByRole('link', { name: /ver ficha/i })).toBeTruthy()
+    expect(screen.queryByRole('link', { name: /ver ficha/i })).toBeNull()
+    expect(within(fila).getAllByRole('link')).toHaveLength(1)
+    await userEvent.click(screen.getByRole('button', { name: 'Limpiar filtros' }))
+    expect(campo).toHaveProperty('value', '')
   })
 
   it('muestra identificación provisional solo para estudiante y filtra apoderado sin facultad', async () => {
