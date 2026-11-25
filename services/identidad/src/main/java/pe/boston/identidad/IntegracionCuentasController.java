@@ -29,8 +29,8 @@ public class IntegracionCuentasController {
     if (entrada==null || !personaId.equals(entrada.personaId()) || !tipo.equals(entrada.tipo())
         || !List.of("DOCENTE","ESTUDIANTE").contains(tipo))
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Cuenta institucional inválida");
-    var existentes=jdbc.query("SELECT id,usuario,activo FROM cuentas WHERE referencia_erp=? AND tipo=? FOR UPDATE",
-      (rs,n)->new Actual(rs.getObject(1,UUID.class),rs.getString(2),rs.getBoolean(3)),personaId,tipo);
+    var existentes=jdbc.query("SELECT id,usuario,activo,clave_hash,cambio_clave_obligatorio FROM cuentas WHERE referencia_erp=? AND tipo=? FOR UPDATE",
+      (rs,n)->new Actual(rs.getObject(1,UUID.class),rs.getString(2),rs.getBoolean(3),rs.getString(4),rs.getBoolean(5)),personaId,tipo);
     if (existentes.isEmpty() && !entrada.activa()) return new Resultado(null,"SIN_CUENTA");
     String usuario=entrada.usuario()==null?"":entrada.usuario().trim().toLowerCase();
     if (!usuario.matches("[a-z0-9._-]{4,120}"))
@@ -51,12 +51,18 @@ public class IntegracionCuentasController {
     }
     Actual actual=existentes.getFirst();
     if (!actual.usuario().equals(usuario) || actual.activa()!=entrada.activa()) {
-      jdbc.update("UPDATE cuentas SET usuario=?,activo=?,sesion_version=sesion_version+1 WHERE id=?",usuario,entrada.activa(),actual.id());
+      boolean claveInicial= !actual.usuario().equals(usuario) && actual.cambioClaveObligatorio()
+        && claves.matches(actual.usuario(),actual.claveHash());
+      if (claveInicial)
+        jdbc.update("UPDATE cuentas SET usuario=?,activo=?,clave_hash=?,sesion_version=sesion_version+1 WHERE id=?",
+          usuario,entrada.activa(),claves.encode(usuario),actual.id());
+      else
+        jdbc.update("UPDATE cuentas SET usuario=?,activo=?,sesion_version=sesion_version+1 WHERE id=?",usuario,entrada.activa(),actual.id());
       jdbc.update("DELETE FROM oauth2_authorization WHERE principal_name=?",actual.usuario());
       jdbc.update("INSERT INTO auditoria_seguridad(id,cuenta_id,accion) VALUES(?,?,?)",UUID.randomUUID(),actual.id(),
         entrada.activa()?"CUENTA_INSTITUCIONAL_ACTUALIZADA":"CUENTA_INSTITUCIONAL_SUSPENDIDA");
     }
     return new Resultado(actual.id(),"REUTILIZADA");
   }
-  private record Actual(UUID id,String usuario,boolean activa) {}
+  private record Actual(UUID id,String usuario,boolean activa,String claveHash,boolean cambioClaveObligatorio) {}
 }

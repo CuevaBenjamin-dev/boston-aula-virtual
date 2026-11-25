@@ -28,6 +28,8 @@ class IntegracionCuentasControllerTest {
         when(rs.getObject(1,UUID.class)).thenReturn(cuenta);
         when(rs.getString(2)).thenReturn("00000011");
         when(rs.getBoolean(3)).thenReturn(true);
+        when(rs.getString(4)).thenReturn("clave-personal");
+        when(rs.getBoolean(5)).thenReturn(false);
         return List.of(mapper.mapRow(rs,0));
       });
     when(db.queryForObject(startsWith("SELECT count(*)"),eq(Long.class),eq("00000011"),eq(persona),eq("DOCENTE")))
@@ -62,6 +64,8 @@ class IntegracionCuentasControllerTest {
         when(rs.getObject(1,UUID.class)).thenReturn(cuenta);
         when(rs.getString(2)).thenReturn("00000011");
         when(rs.getBoolean(3)).thenReturn(true);
+        when(rs.getString(4)).thenReturn("clave-personal");
+        when(rs.getBoolean(5)).thenReturn(false);
         return List.of(mapper.mapRow(rs,0));
       });
     when(db.queryForObject(startsWith("SELECT count(*)"),eq(Long.class),eq("00000012"),eq(persona),eq("DOCENTE")))
@@ -70,6 +74,29 @@ class IntegracionCuentasControllerTest {
       new IntegracionCuentasController.Cuenta(persona,"DOCENTE","00000012",true)).estado());
     verify(db).update(startsWith("UPDATE cuentas SET usuario="),eq("00000012"),eq(true),eq(cuenta));
     verify(claves,never()).encode(anyString());
+  }
+
+  @Test void correccionDocumentalActualizaClaveInicialPendiente() throws Exception {
+    UUID cuenta=UUID.randomUUID();
+    when(db.query(startsWith("SELECT id,usuario,activo"),any(RowMapper.class),eq(persona),eq("ESTUDIANTE")))
+      .thenAnswer(inv -> {
+        RowMapper<?> mapper=inv.getArgument(1);
+        ResultSet rs=mock(ResultSet.class);
+        when(rs.getObject(1,UUID.class)).thenReturn(cuenta);
+        when(rs.getString(2)).thenReturn("bbs27ep01a001");
+        when(rs.getBoolean(3)).thenReturn(true);
+        when(rs.getString(4)).thenReturn("hash-anterior");
+        when(rs.getBoolean(5)).thenReturn(true);
+        return List.of(mapper.mapRow(rs,0));
+      });
+    when(db.queryForObject(startsWith("SELECT count(*)"),eq(Long.class),eq("99000001"),eq(persona),eq("ESTUDIANTE")))
+      .thenReturn(0L);
+    when(claves.matches("bbs27ep01a001","hash-anterior")).thenReturn(true);
+    when(claves.encode("99000001")).thenReturn("hash-nuevo");
+    assertEquals("REUTILIZADA",servicio.proyectar(persona,"ESTUDIANTE",
+      new IntegracionCuentasController.Cuenta(persona,"ESTUDIANTE","99000001",true)).estado());
+    verify(db).update(startsWith("UPDATE cuentas SET usuario=?,activo=?,clave_hash=?"),
+      eq("99000001"),eq(true),eq("hash-nuevo"),eq(cuenta));
   }
 
   @Test void colisionDocumentalBloqueaSinModificarCuenta() throws Exception {
