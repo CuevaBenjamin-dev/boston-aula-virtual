@@ -1,6 +1,8 @@
 package pe.boston.erp.asignaciones.api;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -15,9 +17,12 @@ import pe.boston.erp.plataforma.AccesoErp;
 public class AsignacionesController {
   public record Entrada(UUID docenteId, UUID seccionId, UUID asignaturaId, String tipo,
     LocalDate desde, LocalDate hasta, String horario) {}
+  public record Lote(Integer anio, UUID docenteId, List<UUID> seccionIds, UUID asignaturaId,
+    String tipo, LocalDate desde, LocalDate hasta, String horario) {}
   public record Asignacion(UUID id, UUID docenteId, String docente, UUID seccionId,
     String seccion, UUID asignaturaId, String asignatura, int anio, String tipo,
-    LocalDate desde, LocalDate hasta, String horario, String estado, boolean coberturaPendiente) {}
+    LocalDate desde, LocalDate hasta, String horario, String estado, boolean coberturaPendiente,
+    String aulaEstado) {}
   private final JdbcTemplate jdbc;
   private final PersonasParaAsignaciones personas;
   public AsignacionesController(JdbcTemplate jdbc,PersonasParaAsignaciones personas) {
@@ -35,17 +40,40 @@ public class AsignacionesController {
         a.tipo,a.desde,a.hasta,a.horario,a.estado,
         a.estado='ACTIVA' AND (a.hasta IS NULL OR a.hasta>=current_date)
           AND NOT EXISTS (SELECT 1 FROM per_condiciones c WHERE c.persona_id=a.docente_id
-            AND c.tipo='DOCENTE' AND c.periodo @> now())
+            AND c.tipo='DOCENTE' AND c.periodo @> now()),
+        (SELECT e.estado FROM erp_solicitudes_externas e
+          WHERE e.entidad_tipo='ASIGNACION' AND e.entidad_id=a.id AND e.sistema='AULA'
+          ORDER BY e.creado_en DESC,e.id DESC LIMIT 1)
       FROM asi_asignaciones a JOIN per_personas p ON p.id=a.docente_id
       JOIN ofe_secciones s ON s.id=a.seccion_id JOIN ofe_asignaturas u ON u.id=a.asignatura_id
       WHERE (CAST(? AS INTEGER) IS NULL OR s.anio=?) AND (CAST(? AS UUID) IS NULL OR a.id=?)
-      ORDER BY s.anio DESC,s.nivel,s.grado,s.nombre,u.nombre,a.desde DESC
-      LIMIT 500
+      ORDER BY s.anio DESC,s.nivel,s.grado,s.nombre,u.nombre,a.desde DESC,a.id
       """;
+    // La distribución necesita todos los registros del año, incluidos los cerrados.
+    // Se mantiene el límite histórico solo para consultas sin año ni ID.
+    if(anio==null && id==null) sql+=" LIMIT 500";
     return jdbc.query(sql,(r,n)->new Asignacion(r.getObject(1,UUID.class),r.getObject(2,UUID.class),r.getString(3),
       r.getObject(4,UUID.class),r.getString(5),r.getObject(6,UUID.class),r.getString(7),r.getInt(8),
       r.getString(9),r.getDate(10).toLocalDate(),r.getDate(11)==null?null:r.getDate(11).toLocalDate(),
-      r.getString(12),r.getString(13),r.getBoolean(14)),anio,anio,id,id);
+      r.getString(12),r.getString(13),r.getBoolean(14),r.getString(15)),anio,anio,id,id);
+  }
+
+  @PostMapping("/lote") @Transactional public List<Asignacion> crearLote(@RequestBody Lote p, Authentication auth) {
+    AccesoErp.actor(auth);
+    if(p==null || p.anio()==null || p.anio()<2000 || p.anio()>2100 || p.seccionIds()==null
+        || p.seccionIds().isEmpty() || p.seccionIds().size()>100 || p.seccionIds().stream().anyMatch(java.util.Objects::isNull)
+        || new HashSet<>(p.seccionIds()).size()!=p.seccionIds().size())
+      throw new IllegalArgumentException("Selecciona secciones distintas de un año escolar válido (máximo 100 por operación)");
+    if(p.desde()==null || p.desde().getYear()!=p.anio() || (p.hasta()!=null && p.hasta().getYear()!=p.anio()))
+      throw new IllegalArgumentException("Las fechas deben corresponder al año escolar seleccionado");
+    List<Asignacion> creadas=new ArrayList<>();
+    // Todas las altas y solicitudes externas participan de la misma transacción.
+    for(UUID seccion:p.seccionIds()) {
+      Long coincide=jdbc.queryForObject("SELECT count(*) FROM ofe_secciones WHERE id=? AND anio=?",Long.class,seccion,p.anio());
+      if(coincide==0) throw new IllegalArgumentException("Una sección no pertenece al año seleccionado");
+      creadas.add(crear(new Entrada(p.docenteId(),seccion,p.asignaturaId(),p.tipo(),p.desde(),p.hasta(),p.horario()),auth));
+    }
+    return creadas;
   }
 
   @PostMapping @Transactional public Asignacion crear(@RequestBody Entrada p, Authentication auth) {
@@ -64,6 +92,8 @@ public class AsignacionesController {
       WHERE s.id=? AND u.id=?
       """,Long.class,p.seccionId(),p.asignaturaId());
     if (compatible==0) throw new IllegalArgumentException("La asignatura no pertenece al año y grado de esta sección");
+    // Serializa las altas del mismo docente (incluidos los lotes) para evitar duplicados concurrentes.
+    jdbc.queryForObject("SELECT 1 FROM pg_advisory_xact_lock(hashtextextended(?,0))",Integer.class,"asignaciones:"+p.docenteId());
     Long repetida=jdbc.queryForObject("""
       SELECT count(*) FROM asi_asignaciones WHERE docente_id=? AND seccion_id=? AND asignatura_id=?
         AND tipo=? AND desde=? AND hasta IS NOT DISTINCT FROM ? AND estado='ACTIVA'

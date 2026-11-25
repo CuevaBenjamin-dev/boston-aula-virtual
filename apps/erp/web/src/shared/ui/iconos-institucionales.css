@@ -1,0 +1,28 @@
+/* Iconografía ERP: no reemplaza tipografía ni estilos generales. */
+.bbs-icono-ui{display:block;width:18px;height:18px;flex:none}
+.barra-lateral nav .navegacion{display:flex;align-items:center;gap:16px;padding-inline:13px 10px;min-width:0}
+.barra-lateral nav .navegacion .bbs-icono-ui{width:17px;height:17px;color:currentColor}
+.barra-lateral nav .navegacion>span{min-width:0}
+@media(max-width:950px){.barra-lateral nav .navegacion{flex-shrink:0;gap:9px}}
+/* Exclusivo de Integración institucional en el expediente de Matrículas. */
+.mat-bbs .mat-integracion>header h3{display:flex;align-items:center;gap:10px}
+.mat-bbs .mat-integracion .mat-block{padding:15px;gap:12px}
+.mat-bbs .mat-integracion-lista{display:grid;gap:10px;min-width:0}
+.mat-bbs .mat-integracion-fila{display:grid;grid-template-columns:40px minmax(0,1fr) auto;align-items:center;gap:10px;border:1px solid #d3dfea;border-radius:6px;padding:8px;background:#fbfcfd;min-width:0}
+.mat-bbs .mat-integracion-icono{display:grid;place-items:center;width:40px;height:40px;border-radius:7px;background:#e5eef5;color:#163d63}
+.mat-bbs .mat-integracion-icono .bbs-icono-ui{width:21px;height:21px}
+.mat-bbs .mat-integracion-texto{display:grid;gap:4px;min-width:0;overflow-wrap:anywhere}
+.mat-bbs .mat-integracion-texto strong{font-size:12px;line-height:1.3}
+.mat-bbs .mat-integracion-texto small{font-size:11px;line-height:1.4;color:#52697e}
+.mat-bbs .mat-integracion-estado{display:inline-flex;gap:4px;align-items:center;justify-self:end;max-width:100%;border-radius:12px;background:#edf2f6;color:#4b6075;padding:5px 8px;font-size:11px;font-weight:600;line-height:1.3;overflow-wrap:anywhere}
+.mat-bbs .mat-integracion-estado .bbs-icono-ui{width:14px;height:14px}
+.mat-bbs .mat-integracion-estado.confirmada{color:#176540;background:#e4f3e9}
+.mat-bbs .mat-integracion-estado.pendiente{color:#7b530d;background:#fbefda}
+.mat-bbs .mat-integracion-estado.incidencia{color:#98382e;background:#fae8e5}
+.mat-bbs .mat-integracion-reintento{grid-column:2/-1;justify-self:start}
+.mat-bbs .mat-integracion-nota{display:flex;align-items:flex-start;gap:8px;padding:10px 11px;border-radius:5px;background:#edf4fa;color:#345b81;font-size:11px;line-height:1.5}
+.mat-bbs .mat-integracion-nota .bbs-icono-ui{width:16px;height:16px;margin-top:1px}
+.mat-bbs .mat-integracion-consulta{font-size:11px;line-height:1.5;overflow-wrap:anywhere}
+/* La ficha conserva su grid; el estado salta de línea si el panel es estrecho. */
+.mat-bbs .mat-integracion{container-type:inline-size}
+@container (max-width:420px){.mat-bbs .mat-integracion-fila{grid-template-columns:34px minmax(0,1fr);gap:6px 9px}.mat-bbs .mat-integracion-icono{width:34px;height:34px;grid-row:1/span 2;align-self:start}.mat-bbs .mat-integracion-estado{grid-column:2;justify-self:start}.mat-bbs .mat-integracion-reintento{grid-column:2}}

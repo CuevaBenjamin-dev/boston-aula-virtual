@@ -3,8 +3,10 @@ import { Link, Route, Routes, useNavigate, useParams, useSearchParams } from 're
 import type { Sesion } from '../../shared/api/sesion'
 import { api, guardar, type Capacidades, type Condicion, type Pagina, type Persona, type ReferenciaPersona, type TipoDocumento } from './api'
 import { EstadoIntegracion } from '../../shared/ui/EstadoIntegracion'
+import { IconoInstitucional } from '../../shared/ui/IconoInstitucional'
 import './directorio.css'
 import './ficha.css'
+import './identificacion.css'
 
 const tiposCondicion: { valor: Condicion; texto: string }[] = [
   { valor: 'ESTUDIANTE', texto: 'Estudiante' }, { valor: 'DOCENTE', texto: 'Docente' },
@@ -449,11 +451,28 @@ function FichaContenido({ id, sesion, capacidades }: { id: string | undefined; s
         <section className="per-nuevo-bloque"><div className="per-nuevo-cabecera"><h3>Contacto</h3>{(capacidades.editarContacto || capacidades.corregirIdentidad) && <button type="button" className="per-secundario" disabled={ocupado} onClick={() => accion === 'contacto' ? cancelar() : abrir('contacto', contacto)}>{accion === 'contacto' ? 'Cancelar edición' : 'Editar contacto'}</button>}</div>
           {accion === 'contacto' ? editor : <dl className="per-nuevo-datos">{campoVisible('Teléfono',p.telefono)}{campoVisible('Correo',p.correo)}{campoVisible('Dirección',p.direccion,true)}</dl>}</section>
       </div>
-      <section className="per-nuevo-panel per-nuevo-bloque"><div className="per-nuevo-cabecera"><h3>Identificación</h3></div>
-        {!p.documentos.length && <p className="per-texto">Sin documentos registrados.</p>}
-        {p.documentos.map(d => <div className="per-nuevo-documento" key={d.id}><div className="per-nuevo-cabecera"><span className="etiqueta">{d.tipo} · {d.pais}</span><span className={d.vigenteHasta ? 'per-nuevo-inactivo' : 'per-nuevo-vigente'}>{d.vigenteHasta ? 'Histórico' : d.principal ? 'Principal' : 'Vigente'}</span></div><strong>{d.numero}</strong><small><Fecha valor={d.vigenteDesde} /> — <Fecha valor={d.vigenteHasta} /></small></div>)}
-        {p.provisional && <p className="per-texto">Identificación provisional: {p.provisional.motivo} · {p.provisional.sustentoReferencia} {p.provisional.regularizadaEn && '(regularizada)'}</p>}
-        {capacidades.corregirIdentidad && <button className="per-secundario" type="button" disabled={ocupado} onClick={() => abrir('documento', { tipo: documentoPrincipal?.tipo ?? 'DNI', pais: documentoPrincipal?.pais ?? 'PE', numero: documentoPrincipal?.numero ?? '' })}>Corregir o regularizar documento</button>}
+      <section className="per-nuevo-panel per-identificacion" aria-labelledby="per-identificacion-titulo">
+        <header className="per-identificacion-cabecera"><IconoInstitucional nombre="documentos" /><h3 id="per-identificacion-titulo">Identificación</h3></header>
+        <div className="per-identificacion-cuerpo">
+          {!p.documentos.length && <p className="per-identificacion-vacio">Sin documentos oficiales registrados.</p>}
+          {[...p.documentos].sort((a, b) => Number(!!a.vigenteHasta) - Number(!!b.vigenteHasta) || Number(b.principal) - Number(a.principal)).map(d =>
+            <div className={`per-identificacion-documento${d.vigenteHasta ? ' historico' : d.principal ? ' principal' : ''}`} key={d.id}>
+              <div className="per-identificacion-icono"><IconoInstitucional nombre="identidad" /></div>
+              <div className="per-identificacion-datos">
+                <div className="per-identificacion-linea"><span className="per-identificacion-tipo">{d.tipo} · {d.pais}</span>
+                  <span className={`per-identificacion-estado${d.vigenteHasta ? ' historico' : ' vigente'}`}><IconoInstitucional nombre={d.vigenteHasta ? 'informacion' : 'confirmado'} />{d.vigenteHasta ? 'Histórico' : 'Vigente'}</span>
+                </div>
+                <strong className="per-identificacion-numero">{d.numero}</strong>
+                {d.principal && !d.vigenteHasta && <span className="per-identificacion-principal">Documento principal</span>}
+                <small>Desde <Fecha valor={d.vigenteDesde} />{d.vigenteHasta && <> · Hasta <Fecha valor={d.vigenteHasta} /></>}</small>
+              </div>
+            </div>)}
+          {p.provisional && <div className={`per-identificacion-provisional${p.provisional.regularizadaEn ? ' regularizada' : ''}`}>
+            <IconoInstitucional nombre={p.provisional.regularizadaEn ? 'informacion' : 'pendiente'} />
+            <div><strong>Identificación provisional{p.provisional.regularizadaEn ? ' · Regularizada' : ''}</strong><p>{p.provisional.motivo}</p><small>Sustento: {p.provisional.sustentoReferencia}</small></div>
+          </div>}
+        </div>
+        {capacidades.corregirIdentidad && <footer className="per-identificacion-pie"><button className="per-secundario" type="button" disabled={ocupado} onClick={() => abrir('documento', { tipo: documentoPrincipal?.tipo ?? 'DNI', pais: documentoPrincipal?.pais ?? 'PE', numero: documentoPrincipal?.numero ?? '' })}>Corregir o regularizar documento</button></footer>}
       </section>
     </section> : <section className="per-nuevo-pila" aria-label="Condiciones institucionales">
       <section className="per-nuevo-panel"><div className="per-nuevo-franja"><div><h3>Condiciones institucionales</h3><p>Una persona puede tener más de una condición.</p></div>{capacidades.gestionarCondiciones && <button className="per-secundario" type="button" disabled={ocupado} onClick={() => abrir('condicion')}>+ Incorporar</button>}</div>

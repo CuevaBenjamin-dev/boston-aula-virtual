@@ -1,0 +1,29 @@
+/* Solo el panel de Identificación de la ficha institucional de Personas. */
+.per-nueva-ficha .per-identificacion {align-self:start;min-width:0;overflow:hidden}
+.per-identificacion-cabecera {display:flex;align-items:center;gap:10px;padding:15px 19px;background:#edf3f7;border-bottom:1px solid #d3dfea}
+.per-identificacion-cabecera h3 {font-size:15px;margin:0;color:#102847}
+.per-identificacion-cabecera .bbs-icono-ui {color:#20578d}
+.per-identificacion-cuerpo {display:grid;gap:10px;padding:15px;min-width:0}
+.per-identificacion-documento {display:grid;grid-template-columns:40px minmax(0,1fr);align-items:start;gap:11px;padding:12px;border:1px solid #d3dfea;border-radius:6px;background:#fbfcfd;min-width:0}
+.per-identificacion-documento.principal {background:#f3f7fb;border-color:#c5d7e7}
+.per-identificacion-documento.historico {background:#fff}
+.per-identificacion-icono {display:grid;place-items:center;width:40px;height:40px;background:#e5eef5;color:#163d63;border-radius:7px}
+.per-identificacion-icono .bbs-icono-ui {width:21px;height:21px}
+.per-identificacion-datos {display:grid;gap:5px;min-width:0;overflow-wrap:anywhere}
+.per-identificacion-linea {display:flex;justify-content:space-between;align-items:center;gap:6px 10px;flex-wrap:wrap}
+.per-identificacion-tipo {font-size:11px;letter-spacing:.12em;font-weight:700;color:#20578d}
+.per-identificacion-numero {display:block;font-size:22px;line-height:1.2;letter-spacing:.3px;font-variant-numeric:tabular-nums;color:#102847;overflow-wrap:anywhere}
+.per-identificacion-principal {font-size:11px;font-weight:600;color:#20578d}
+.per-identificacion-datos small,.per-identificacion-provisional small {font-size:11px;line-height:1.5;color:#526b85}
+.per-identificacion-estado {display:inline-flex;align-items:center;gap:4px;padding:4px 8px;border-radius:12px;font-size:11px;font-weight:600;line-height:1.3;background:#edf2f6;color:#4b6075}
+.per-identificacion-estado.vigente {background:#e4f3e9;color:#176540}
+.per-identificacion-estado .bbs-icono-ui {width:14px;height:14px}
+.per-identificacion-provisional {display:flex;align-items:flex-start;gap:9px;padding:11px;border:1px solid #ead9b8;border-radius:5px;background:#fbf4e7;color:#79530d;overflow-wrap:anywhere}
+.per-identificacion-provisional.regularizada {background:#edf4fa;border-color:#d3dfea;color:#345b81}
+.per-identificacion-provisional > div {min-width:0}
+.per-identificacion-provisional strong {font-size:12px}
+.per-identificacion-provisional p {margin:5px 0;font-size:12px;line-height:1.4}
+.per-identificacion-vacio {margin:0;padding:9px 3px;color:#526b85;font-size:12px;line-height:1.5}
+.per-identificacion-pie {display:flex;justify-content:flex-start;flex-wrap:wrap;padding:0 15px 15px}
+.per-identificacion-pie button {max-width:100%;text-align:left}
+@media(max-width:550px){.per-identificacion-cabecera {padding:13px 15px}.per-identificacion-cuerpo {padding:12px}.per-identificacion-documento {grid-template-columns:34px minmax(0,1fr);gap:9px;padding:10px}.per-identificacion-icono {width:34px;height:34px}.per-identificacion-pie {padding:0 12px 12px}}

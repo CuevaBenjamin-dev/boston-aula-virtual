@@ -1,94 +1,69 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import type { Sesion } from '../../shared/api/sesion'
 import { erp } from '../../shared/api/erp'
 import { EstadoIntegracion } from '../../shared/ui/EstadoIntegracion'
+import './asignaciones.css'
 
 type Persona = { id: string; nombres: string; apellidos: string; documento: string | null }
-type Pagina = { resultados: Persona[] }
-type Seccion = { id: string; anio: number; nivel: string; grado: number; nombre: string }
-type Asignatura = { id: string; anio: number; nivel: string; grado: number; codigo: string; nombre: string }
-type Asignacion = { id: string; docente: string; seccion: string; asignatura: string; anio: number;
-  tipo: string; desde: string; hasta: string | null; horario: string | null; estado: string; coberturaPendiente: boolean }
-
-export function AsignacionesModulo({ sesion }: { sesion: Sesion }) {
-  const [anios, setAnios] = useState<number[]>([])
-  const [anio, setAnio] = useState<number>(new Date().getFullYear())
-  const [secciones, setSecciones] = useState<Seccion[]>([])
-  const [asignaturas, setAsignaturas] = useState<Asignatura[]>([])
-  const [filas, setFilas] = useState<Asignacion[]>([])
-  const [busqueda, setBusqueda] = useState('')
-  const [docentes, setDocentes] = useState<Persona[]>([])
-  const [docenteId, setDocenteId] = useState('')
-  const [seccionId, setSeccionId] = useState('')
-  const [asignaturaId, setAsignaturaId] = useState('')
-  const [tipo, setTipo] = useState('TITULAR')
-  const [desde, setDesde] = useState(new Date().toISOString().slice(0, 10))
-  const [hasta, setHasta] = useState('')
-  const [horario, setHorario] = useState('')
-  const [error, setError] = useState('')
-  const [aviso, setAviso] = useState('')
-  const [guardando, setGuardando] = useState(false)
-
-  useEffect(() => { void erp<number[]>('/oferta/anios', sesion).then(v => { setAnios(v); if (v.length) setAnio(v[0]) }).catch(e => setError(String(e))) }, [sesion])
-  useEffect(() => { void Promise.all([
-    erp<Seccion[]>(`/oferta/secciones?anio=${anio}`, sesion),
-    erp<Asignatura[]>(`/oferta/asignaturas?anio=${anio}`, sesion),
-    erp<Asignacion[]>(`/asignaciones?anio=${anio}`, sesion),
-  ]).then(([s, a, f]) => { setSecciones(s); setAsignaturas(a); setFilas(f) }).catch(e => setError(String(e))) }, [anio, sesion])
-  useEffect(() => {
-    if (busqueda.trim().length < 1 || docenteId) { setDocentes([]); return }
-    let vigente = true
-    const reloj = window.setTimeout(() => { void erp<Pagina>(`/personas?condicion=DOCENTE&vigente=true&buscar=${encodeURIComponent(busqueda.trim())}&tamano=8`, sesion)
-      .then(p => { if (vigente) setDocentes(p.resultados) }).catch(e => { if (vigente) setError(String(e)) }) }, 250)
-    return () => { vigente = false; window.clearTimeout(reloj) }
-  }, [busqueda, docenteId, sesion])
-  const seccion=secciones.find(s => s.id===seccionId)
-  const compatibles=asignaturas.filter(a => seccion && a.nivel===seccion.nivel && a.grado===seccion.grado)
-  async function crear(e: FormEvent) {
-    e.preventDefault(); setError(''); setAviso(''); setGuardando(true)
-    try { const a=await erp<Asignacion>('/asignaciones',sesion,'POST',{ docenteId,seccionId,asignaturaId,tipo,desde,hasta:hasta||null,horario:horario||null })
-      setFilas(f=>[a,...f]); setAviso('Asignación registrada en ERP. Comprueba la confirmación de Aula en la fila.'); setAsignaturaId('') }
-    catch (e) { setError(String(e instanceof Error?e.message:e)) } finally { setGuardando(false) }
-  }
-  async function cerrar(id: string) {
-    if (!window.confirm('¿Cerrar esta asignación? Su historial permanecerá disponible.')) return
-    setError(''); setGuardando(true)
-    try { const a=await erp<Asignacion>(`/asignaciones/${id}/cerrar`,sesion,'POST'); setFilas(f=>f.map(x=>x.id===id?a:x)); setAviso('Asignación cerrada; comprueba la actualización de Aula.') }
-    catch (e) { setError(String(e instanceof Error?e.message:e)) } finally { setGuardando(false) }
-  }
-
-  return <section className="pagina">
-    <div className="erp-pagina-titulo"><div><p className="etiqueta">ORGANIZACIÓN DOCENTE</p>
-      <p>Vincula un docente activo a una asignatura y sección del mismo grado y año.</p></div></div>
-    {error && <p className="per-aviso" role="alert">{error}</p>}{aviso && <p className="per-aviso exito" role="status">{aviso}</p>}
-    <section className="per-panel"><div className="per-panel-cabecera"><h3>Nueva asignación</h3></div>
-      {!anios.length && <p className="per-vacio">Primero configura un año en Oferta académica y registra al docente en Personas.</p>}
-      <form onSubmit={e=>void crear(e)}>
-        <div className="per-formulario"><label className="per-campo">Año escolar<select value={anio} onChange={e=>{setAnio(Number(e.target.value));setSeccionId('');setAsignaturaId('')}}>
-          {anios.map(y=><option key={y}>{y}</option>)}</select></label>
-          <label className="per-campo">Buscar docente<input value={busqueda} onChange={e=>{setBusqueda(e.target.value);setDocenteId('')}} placeholder="Nombre o documento" /></label></div>
-        {!!docentes.length && <div className="per-opciones">{docentes.map(d=><button type="button" key={d.id} onClick={()=>{setDocenteId(d.id);setBusqueda(`${d.nombres} ${d.apellidos}`);setDocentes([])}}>
-          <strong>{d.nombres} {d.apellidos}</strong><small>{d.documento}</small></button>)}</div>}
-        {docenteId && <p className="per-seleccionado">Docente seleccionado: {busqueda}</p>}
-        <div className="per-formulario"><label className="per-campo">Sección<select required value={seccionId} onChange={e=>{setSeccionId(e.target.value);setAsignaturaId('')}}>
-          <option value="">Seleccionar</option>{secciones.map(s=><option value={s.id} key={s.id}>{s.nivel} · {s.grado}.º · {s.nombre}</option>)}</select></label>
-          <label className="per-campo">Asignatura<select required value={asignaturaId} onChange={e=>setAsignaturaId(e.target.value)}>
-            <option value="">Seleccionar</option>{compatibles.map(a=><option value={a.id} key={a.id}>{a.nombre} ({a.codigo})</option>)}</select></label>
-          <label className="per-campo">Tipo<select value={tipo} onChange={e=>setTipo(e.target.value)}><option value="TITULAR">Titular</option><option value="REEMPLAZO">Reemplazo</option></select></label>
-          <label className="per-campo">Desde<input required type="date" value={desde} onChange={e=>setDesde(e.target.value)} /></label>
-          <label className="per-campo">Hasta (opcional)<input type="date" value={hasta} onChange={e=>setHasta(e.target.value)} /></label>
-          <label className="per-campo">Horario (referencia opcional)<input value={horario} onChange={e=>setHorario(e.target.value)} placeholder="Lunes 08:00–09:00" /></label></div>
-        <div className="per-acciones"><small>La asignación queda persistida; Aula se actualiza al confirmar el destino.</small>
-          <button className="boton-principal" disabled={guardando||!docenteId||!anios.length}>Registrar asignación</button></div>
-      </form>
-    </section>
-    <section className="per-panel"><div className="per-panel-cabecera"><h3>Asignaciones · {anio}</h3><span>{filas.length}</span></div>
-      {!filas.length && <p className="per-vacio">No hay asignaciones en este año.</p>}
-      {filas.map(a=><div className="per-fila" key={a.id}><div><strong>{a.asignatura} · {a.seccion}</strong>
-        <small>{a.docente} · {a.tipo} · {a.desde}{a.hasta?` a ${a.hasta}`:''} · {a.estado}</small>
-        {a.coberturaPendiente && <small className="per-aviso">Cobertura futura por resolver: docente inactivo.</small>}
-        <EstadoIntegracion sesion={sesion} tipo="ASIGNACION" id={a.id} /></div>
-        {a.estado==='ACTIVA' && <button className="per-secundario" type="button" disabled={guardando} onClick={()=>void cerrar(a.id)}>Cerrar</button>}</div>)}
-    </section>
+type Oferta = { id: string; anio: number; nivel: string; grado: number; nombre: string }
+type Materia = Oferta & { codigo: string }
+type Fila = { id: string; docenteId: string; docente: string; seccionId: string; seccion: string; asignaturaId: string; asignatura: string; anio: number; tipo: string; desde: string; hasta: string | null; horario: string | null; estado: string; coberturaPendiente: boolean; aulaEstado: string | null }
+type Datos = { anio: number; secciones: Oferta[]; materias: Materia[]; filas: Fila[] }
+type Entrada = { grado: string; materia: string; secciones: string[]; docente: Persona | null; tipo: string; desde: string; hasta: string; horario: string; continuar: boolean }
+const grados = ['PRIMARIA','SECUNDARIA'].flatMap(nivel => Array.from({length: nivel==='PRIMARIA'?6:5}, (_,i)=>({id:`${nivel}-${i+1}`, nivel, grado:i+1, nombre:`${i+1}.º de ${nivel==='PRIMARIA'?'Primaria':'Secundaria'}`})))
+const gradoDe = (o: Oferta) => `${o.nivel}-${o.grado}`
+const nombre = (p: Persona) => `${p.nombres} ${p.apellidos}`.trim()
+const normal = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('es').trim()
+const hoy = () => { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` }
+const activo = (f: Fila) => f.estado==='ACTIVA' && (!f.hasta || f.hasta>=hoy())
+const titular = (f: Fila) => activo(f) && !f.coberturaPendiente && f.tipo==='TITULAR'
+const aula = (f: Fila) => f.aulaEstado==='CONFIRMADA'?'Confirmada':f.aulaEstado==='INTERVENCION'?'Requiere intervención':f.aulaEstado==='ERROR'?'Error reintentable':f.aulaEstado==='PROCESANDO'?'Procesando':f.aulaEstado?'Pendiente':'Sin solicitud'
+const err = (e: unknown) => e instanceof Error?e.message:String(e)
+const fecha = (d: string | null) => d ? d.split('-').reverse().join('/') : 'Sin término'
+function Modal({titulo,ocupado,cerrar,children}:{titulo:string;ocupado:boolean;cerrar:()=>void;children:ReactNode}) {
+  const ref=useRef<HTMLDialogElement>(null)
+  useEffect(()=>{const el=ref.current;el?.showModal();return()=>{if(el?.open)el.close()}},[])
+  return <dialog ref={ref} className="asi-modal" aria-label={titulo} onCancel={e=>{e.preventDefault();if(!ocupado)cerrar()}}><header><h2>{titulo}</h2><button type="button" className="asi-button" disabled={ocupado} onClick={cerrar} aria-label="Cerrar diálogo">×</button></header>{children}</dialog>
+}
+function BuscadorDocente({sesion,docente,onSelect}:{sesion:Sesion;docente:Persona|null;onSelect:(p:Persona|null)=>void}) {
+  const [q,setQ]=useState(''), [lista,setLista]=useState<Persona[]>([]), [estado,setEstado]=useState('')
+  useEffect(()=>{if(docente||!q.trim()){setLista([]);setEstado('');return}let live=true;setLista([]);setEstado('Buscando…');const t=window.setTimeout(()=>{void erp<{resultados:Persona[]}>(`/personas?condicion=DOCENTE&vigente=true&buscar=${encodeURIComponent(q.trim())}&tamano=8`,sesion).then(p=>{if(live){setLista(p.resultados);setEstado(p.resultados.length?'':'No se encontraron docentes activos.')}}).catch(e=>{if(live)setEstado(err(e))})},250);return()=>{live=false;window.clearTimeout(t)}},[q,docente,sesion])
+  return docente?<div className="asi-selected"><div><small>Docente seleccionado</small><strong>{nombre(docente)}</strong><small>{docente.documento||'Sin documento'}</small></div><button type="button" className="asi-button" onClick={()=>{setQ('');onSelect(null)}}>Cambiar</button></div>:<div className="asi-search"><label>Buscar docente<input autoComplete="off" value={q} onChange={e=>setQ(e.target.value)} placeholder="Nombre o documento" /></label>{estado&&<small role="status">{estado}</small>}{lista.length>0&&<div className="asi-results">{lista.map(p=><button type="button" key={p.id} onClick={()=>onSelect(p)}><strong>{nombre(p)}</strong><small>{p.documento}</small></button>)}</div>}</div>
+}
+export function AsignacionesModulo({sesion}:{sesion:Sesion}) {
+  const [anios,setAnios]=useState<number[]>([]), [anio,setAnio]=useState<number|null>(null), [datos,setDatos]=useState<Datos|null>(null)
+  const [error,setError]=useState(''), [aviso,setAviso]=useState(''), [cargando,setCargando]=useState(true), [revision,setRevision]=useState(0)
+  const [grado,setGrado]=useState(grados[0].id), [vista,setVista]=useState<'matriz'|'registro'>('matriz'), [pendientes,setPendientes]=useState(false)
+  const [q,setQ]=useState(''), [fg,setFg]=useState(''), [fs,setFs]=useState(''), [fe,setFe]=useState(''), [ft,setFt]=useState(''), [fi,setFi]=useState(''), [agrupar,setAgrupar]=useState(false), [pagina,setPagina]=useState(0)
+  const [entrada,setEntrada]=useState<Entrada|null>(null), [detalle,setDetalle]=useState<string|null>(null), [confirmar,setConfirmar]=useState(false), [ocupado,setOcupado]=useState(false), [errorModal,setErrorModal]=useState(''), [marcadas,setMarcadas]=useState<string[]>([])
+  const escribiendo=useRef(false)
+  useEffect(()=>{let live=true;void erp<number[]>('/oferta/anios',sesion).then(a=>{if(live){setAnios(a);setAnio(a.length?Math.max(...a):null);setCargando(false)}}).catch(e=>{if(live){setError(err(e));setCargando(false)}});return()=>{live=false}},[sesion])
+  useEffect(()=>{if(anio===null)return;let live=true;let seq=0;let inicialCompleta=false;let consultando=false;setCargando(true);setError('');const cargar=async(inicial:boolean)=>{if(consultando)return;consultando=true;const n=++seq;try{if(inicial){const [secciones,materias,filas]=await Promise.all([erp<Oferta[]>(`/oferta/secciones?anio=${anio}`,sesion),erp<Materia[]>(`/oferta/asignaturas?anio=${anio}`,sesion),erp<Fila[]>(`/asignaciones?anio=${anio}`,sesion)]);if(live&&n===seq){setDatos({anio,secciones,materias,filas});inicialCompleta=true}}else{const filas=await erp<Fila[]>(`/asignaciones?anio=${anio}`,sesion);if(live&&n===seq&&!escribiendo.current)setDatos(d=>d?.anio===anio?{...d,filas}:d)}if(live&&n===seq)setError('')}catch(e){if(live&&n===seq)setError(err(e))}finally{consultando=false;if(live&&n===seq)setCargando(false)}};void cargar(true);const timer=window.setInterval(()=>{if(!escribiendo.current&&inicialCompleta)void cargar(false)},10000);return()=>{live=false;window.clearInterval(timer)}},[anio,sesion,revision])
+  useEffect(()=>{if(!marcadas.length)return;const t=window.setTimeout(()=>setMarcadas([]),2350);return()=>window.clearTimeout(t)},[marcadas])
+  const actual=datos?.anio===anio?datos:null, secciones=actual?.secciones||[], materias=actual?.materias||[], filas=actual?.filas||[]
+  const porPar=new Map<string,Fila[]>();for(const f of filas){const k=`${f.seccionId}:${f.asignaturaId}`;porPar.set(k,[...(porPar.get(k)||[]),f])}
+  const pares=(g:string)=>secciones.filter(s=>gradoDe(s)===g).flatMap(s=>materias.filter(m=>gradoDe(m)===g).map(m=>({s,m,filas:porPar.get(`${s.id}:${m.id}`)||[]})))
+  const todos=grados.flatMap(g=>pares(g.id)), cubiertos=todos.filter(p=>p.filas.some(titular)).length
+  const ss=secciones.filter(s=>gradoDe(s)===grado).sort((a,b)=>a.nombre.localeCompare(b.nombre,'es',{numeric:true})), mm=materias.filter(m=>gradoDe(m)===grado).sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'))
+  const visible=mm.filter(m=>!pendientes||ss.some(s=>!(porPar.get(`${s.id}:${m.id}`)||[]).some(titular)))
+  const filtradas=filas.filter(f=>(!q||normal(`${f.docente} ${f.asignatura} ${f.seccion}`).includes(normal(q)))&&(!fg||secciones.some(s=>s.id===f.seccionId&&gradoDe(s)===fg))&&(!fs||f.seccionId===fs)&&(!fe||f.estado===fe)&&(!ft||f.tipo===ft)&&(!fi||(fi==='COBERTURA'?f.coberturaPendiente:fi==='PENDIENTE'?f.aulaEstado!=='CONFIRMADA':f.aulaEstado==='CONFIRMADA'))).sort((a,b)=>agrupar?a.docente.localeCompare(b.docente,'es')||a.docenteId.localeCompare(b.docenteId)||a.seccion.localeCompare(b.seccion,'es'):a.seccion.localeCompare(b.seccion,'es',{numeric:true})||a.asignatura.localeCompare(b.asignatura,'es')||b.desde.localeCompare(a.desde)||a.id.localeCompare(b.id))
+  const paginas=Math.max(1,Math.ceil(filtradas.length/15)), p=Math.min(pagina,paginas-1), paginaFilas=filtradas.slice(p*15,p*15+15), fDetalle=filas.find(f=>f.id===detalle)
+  function limpiar(){setQ('');setFg('');setFs('');setFe('');setFt('');setFi('');setPagina(0)}
+  function abrir(g=grado,m='',s:string[]=[],tipo='TITULAR'){setDetalle(null);setConfirmar(false);setErrorModal('');setEntrada({grado:g,materia:m,secciones:s,docente:null,tipo,desde:anio===new Date().getFullYear()?hoy():'',hasta:'',horario:'',continuar:false})}
+  function editar(cambio:Partial<Entrada>){setEntrada(e=>e?{...e,...cambio}:e);setErrorModal('')}
+  const seleccionadas=entrada?secciones.filter(s=>entrada.secciones.includes(s.id)):[]
+  const conflictos=entrada?seleccionadas.filter(s=>(porPar.get(`${s.id}:${entrada.materia}`)||[]).some(f=>f.estado==='ACTIVA'&&(!f.hasta||f.hasta>=entrada.desde)&&(!entrada.hasta||f.desde<=entrada.hasta))):[]
+  async function guardar(e:FormEvent){e.preventDefault();if(!entrada||!entrada.docente||!entrada.materia||!entrada.secciones.length||escribiendo.current||anio===null)return;const v={...entrada,docente:entrada.docente};setErrorModal('');if(!v.desde||v.desde.slice(0,4)!==String(anio)||(v.hasta&&(v.hasta<v.desde||v.hasta.slice(0,4)!==String(anio)))){setErrorModal('Revisa las fechas: deben corresponder al año escolar seleccionado y estar en orden.');return}if(v.secciones.some(s=>(porPar.get(`${s}:${v.materia}`)||[]).some(f=>f.estado==='ACTIVA'&&f.docenteId===v.docente.id&&f.tipo===v.tipo&&f.desde===v.desde&&(f.hasta||'')===v.hasta))){setErrorModal('Ya existe una asignación activa idéntica. Desmarca esa sección o revisa los datos.');return}escribiendo.current=true;setOcupado(true);try{const nuevas=await erp<Fila[]>('/asignaciones/lote',sesion,'POST',{anio,docenteId:v.docente.id,asignaturaId:v.materia,seccionIds:v.secciones,tipo:v.tipo,desde:v.desde,hasta:v.hasta||null,horario:v.horario.trim()||null});setDatos(d=>d?.anio===anio?{...d,filas:[...nuevas,...d.filas]}:d);setMarcadas(nuevas.map(f=>f.id));setGrado(v.grado);setAviso(`${nuevas.length} asignación(es) registrada(s) en ERP. Aula se confirma por separado.`);setEntrada(v.continuar?{...v,materia:'',secciones:[]}:null);setRevision(r=>r+1)}catch(e){setErrorModal(err(e)+' Si hubo un problema de conexión, consulta el registro antes de repetir.')}finally{escribiendo.current=false;setOcupado(false)}}
+  async function cerrarAsignacion(){if(!fDetalle||escribiendo.current)return;setOcupado(true);setErrorModal('');try{const f=await erp<Fila>(`/asignaciones/${fDetalle.id}/cerrar`,sesion,'POST');setDatos(d=>d?{...d,filas:d.filas.map(x=>x.id===f.id?f:x)}:d);setMarcadas([f.id]);setDetalle(null);setConfirmar(false);setAviso('Asignación cerrada. El historial permanece disponible; consulta el estado de Aula.');setRevision(r=>r+1)}catch(e){setErrorModal(err(e))}finally{escribiendo.current=false;setOcupado(false)}}
+  const abrirDetalle=(id:string)=>{setDetalle(id);setConfirmar(false);setErrorModal('')}
+  return <section className="pagina asi-bbs">
+    <div className="asi-intro"><div><p className="etiqueta">ORGANIZACIÓN DOCENTE</p><h2>Distribución docente</h2><p>Organiza las asignaturas por grado y sección, y consulta su historial.</p></div><button className="asi-primary" disabled={!actual||!secciones.length||!materias.length||cargando||!!error} onClick={()=>abrir()}>+ Nueva asignación</button></div>
+    <div className="asi-summary" aria-label="Resumen anual"><label>Año escolar<select value={anio??''} disabled={!anios.length||ocupado} onChange={e=>{setAnio(Number(e.target.value));limpiar();setAviso('');setDatos(null)}}>{!anios.length&&<option value="">Sin años</option>}{anios.map(y=><option key={y}>{y}</option>)}</select></label><div><strong>{actual&&!cargando&&!error?`${cubiertos}/${todos.length}`:'—'}</strong><small>Con titular registrado</small></div><div><strong>{actual&&!cargando&&!error?todos.length-cubiertos:'—'}</strong><small>Sin titular registrado</small></div><div><strong>{actual&&!cargando&&!error?filas.filter(f=>f.estado==='ACTIVA').length:'—'}</strong><small>Asignaciones activas</small></div><div><strong>{actual&&!cargando&&!error?filas.filter(f=>f.estado==='CERRADA').length:'—'}</strong><small>Cerradas</small></div></div>
+    {error&&<p className="per-aviso" role="alert">{error} <button className="asi-button" onClick={()=>{if(anio!==null)setRevision(r=>r+1);else window.location.reload()}}>Reintentar consulta</button></p>}{aviso&&<p className="per-aviso exito" role="status">{aviso}</p>}
+    <nav className="asi-tabs" aria-label="Vistas de asignaciones"><button aria-pressed={vista==='matriz'} onClick={()=>setVista('matriz')}>Distribución por grado</button><button aria-pressed={vista==='registro'} onClick={()=>setVista('registro')}>Registro de asignaciones</button></nav>
+    {cargando&&!actual?<p role="status">Cargando oferta y asignaciones…</p>:!actual?<p className="asi-empty">{error?'No se pudo consultar la distribución.':'Primero configura el año en Oferta académica.'}</p>:vista==='matriz'?<div className="asi-workspace"><nav className="asi-grades asi-panel" aria-label="Navegación por grados"><h3>Grados</h3>{['PRIMARIA','SECUNDARIA'].map(n=><div key={n}><p className="etiqueta">{n}</p>{grados.filter(g=>g.nivel===n).map(g=>{const ps=pares(g.id);return <button key={g.id} aria-pressed={grado===g.id} onClick={()=>setGrado(g.id)}>{g.grado}.º grado <small>{ps.filter(p=>p.filas.some(titular)).length}/{ps.length}</small></button>})}</div>)}</nav><section className="asi-panel asi-matrix"><div className="asi-head"><div><h3>{grados.find(g=>g.id===grado)?.nombre}</h3><p>{ss.length} secciones · {mm.length} asignaturas</p></div><label className="asi-check"><input type="checkbox" checked={pendientes} onChange={e=>setPendientes(e.target.checked)}/> Solo materias sin titular en alguna sección</label></div>{!ss.length||!mm.length?<p className="asi-empty">Configura secciones y asignaturas en Oferta académica.</p>:<div className="asi-scroll" tabIndex={0} aria-label="Matriz de distribución"><table><thead><tr><th scope="col">Asignatura</th>{ss.map(s=><th scope="col" key={s.id}>Sección {s.nombre}</th>)}</tr></thead><tbody>{visible.map(m=><tr key={m.id}><th scope="row">{m.nombre}<small>{m.codigo}</small></th>{ss.map(s=>{const af=(porPar.get(`${s.id}:${m.id}`)||[]).filter(activo);return <td key={s.id} className={af.some(f=>marcadas.includes(f.id))?'asi-flash':''}>{af.map(f=><button key={f.id} className="asi-cell" onClick={()=>abrirDetalle(f.id)}><strong>{f.docente}</strong><small>{f.tipo==='TITULAR'?'Titular':'Reemplazo'}{f.coberturaPendiente?' · Cobertura pendiente':''}</small></button>)}<button className="asi-add" disabled={!!error||cargando} aria-label={`Asignar ${m.nombre} a sección ${s.nombre}`} onClick={()=>abrir(grado,m.id,[s.id])}>{af.some(titular)?'+ Añadir':'+ Asignar'}</button></td>})}</tr>)}</tbody></table>{!visible.length&&<p className="asi-empty">No hay materias pendientes de titular en este grado.</p>}</div>}<p className="asi-note">Titular registrado: asignación activa, docente activo y término no vencido; incluye inicios futuros. No representa cobertura diaria ni horario semanal.</p></section></div>:<section className="asi-panel"><div className="asi-head"><h3>Registro · {anio}</h3><label className="asi-check"><input type="checkbox" checked={agrupar} onChange={e=>{setAgrupar(e.target.checked);setPagina(0)}}/> Agrupar por docente</label></div><div className="asi-filters"><label>Buscar<input value={q} onChange={e=>{setQ(e.target.value);setPagina(0)}} placeholder="Docente, materia o sección"/></label><label>Grado<select value={fg} onChange={e=>{setFg(e.target.value);setFs('');setPagina(0)}}><option value="">Todos</option>{grados.map(g=><option key={g.id} value={g.id}>{g.nombre}</option>)}</select></label><label>Sección<select value={fs} onChange={e=>{setFs(e.target.value);setPagina(0)}}><option value="">Todas</option>{secciones.filter(s=>!fg||gradoDe(s)===fg).map(s=><option key={s.id} value={s.id}>{s.nivel} {s.grado}.º {s.nombre}</option>)}</select></label><label>Estado<select value={fe} onChange={e=>{setFe(e.target.value);setPagina(0)}}><option value="">Todos</option><option value="ACTIVA">Activa</option><option value="CERRADA">Cerrada</option></select></label><label>Tipo<select value={ft} onChange={e=>{setFt(e.target.value);setPagina(0)}}><option value="">Todos</option><option value="TITULAR">Titular</option><option value="REEMPLAZO">Reemplazo</option></select></label><label>Seguimiento<select value={fi} onChange={e=>{setFi(e.target.value);setPagina(0)}}><option value="">Todos</option><option value="COBERTURA">Cobertura pendiente</option><option value="PENDIENTE">Aula sin confirmar</option><option value="CONFIRMADA">Aula confirmada</option></select></label><button className="asi-button" onClick={limpiar}>Limpiar filtros</button></div><div className="asi-scroll" tabIndex={0} aria-label="Registro de asignaciones"><table className="asi-record"><thead><tr><th>Docente</th><th>Asignatura / sección</th><th>Tipo</th><th>Vigencia</th><th>Estado</th><th>Aula</th></tr></thead><tbody>{paginaFilas.map((f,i)=><RegistroFila key={f.id} f={f} grupo={agrupar&&(i===0||paginaFilas[i-1].docenteId!==f.docenteId)} marcado={marcadas.includes(f.id)} abrir={()=>abrirDetalle(f.id)}/>)}</tbody></table>{!filtradas.length&&<p className="asi-empty">No hay asignaciones que coincidan con la consulta.</p>}</div><div className="asi-footer"><span>{filtradas.length?`${p*15+1}–${Math.min((p+1)*15,filtradas.length)} de ${filtradas.length}`:'0 resultados'}</span><div><button className="asi-button" disabled={p===0} onClick={()=>setPagina(p-1)}>Anterior</button> Página {p+1} de {paginas} <button className="asi-button" disabled={p+1>=paginas} onClick={()=>setPagina(p+1)}>Siguiente</button></div></div></section>}
+    {entrada&&<Modal titulo="Nueva asignación" ocupado={ocupado} cerrar={()=>setEntrada(null)}><form onSubmit={e=>void guardar(e)} className="asi-form"><p className="asi-context">Año escolar {anio}</p><fieldset disabled={ocupado}><BuscadorDocente sesion={sesion} docente={entrada.docente} onSelect={docente=>editar({docente})}/><div className="asi-grid"><label>Grado<select value={entrada.grado} onChange={e=>editar({grado:e.target.value,materia:'',secciones:[]})}>{grados.map(g=><option key={g.id} value={g.id}>{g.nombre}</option>)}</select></label><label>Asignatura<select required value={entrada.materia} onChange={e=>editar({materia:e.target.value})}><option value="">Seleccionar</option>{materias.filter(m=>gradoDe(m)===entrada.grado).map(m=><option key={m.id} value={m.id}>{m.nombre}</option>)}</select></label></div><div className="asi-choices"><div><strong>Secciones</strong><button type="button" className="asi-button" onClick={()=>editar({secciones:secciones.filter(s=>gradoDe(s)===entrada.grado).map(s=>s.id)})}>Todas</button></div>{secciones.filter(s=>gradoDe(s)===entrada.grado).map(s=><label className="asi-check" key={s.id}><input type="checkbox" checked={entrada.secciones.includes(s.id)} onChange={e=>editar({secciones:e.target.checked?[...entrada.secciones,s.id]:entrada.secciones.filter(x=>x!==s.id)})}/> Sección {s.nombre}</label>)}</div><div className="asi-grid"><label>Tipo<select value={entrada.tipo} onChange={e=>editar({tipo:e.target.value})}><option value="TITULAR">Titular</option><option value="REEMPLAZO">Reemplazo</option></select></label><label>Desde<input required type="date" min={`${anio}-01-01`} max={`${anio}-12-31`} value={entrada.desde} onChange={e=>editar({desde:e.target.value})}/></label><label>Hasta (opcional)<input type="date" min={entrada.desde||`${anio}-01-01`} max={`${anio}-12-31`} value={entrada.hasta} onChange={e=>editar({hasta:e.target.value})}/></label><label>Horario (referencia opcional)<input value={entrada.horario} onChange={e=>editar({horario:e.target.value})} placeholder="Lunes 08:00–09:00"/></label></div>{conflictos.length>0&&<p className="asi-warning">Hay asignaciones con periodos que se superponen en {conflictos.map(s=>s.nombre).join(', ')}. Registrar no cierra ni reemplaza automáticamente las anteriores.</p>}<p className="asi-context">Se registrarán {entrada.secciones.length} asignaciones independientes para {materias.find(m=>m.id===entrada.materia)?.nombre||'la materia seleccionada'}.</p><label className="asi-check"><input type="checkbox" checked={entrada.continuar} onChange={e=>editar({continuar:e.target.checked})}/> Continuar con el mismo docente</label></fieldset>{errorModal&&<p className="per-aviso" role="alert">{errorModal}</p>}<footer><button type="button" className="asi-button" disabled={ocupado} onClick={()=>setEntrada(null)}>Cancelar</button><button className="asi-primary" disabled={ocupado||!entrada.docente||!entrada.materia||!entrada.secciones.length||!entrada.desde}>{ocupado?'Registrando…':`Registrar ${entrada.secciones.length||''} asignación(es)`}</button></footer></form></Modal>}
+    {fDetalle&&<Modal titulo="Detalle de asignación" ocupado={ocupado} cerrar={()=>setDetalle(null)}><div className="asi-form"><h3>{fDetalle.asignatura} · {fDetalle.seccion}</h3><p>{fDetalle.docente}</p><dl className="asi-detail"><dt>Tipo</dt><dd>{fDetalle.tipo}</dd><dt>Estado</dt><dd>{fDetalle.estado}</dd><dt>Desde</dt><dd>{fecha(fDetalle.desde)}</dd><dt>Hasta</dt><dd>{fecha(fDetalle.hasta)}</dd><dt>Horario de referencia</dt><dd>{fDetalle.horario||'No indicado'}</dd></dl>{fDetalle.coberturaPendiente&&<p className="asi-warning">Cobertura futura por resolver: docente inactivo.</p>}<section className="asi-context"><h3>Integración con Aula</h3><EstadoIntegracion sesion={sesion} tipo="ASIGNACION" id={fDetalle.id}/></section>{errorModal&&<p className="per-aviso" role="alert">{errorModal}</p>}{confirmar&&<p className="asi-warning">Cerrar esta asignación conserva su historial, solicita actualizar Aula y puede dejar esta materia sin titular. No elimina el curso ni la cuenta.</p>}<footer><button className="asi-button" disabled={ocupado} onClick={()=>setDetalle(null)}>Volver</button>{!confirmar&&<button className="asi-button" disabled={ocupado||!!error} onClick={()=>abrir(secciones.find(s=>s.id===fDetalle.seccionId)?gradoDe(secciones.find(s=>s.id===fDetalle.seccionId)!):grado,fDetalle.asignaturaId,[fDetalle.seccionId],'REEMPLAZO')}>Registrar reemplazo</button>}{fDetalle.estado==='ACTIVA'&&(confirmar?<><button className="asi-button" disabled={ocupado} onClick={()=>setConfirmar(false)}>Cancelar cierre</button><button className="asi-danger" disabled={ocupado} onClick={()=>void cerrarAsignacion()}>Confirmar cierre</button></>:<button className="asi-danger" disabled={ocupado||!!error} onClick={()=>setConfirmar(true)}>Cerrar asignación</button>)}</footer></div></Modal>}
   </section>
 }
+function RegistroFila({f,grupo,marcado,abrir}:{f:Fila;grupo:boolean;marcado:boolean;abrir:()=>void}){return <>{grupo&&<tr className="asi-group"><th colSpan={6} scope="row">{f.docente}</th></tr>}<tr className={marcado?'asi-flash':''}><td><button className="asi-link" onClick={abrir}>{f.docente}</button></td><td><strong>{f.asignatura}</strong><small>{f.seccion}</small></td><td>{f.tipo==='TITULAR'?'Titular':'Reemplazo'}</td><td>{fecha(f.desde)}<small>{fecha(f.hasta)}</small></td><td>{f.estado==='ACTIVA'?'Activa':'Cerrada'}{f.coberturaPendiente&&<small className="asi-warning-text">Cobertura pendiente</small>}</td><td><span className={f.aulaEstado==='CONFIRMADA'?'asi-ok':'asi-muted'}>{aula(f)}</span></td></tr></>}

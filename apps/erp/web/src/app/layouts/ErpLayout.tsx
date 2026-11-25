@@ -1,4 +1,5 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { IconoInstitucional } from '../../shared/ui/IconoInstitucional'
 import { modulos } from '../../shared/lib/modulos'
 import { cerrarSesion, type Sesion } from '../../shared/api/sesion'
 
@@ -14,10 +15,10 @@ export function ErpLayout({ sesion }: { sesion: Sesion }) {
         <small>ERP INSTITUCIONAL</small>
       </NavLink>
       <nav aria-label="Módulos del ERP">
-        <NavLink to="/" end className={({ isActive }) => isActive ? 'navegacion activa' : 'navegacion'}>Inicio</NavLink>
+        <NavLink to="/" end className={({ isActive }) => isActive ? 'navegacion activa' : 'navegacion'}><IconoInstitucional nombre="inicio"/><span>Inicio</span></NavLink>
         {modulos.map(modulo => <NavLink key={modulo.ruta} to={'/' + modulo.ruta}
           className={({ isActive }) => isActive ? 'navegacion activa' : 'navegacion'}>
-          {modulo.nombre}
+          <IconoInstitucional nombre={modulo.ruta}/><span>{modulo.nombre}</span>
         </NavLink>)}
       </nav>
       <div className="usuario"><span>{sesion.usuario}</span><button type="button"
