@@ -148,7 +148,7 @@ public class PersonasServicio implements PersonasParaMatriculas, pe.boston.erp.p
     repositorio.cerrarDocumentoPrincipal(id,ahora);
     repositorio.regularizar(id,ahora);
     repositorio.documento(id,d,numero,ahora);
-    repositorio.solicitarCorreccionLogin(id);
+    if (repositorio.tieneCuentaAcademica(id)) repositorio.solicitarCorreccionLogin(id);
     repositorio.evento(id,id,"DOCUMENTO_CORREGIDO",actor.sub());
   }
 

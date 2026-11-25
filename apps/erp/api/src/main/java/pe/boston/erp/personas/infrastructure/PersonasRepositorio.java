@@ -224,6 +224,13 @@ public class PersonasRepositorio {
     solicitud(persona,"IDENTIDAD","CORREGIR_LOGIN","persona-login:"+persona+":"+java.util.UUID.randomUUID());
   }
 
+  public boolean tieneCuentaAcademica(UUID persona) {
+    return Boolean.TRUE.equals(jdbc.queryForObject("""
+      SELECT EXISTS(SELECT 1 FROM per_condiciones WHERE persona_id=? AND tipo='DOCENTE')
+          OR EXISTS(SELECT 1 FROM mat_matriculas WHERE persona_id=? AND estado<>'BORRADOR')
+      """, Boolean.class, persona, persona));
+  }
+
   private void solicitud(UUID persona,String sistema,String accion,String clave) {
     jdbc.update("INSERT INTO erp_solicitudes_externas(id,clave_idempotencia,sistema,entidad_tipo,entidad_id,accion,motivo) VALUES(?,?,?,?,?,?,?) ON CONFLICT (clave_idempotencia) DO NOTHING",
       UUID.randomUUID(),clave,sistema,"PERSONA",persona,accion,"Contrato remoto de negocio aún no conectado");

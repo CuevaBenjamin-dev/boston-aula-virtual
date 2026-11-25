@@ -160,6 +160,14 @@ class PersonasHttpTest {
       .andExpect(status().isOk()).andExpect(jsonPath("$.documentos.length()").value(2));
   }
 
+  @Test void corregirDocumentoSinCuentaNoEncolaCambioDeLogin() throws Exception {
+    UUID familiar=crearPersona("PERSONAL_INSTITUCIONAL",false,"987654321","persona@prueba.local");
+    mvc.perform(post("/api/erp/v1/personas/"+familiar+"/documentos").with(authentication(actor("DIRECCION",null))).with(csrf())
+      .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsBytes(Map.of("tipo","PASAPORTE","pais","PE","numero","F-"+UUID.randomUUID()))))
+      .andExpect(status().isNoContent());
+    assertEquals(0L,jdbc.queryForObject("SELECT count(*) FROM erp_solicitudes_externas WHERE entidad_tipo='PERSONA' AND entidad_id=? AND accion='CORREGIR_LOGIN'",Long.class,familiar));
+  }
+
   @Test void condicionesParentescosApoderamientosEIdentificacionProvisional() throws Exception {
     UUID estudiante=crearPersona("ESTUDIANTE",true,null,null);
     UUID familiar=crearPersona("PERSONAL_INSTITUCIONAL",false,"987654321","persona@prueba.local");
