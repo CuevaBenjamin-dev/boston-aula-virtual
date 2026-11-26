@@ -92,7 +92,7 @@
 .cursos-ficha{min-width:0;min-height:205px;display:flex;flex-direction:column;overflow:hidden;padding:23px 21px 0;background:#fff;border:1px solid #bcc9d8;border-radius:3px}
 .cursos-ficha:focus-visible{outline:2px solid #294769;outline-offset:3px}
 .cursos-ficha-cuerpo>span{display:block;color:#4c6a8b;font-size:10px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;line-height:1.5}
-.cursos-ficha h2{margin:38px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:24px;font-weight:700;line-height:1.18;letter-spacing:-.35px}
+.cursos-ficha h2{margin:10px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:24px;font-weight:700;line-height:1.18;letter-spacing:-.35px}
 .cursos-ficha-docente{display:block;margin-top:5px;color:#4c6a8b;font-size:11px;line-height:1.45;text-transform:uppercase;overflow-wrap:anywhere}
 .cursos-ficha-pie{position:relative;height:48px;display:flex;align-items:center;justify-content:space-between;gap:12px;overflow:hidden;margin:auto -21px 0;padding:0 21px;border-top:1px solid #dce4ea;font-size:10px;font-weight:700;letter-spacing:1.8px}
 .cursos-ficha-pie::before{content:'';position:absolute;inset:0;background:#c90023;transform:scaleX(0);transform-origin:left;transition:transform .38s cubic-bezier(.22,.61,.36,1)}
