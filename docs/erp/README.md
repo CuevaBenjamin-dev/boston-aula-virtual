@@ -12,7 +12,7 @@ Esta fase implementa una primera vertical con persistencia real y muestra explí
 | Oferta académica | Alta/consulta de año, secciones y asignaturas por año/grado | [Estado](modulos/oferta/ESTADO.md) |
 | Matrículas | Borrador, confirmación validada, retirada, reincorporación y cierre anual API; solicitudes remotas pendientes | [Estado](modulos/matriculas/ESTADO.md) |
 | Asignaciones docentes | Alta/consulta/cierre de asignación y alerta de cobertura por docente inactivo; Aula pendiente | [Estado](modulos/asignaciones/ESTADO.md) |
-| Asistencia | En desarrollo | [Incremento](INCREMENTO_MVP_2026-11-19.md) |
+| Asistencia | Implementación AST-00–05 en verificación | [Estado](modulos/asistencia/ESTADO.md) |
 | Documentos | En desarrollo | [Estado](modulos/documentos/ESTADO.md) |
 | Atención institucional | En desarrollo | [Incremento](INCREMENTO_MVP_2026-11-19.md) |
 

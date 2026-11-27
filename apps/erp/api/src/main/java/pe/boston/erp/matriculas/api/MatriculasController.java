@@ -29,6 +29,7 @@ public class MatriculasController {
     String estado, Map<String,Object> borrador, String creadoPor, String creadoEn, String confirmadoEn) {}
   public record ResultadoAnio(int anio, int finalizadas) {}
   public record ResumenCierre(int anio, long vigentes) {}
+  public record Traslado(UUID seccionId,String motivo) {}
   public record FilaMatricula(UUID id, String estudiante, String documento, Integer anio,
     String seccion, String estado, String creadoEn) {}
   public record PaginaMatriculas(List<FilaMatricula> resultados, long total, int pagina, int tamano) {}
@@ -207,15 +208,44 @@ public class MatriculasController {
     return obtener(id);
   }
   @PostMapping("/{id}/retirar") @Transactional public Matricula retirar(@PathVariable UUID id,Authentication auth) {
+    verificarMovimientoHoy(obtener(id,true));
     cambiarEstado(id,auth,"VIGENTE","RETIRADA","RETIRADA"); solicitud(id,"AULA","RETIRAR_ACCESO"); return obtener(id);
   }
   @PostMapping("/{id}/reincorporar") @Transactional public Matricula reincorporar(@PathVariable UUID id,Authentication auth) {
     Matricula m=obtener(id,true);
+    verificarMovimientoHoy(m);
     if (jdbc.queryForObject("SELECT count(*) FROM mat_matriculas WHERE persona_id=? AND anio=? AND estado='VIGENTE' AND id<>?",
       Long.class,m.personaId(),m.anio(),id)>0) throw new IllegalArgumentException("Ya existe otra matrícula vigente en el año");
     try { cambiarEstado(id,auth,"RETIRADA","VIGENTE","REINCORPORADA"); }
     catch (DataIntegrityViolationException e) { throw conflictoVigente(e,m.anio()); }
     solicitud(id,"AULA","REINCORPORAR_ACCESO"); return obtener(id);
+  }
+  @PostMapping("/{id}/trasladar") @Transactional public Matricula trasladar(@PathVariable UUID id,
+      @RequestBody Traslado entrada,Authentication auth) {
+    String actor=AccesoErp.actor(auth);
+    if (entrada==null || entrada.seccionId()==null || entrada.motivo()==null || entrada.motivo().isBlank())
+      throw new IllegalArgumentException("Selecciona la sección y registra el motivo del traslado");
+    Matricula m=obtener(id,true);
+    if (!"VIGENTE".equals(m.estado())) throw new IllegalArgumentException("Solo se traslada una matrícula vigente");
+    OfertaConsulta.Seccion origen=oferta.seccion(m.seccionId());
+    OfertaConsulta.Seccion destino=oferta.seccion(entrada.seccionId());
+    if (destino==null || origen==null || destino.anio()!=m.anio() || destino.grado()!=origen.grado()
+        || !destino.nivel().equals(origen.nivel()))
+      throw new IllegalArgumentException("El traslado debe conservar año, nivel y grado");
+    if (destino.id().equals(origen.id())) return m;
+    verificarMovimientoHoy(m);
+    jdbc.update("UPDATE mat_matriculas SET seccion_id=?,actualizado_en=now() WHERE id=?",destino.id(),id);
+    evento(id,"TRASLADO_SECCION: "+entrada.motivo().trim(),actor);
+    // La proyección de la sección anterior retira el acceso activo; la nueva lo incorpora.
+    var asignaturas=jdbc.query("SELECT id FROM ofe_asignaturas WHERE anio=? AND nivel=? AND grado=?",
+      (r,n)->r.getObject(1,UUID.class),m.anio(),origen.nivel(),origen.grado());
+    for(UUID asignatura:asignaturas) {
+      UUID curso=UUID.nameUUIDFromBytes(("bbs:aula:curso:v1:"+origen.id()+":"+asignatura)
+        .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+      solicitudCurso(curso);
+    }
+    solicitud(id,"AULA","TRASLADAR_ACCESO");
+    return obtener(id);
   }
   @PostMapping("/finalizar-anio/{anio}") @Transactional public ResultadoAnio finalizar(@PathVariable int anio,Authentication auth) {
     String actor=AccesoErp.actor(auth);
@@ -246,6 +276,21 @@ public class MatriculasController {
     UUID solicitudId=UUID.randomUUID();
     jdbc.update("INSERT INTO erp_solicitudes_externas(id,clave_idempotencia,sistema,entidad_tipo,entidad_id,accion,motivo) VALUES(?,?,?,?,?,?,?) ON CONFLICT (clave_idempotencia) DO NOTHING",
       solicitudId,"matricula:"+id+":"+accion+":"+solicitudId,sistema,"MATRICULA",id,accion,"Contrato remoto de negocio aún no conectado");
+  }
+  private void solicitudCurso(UUID curso) {
+    UUID id=UUID.randomUUID();
+    jdbc.update("INSERT INTO erp_solicitudes_externas(id,clave_idempotencia,sistema,entidad_tipo,entidad_id,accion,motivo) VALUES(?,?,'AULA','CURSO',?,'RECONCILIAR_SECCION','Traslado de matrícula')",
+      id,"curso:traslado:"+curso+":"+id,curso);
+  }
+  private void verificarMovimientoHoy(Matricula matricula) {
+    LocalDate dia=LocalDate.now(java.time.ZoneId.of("America/Lima"));
+    jdbc.query("SELECT version FROM ast_jornadas WHERE seccion_id=? AND fecha=? FOR UPDATE",
+      (r,n)->r.getInt(1),matricula.seccionId(),dia);
+    if(jdbc.queryForObject("""
+        SELECT EXISTS(SELECT 1 FROM ast_registros WHERE persona_id=? AND fecha=? AND valido)
+          OR EXISTS(SELECT 1 FROM ast_borradores WHERE persona_id=? AND fecha=?)
+        """,Boolean.class,matricula.personaId(),dia,matricula.personaId(),dia))
+      throw new IllegalArgumentException("Ya hay asistencia registrada o pendiente hoy; regulariza el día antes de cambiar la matrícula");
   }
   private Matricula obtener(UUID id) { return obtener(id,false); }
   private Matricula obtener(UUID id,boolean bloquear) {

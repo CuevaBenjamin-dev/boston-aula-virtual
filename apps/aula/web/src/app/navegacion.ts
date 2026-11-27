@@ -3,8 +3,8 @@ import type {Perfil} from '../api';
 export type ItemMenu = [ruta: string, etiqueta: string];
 
 export const menu: Record<Perfil['tipo'], ItemMenu[]> = {
-  ESTUDIANTE:[['/','Inicio'],['/cursos','Mis cursos actuales'],['/historial','Historial académico'],['/materiales','Mis materiales'],['/clases','Clases virtuales'],['/grabaciones','Grabaciones'],['/notificaciones','Bandeja de mensajes'],['/tareas','Mis tareas'],['/notas','Mis notas'],['/pagos','Mis pagos'],['/cuenta','Mi cuenta']],
-  DOCENTE:[['/','Inicio'],['/cursos','Mis cursos'],['/materiales','Mis materiales'],['/clases','Clases virtuales'],['/grabaciones','Grabaciones'],['/notificaciones','Bandeja de mensajes'],['/tareas','Tareas y entregas'],['/notas','Calificaciones'],['/cuenta','Mi cuenta']],
+  ESTUDIANTE:[['/','Inicio'],['/cursos','Mis cursos actuales'],['/historial','Historial académico'],['/asistencia','Mi asistencia'],['/materiales','Mis materiales'],['/clases','Clases virtuales'],['/grabaciones','Grabaciones'],['/notificaciones','Bandeja de mensajes'],['/tareas','Mis tareas'],['/notas','Mis notas'],['/pagos','Mis pagos'],['/cuenta','Mi cuenta']],
+  DOCENTE:[['/','Inicio'],['/cursos','Mis cursos'],['/asistencia','Asistencia'],['/materiales','Mis materiales'],['/clases','Clases virtuales'],['/grabaciones','Grabaciones'],['/notificaciones','Bandeja de mensajes'],['/tareas','Tareas y entregas'],['/notas','Calificaciones'],['/cuenta','Mi cuenta']],
   COORDINACION:[['/','Inicio'],['/cursos','Cursos y secciones'],['/materiales','Mis materiales'],['/historial','Historial académico'],['/docentes','Docentes'],['/reportes','Seguimiento y reportes'],['/tareas','Tareas y evaluaciones'],['/clases','Clases virtuales'],['/grabaciones','Grabaciones'],['/notificaciones','Bandeja de mensajes'],['/cuenta','Mi cuenta']],
   ADMINISTRADOR:[['/','Inicio'],['/usuarios','Usuarios y accesos'],['/historial','Historial académico'],['/modulos','Módulos del aula'],['/clases','Control de clases virtuales'],['/grabaciones','Grabaciones'],['/notificaciones','Bandeja de mensajes'],['/cuenta','Mi cuenta']]
 };

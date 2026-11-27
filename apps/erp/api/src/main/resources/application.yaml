@@ -6,6 +6,10 @@ server:
 spring:
   application:
     name: api-erp-boston
+  servlet:
+    multipart:
+      max-file-size: 2MB
+      max-request-size: 3MB
   modulith:
     detection-strategy: explicitly-annotated
   datasource:
@@ -20,6 +24,9 @@ spring:
       initialize-schema: never
   security:
     oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${BOSTON_JWKS_URI:http://localhost:9000/oauth2/jwks}
       client:
         registration:
           boston-erp:

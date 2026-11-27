@@ -19,7 +19,7 @@ export async function api<T>(path:string, options:RequestInit={}):Promise<T>{
   if(options.method && !['GET','HEAD'].includes(options.method.toUpperCase())) headers['X-XSRF-TOKEN']=csrf();
   const response=await fetch('/api/aula'+path,{...options,headers,credentials:'same-origin'});
   if(response.status===401&&!redirigiendoAlInicio){redirigiendoAlInicio=true;window.location.assign('/');}
-  if(!response.ok){const body=await response.json().catch(()=>({error:response.statusText}));throw new Error(body.error||`Error HTTP ${response.status}`)}
+  if(!response.ok){const body=await response.json().catch(()=>({error:response.statusText})) as {mensaje?:string;detail?:string;error?:string};throw new Error(body.mensaje||body.detail||body.error||`Error HTTP ${response.status}`)}
   if(response.status===204)return undefined as T;
   const body=await response.text();return body?JSON.parse(body) as T:undefined as T;
 }

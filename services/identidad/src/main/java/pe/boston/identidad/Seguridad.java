@@ -161,9 +161,12 @@ public class Seguridad {
     else if (!tokensBff.getRefreshTokenTimeToLive().equals(bffActual.getTokenSettings().getRefreshTokenTimeToLive())
         || bffActual.getTokenSettings().isReuseRefreshTokens())
       repo.save(RegisteredClient.from(bffActual).tokenSettings(tokensBff).build());
-    if (repo.findByClientId("aula-servicio") == null) repo.save(RegisteredClient.withId(UUID.randomUUID().toString())
+    var aulaServicio=repo.findByClientId("aula-servicio");
+    if (aulaServicio == null) repo.save(RegisteredClient.withId(UUID.randomUUID().toString())
       .clientId("aula-servicio").clientSecret(encoder.encode(erp)).clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
-      .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS).scope("erp.read").scope("erp.sync").build());
+      .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS).scope("erp.read").scope("erp.sync").scope("erp.asistencia").build());
+    else if (!aulaServicio.getScopes().contains("erp.asistencia"))
+      repo.save(RegisteredClient.from(aulaServicio).scope("erp.asistencia").build());
     if (repo.findByClientId("erp-integracion") == null) repo.save(RegisteredClient.withId(UUID.randomUUID().toString())
       .clientId("erp-integracion").clientSecret(encoder.encode(erp)).clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
       .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
@@ -210,7 +213,11 @@ public class Seguridad {
   }
   @Bean OAuth2TokenCustomizer<JwtEncodingContext> claims(JdbcTemplate jdbc) {
     return context -> {
-      if (AuthorizationGrantType.CLIENT_CREDENTIALS.equals(context.getAuthorizationGrantType())) return;
+      if (AuthorizationGrantType.CLIENT_CREDENTIALS.equals(context.getAuthorizationGrantType())) {
+        if ("aula-servicio".equals(context.getRegisteredClient().getClientId()))
+          context.getClaims().audience(java.util.List.of("api-erp"));
+        return;
+      }
       String usuario = context.getPrincipal().getName();
       jdbc.query("SELECT id,tipo,referencia_erp,developer,tesoreria,activo,sesion_version FROM cuentas WHERE usuario=?", rs -> {
         if (!rs.getBoolean("activo")) throw new IllegalStateException("Cuenta suspendida");

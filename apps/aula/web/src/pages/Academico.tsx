@@ -7,6 +7,7 @@ import {Cursos,CursoPage,MaterialesPage,TareaPage,NotaPage} from './AcademicoTar
 import Bandeja from './Bandeja';
 import Historial from './Historial';
 import Inicio from './Inicio';
+import AsistenciaAula from './AsistenciaAula';
 
 type Props={perfil:Perfil;pagina?:string;modulos?:{clasesYGrabaciones:boolean}};
 const fecha=(s:string)=>new Date(s).toLocaleString('es-PE',{dateStyle:'medium',timeStyle:'short'});
@@ -48,6 +49,7 @@ export default function Academico({perfil,pagina='inicio',modulos}:Props){
   if(p.claseId)return <ClaseDetalle perfil={perfil}/>;
   if(actual==='inicio')return <Inicio perfil={perfil} clasesHabilitadas={modulos?.clasesYGrabaciones!==false}/>;
   if(actual==='notificaciones')return <Bandeja perfil={perfil}/>;
+  if(actual==='asistencia'&&['DOCENTE','ESTUDIANTE'].includes(perfil.tipo))return <AsistenciaAula perfil={perfil}/>;
   if(actual==='materiales'&&perfil.tipo!=='ADMINISTRADOR')return <MaterialesPage perfil={perfil}/>;
   if(actual==='historial'&&['COORDINACION','ADMINISTRADOR'].includes(perfil.tipo))return <Historial/>;
   if(perfil.tipo==='ADMINISTRADOR'&&actual==='grabaciones')return <AdminGrabaciones/>;

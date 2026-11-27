@@ -76,4 +76,8 @@ class OfertaConsultaImpl implements OfertaConsulta {
       (r,n)->new Seccion(r.getObject(1,UUID.class),r.getInt(2),r.getString(3),r.getInt(4),r.getString(5)),id);
     return filas.isEmpty()?null:filas.getFirst();
   }
+  @Override public List<Seccion> secciones(int anio) {
+    return jdbc.query("SELECT id,anio,nivel,grado,nombre FROM ofe_secciones WHERE anio=? ORDER BY nivel,grado,nombre",
+      (r,n)->new Seccion(r.getObject(1,UUID.class),r.getInt(2),r.getString(3),r.getInt(4),r.getString(5)),anio);
+  }
 }

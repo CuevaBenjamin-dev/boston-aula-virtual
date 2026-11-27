@@ -95,6 +95,14 @@ import org.springframework.web.bind.annotation.RestController;
       LEFT JOIN docentes_curso d ON d.curso_id=n.curso_id AND d.docente_erp_id=n.docente_erp_id
       WHERE n.docente_erp_id=? ORDER BY n.creada_en DESC LIMIT 100
       """,usuario.referencia(a)));
+    if("ESTUDIANTE".equals(tipo)||"DOCENTE".equals(tipo)) filas.addAll(db.queryForList("""
+      SELECT id,NULL::uuid AS clase_id,'ASISTENCIA' AS tipo,mensaje,creada_en,leida_en,
+        'Asistencia' AS tema,NULL::timestamptz AS inicio,
+        'Asistencia' AS asignatura,'' AS grado,'' AS seccion,TRUE AS puede_abrir
+      FROM notificaciones_asistencia
+      WHERE destinatario_tipo=? AND destinatario_erp_id=?
+      ORDER BY creada_en DESC LIMIT 100
+      """,tipo,usuario.referencia(a)));
     filas.sort(Comparator.comparing((Map<String,Object> n)->
       (java.time.Instant)((java.sql.Timestamp)n.getOrDefault("actualizada_en",n.get("creada_en"))).toInstant()).reversed());
     return filas.stream().limit(100).toList();
@@ -102,6 +110,10 @@ import org.springframework.web.bind.annotation.RestController;
   @PostMapping("/{id}/leer") public void leer(@PathVariable UUID id,Authentication a) {
     String tipo=usuario.tipo(a);
     if(listar(a).stream().noneMatch(n->id.equals(n.get("id")))) throw new AccessDeniedException("Notificación ajena");
+    if(("ESTUDIANTE".equals(tipo)||"DOCENTE".equals(tipo))&&db.update("""
+      UPDATE notificaciones_asistencia SET leida_en=COALESCE(leida_en,now())
+      WHERE id=? AND destinatario_tipo=? AND destinatario_erp_id=?
+      """,id,tipo,usuario.referencia(a))>0) return;
     if(("ESTUDIANTE".equals(tipo)||"DOCENTE".equals(tipo)) && db.update("""
       UPDATE notificaciones_tarea SET leida_en=COALESCE(leida_en,now())
       WHERE id=? AND destinatario_tipo=? AND destinatario_erp_id=?

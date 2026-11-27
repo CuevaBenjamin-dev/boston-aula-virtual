@@ -8,6 +8,7 @@ import { PersonasModulo } from '../../modules/personas/PersonasModulo'
 import { OfertaModulo } from '../../modules/oferta/OfertaModulo'
 import { MatriculasModulo } from '../../modules/matriculas/MatriculasModulo'
 import { AsignacionesModulo } from '../../modules/asignaciones/AsignacionesModulo'
+import { AsistenciaModulo } from '../../modules/asistencia/AsistenciaModulo'
 import { erp } from '../../shared/api/erp'
 
 type Resumen = { anio: number | null; personas: number; borradores: number; vigentes: number;
@@ -33,7 +34,7 @@ function Inicio({ sesion }: { sesion: Sesion }) {
         <span className="numero">0{indice + 1} / MÓDULO</span>
         <strong>{modulo.nombre}</strong>
         <span>{modulo.resumen}</span>
-        <small>{['personas','oferta','matriculas','asignaciones'].includes(modulo.ruta) ? 'ABRIR MÓDULO' : 'EN DESARROLLO'} <span aria-hidden="true">→</span></small>
+        <small>{['personas','oferta','matriculas','asignaciones','asistencia'].includes(modulo.ruta) ? 'ABRIR MÓDULO' : 'EN DESARROLLO'} <span aria-hidden="true">→</span></small>
       </Link>)}
     </div>
   </div>
@@ -65,7 +66,8 @@ export default function App() {
       <Route path="oferta/*" element={<OfertaModulo sesion={sesion} />} />
       <Route path="matriculas/*" element={<MatriculasModulo sesion={sesion} />} />
       <Route path="asignaciones/*" element={<AsignacionesModulo sesion={sesion} />} />
-      {modulos.filter(modulo => !['personas','oferta','matriculas','asignaciones'].includes(modulo.ruta)).map(modulo => <Route key={modulo.ruta} path={modulo.ruta}
+      <Route path="asistencia/*" element={<AsistenciaModulo sesion={sesion} />} />
+      {modulos.filter(modulo => !['personas','oferta','matriculas','asignaciones','asistencia'].includes(modulo.ruta)).map(modulo => <Route key={modulo.ruta} path={modulo.ruta}
         element={<EstadoPendiente modulo={modulo} />} />)}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Route>

@@ -12,7 +12,7 @@ from urllib.parse import unquote
 ROOT = Path(__file__).resolve().parents[1]
 ERP = ROOT / "docs" / "erp"
 ENGINEERING = ERP / "ingenieria"
-MODULES = ("personas", "matriculas", "oferta", "asignaciones", "documentos")
+MODULES = ("personas", "matriculas", "oferta", "asignaciones", "asistencia", "documentos")
 MODULE_FILES = (
     "README.md", "ESPECIFICACION.md", "ARQUITECTURA.md",
     "MODELO_DATOS.md", "PRUEBAS.md", "ESTADO.md",

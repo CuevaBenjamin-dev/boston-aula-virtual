@@ -65,6 +65,9 @@ services:
       BOSTON_AULA_URL: http://api-aula:8080
       BOSTON_INTEGRACION_SECRET: ${ERP_CLIENT_SECRET:-cambiar-local-erp}
       BOSTON_ERP_WEB_SECRET: ${ERP_WEB_CLIENT_SECRET:-cambiar-local-erp-web}
+      BOSTON_S3_ENDPOINT: http://seaweedfs:8333
+      BOSTON_S3_ACCESS_KEY: ${S3_ACCESS_KEY:-local-aula}
+      BOSTON_S3_SECRET_KEY: ${S3_SECRET_KEY:-cambiar-local-s3}
     depends_on:
       postgres:
         condition: service_healthy
