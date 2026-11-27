@@ -1,7 +1,7 @@
 package pe.boston.aula;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 import org.springframework.http.MediaType;
@@ -16,7 +16,7 @@ import pe.boston.aula.integraciones.ErpCliente;
 public class AsistenciaController {
   private final UsuarioActual usuario;
   private final ErpCliente erp;
-  private final ObjectMapper json=new ObjectMapper();
+  private final JsonMapper json=JsonMapper.builder().build();
   public AsistenciaController(UsuarioActual usuario,ErpCliente erp) { this.usuario=usuario;this.erp=erp; }
   private void rol(Authentication a,String tipo) {
     if(!tipo.equals(usuario.tipo(a))) throw new org.springframework.security.access.AccessDeniedException("Perfil sin acceso a Asistencia");

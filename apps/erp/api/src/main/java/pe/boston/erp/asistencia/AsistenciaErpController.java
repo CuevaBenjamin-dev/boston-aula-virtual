@@ -20,6 +20,12 @@ public class AsistenciaErpController {
   public record Complemento(String texto,int version) {}
   public record NuevaSalida(UUID personaId,String estado,String motivo,String clave) {}
   public record Hora(String valor) {}
+  public record NuevoCalendario(
+    Integer anio,
+    LocalDate inicio,
+    LocalDate fin,
+    List<Integer> diasSemana
+) {}
   private final AsistenciaService ast;
   public AsistenciaErpController(AsistenciaService ast) { this.ast=ast; }
   private AsistenciaService.Actor actor(Authentication a) {
@@ -30,9 +36,35 @@ public class AsistenciaErpController {
     var c=ast.calendario(anio);
     return c==null?ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body("null"):ResponseEntity.ok(c);
   }
-  @PostMapping("/calendario") public AsistenciaService.Calendario calendario(@RequestBody AsistenciaService.Calendario c,Authentication a) {
-    return ast.configurarCalendario(actor(a),c);
+  @PostMapping("/calendario")
+public AsistenciaService.Calendario calendario(
+    @RequestBody NuevoCalendario c,
+    Authentication a) {
+
+  if (c.anio() == null) {
+    throw new IllegalArgumentException(
+        "El año escolar es obligatorio");
   }
+
+  if (c.diasSemana() != null &&
+      c.diasSemana().stream().anyMatch(d -> d == null)) {
+    throw new IllegalArgumentException(
+        "Los días lectivos deben ser números del 1 al 7");
+  }
+
+  return ast.configurarCalendario(
+      actor(a),
+      new AsistenciaService.Calendario(
+          c.anio(),
+          c.inicio(),
+          c.fin(),
+          c.diasSemana(),
+          null,
+          null,
+          0
+      )
+  );
+}
   @GetMapping("/excepciones/{anio}") public List<Map<String,Object>> excepciones(@PathVariable int anio,Authentication a) {
     actor(a);return ast.excepciones(anio);
   }
@@ -65,10 +97,15 @@ public class AsistenciaErpController {
   @GetMapping("/pendientes/{anio}") public List<Map<String,Object>> pendientes(@PathVariable int anio,Authentication a) {
     actor(a);return ast.pendientes(anio);
   }
+  @GetMapping("/justificaciones/conteo") public ResponseEntity<List<AsistenciaService.ConteoJustificaciones>> conteoJustificaciones(Authentication a) {
+    if (!AccesoErp.coordinacion(a)) throw new org.springframework.security.access.AccessDeniedException("Solo Coordinación puede consultar su contador de trabajo");
+    return ResponseEntity.ok().header("Cache-Control","no-store").body(ast.conteoJustificaciones());
+  }
   @GetMapping("/justificaciones") public List<AsistenciaService.Justificacion> justificaciones(
       @RequestParam(required=false) Integer anio,@RequestParam(defaultValue="false") boolean pendientes,Authentication a) {
     actor(a);return ast.justificaciones(anio,pendientes);
   }
+  @ResponseStatus(org.springframework.http.HttpStatus.NO_CONTENT)
   @PostMapping("/justificaciones/{id}/resolver") public void resolver(@PathVariable UUID id,@RequestBody Decision d,Authentication a) {
     ast.resolver(actor(a),id,d.aprobar(),d.comentario(),d.version());
   }

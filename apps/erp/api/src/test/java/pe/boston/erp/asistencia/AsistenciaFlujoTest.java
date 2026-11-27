@@ -90,14 +90,18 @@ class AsistenciaFlujoTest {
     UUID registro=db.queryForObject("SELECT id FROM ast_registros WHERE persona_id=? AND fecha=?",UUID.class,uno,dia);
     var estudiante=new AsistenciaService.Actor("alumno","ESTUDIANTE",uno);
     assertThrows(SecurityException.class,()->ast.solicitar(new AsistenciaService.Actor("otro","ESTUDIANTE",dos),registro,"Motivo","ajena"));
+    assertTrue(ast.conteoJustificaciones().isEmpty());
     var solicitud=ast.solicitar(estudiante,registro,"Motivo de prueba","sol-1");
+    assertEquals(List.of(new AsistenciaService.ConteoJustificaciones(2027,1)),ast.conteoJustificaciones());
     assertThrows(IllegalArgumentException.class,()->ast.adjuntar(estudiante,solicitud.id(),"falso.pdf",new byte[]{1,2,3,4}));
     assertThrows(SecurityException.class,()->ast.adjuntos(new AsistenciaService.Actor("otro","ESTUDIANTE",dos),solicitud.id()));
     assertEquals(solicitud.id(),ast.solicitar(estudiante,registro,"Motivo de prueba","sol-1").id());
     assertThrows(AsistenciaService.Conflicto.class,()->ast.solicitar(estudiante,registro,"Otro","sol-2"));
     ast.complementar(estudiante,solicitud.id(),"Más contexto",solicitud.version());
     assertThrows(SecurityException.class,()->ast.resolver(estudiante,solicitud.id(),true,"",2));
+    assertEquals(List.of(new AsistenciaService.ConteoJustificaciones(2027,1)),ast.conteoJustificaciones());
     ast.resolver(coord,solicitud.id(),true,"",2);
+    assertTrue(ast.conteoJustificaciones().isEmpty());
     assertEquals("JUSTIFICADA",ast.historial(uno,2027).getFirst().visible());
     assertEquals("FALTA",db.queryForObject("SELECT marca FROM ast_registros WHERE id=?",String.class,registro));
     var salida=ast.salida(coord,uno,"NO_AUTORIZADA","Salió sin autorización","salida-1");

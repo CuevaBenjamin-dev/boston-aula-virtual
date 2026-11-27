@@ -72,7 +72,7 @@ export function AsistenciaModulo({sesion}:{sesion:Sesion}){
   async function crearExcepcion(){await ejecutar(async()=>{await erp('/asistencia/excepciones',sesion,'PUT',{fecha:excFecha,seccionId:excSeccion||null,lectivo:excLectivo,motivo:excMotivo});setExcepciones(await erp<Excepcion[]>(`/asistencia/excepciones/${anio}`,sesion));setAviso('Excepción guardada. Las marcas invalidadas conservan auditoría.')})}
   async function cambiarHora(){await ejecutar(async()=>{await erp(`/asistencia/recordatorio/${anio}`,sesion,'PUT',{valor:horaAviso});setCal(await erp<Calendario>(`/asistencia/calendario/${anio}`,sesion));setAviso('Hora de recordatorio actualizada.')})}
   async function resolver(j:Justificacion,aprobar:boolean){const comentario=aprobar?'':prompt('Motivo de rechazo')??'';if(!aprobar&&!comentario.trim())return;
-    await ejecutar(async()=>{await erp(`/asistencia/justificaciones/${j.id}/resolver`,sesion,'POST',{aprobar,comentario,version:j.version});setJustificaciones(await erp<Justificacion[]>(`/asistencia/justificaciones?anio=${anio}`,sesion));setAviso('Decisión registrada y aviso pendiente de entrega al Aula.')})}
+    await ejecutar(async()=>{await erp(`/asistencia/justificaciones/${j.id}/resolver`,sesion,'POST',{aprobar,comentario,version:j.version});window.dispatchEvent(new Event('bbs:justificaciones-actualizadas'));setJustificaciones(await erp<Justificacion[]>(`/asistencia/justificaciones?anio=${anio}`,sesion));setAviso('Decisión registrada y aviso pendiente de entrega al Aula.')})}
   async function registrarSalida(){if(!persona)return;await ejecutar(async()=>{
     const firma=JSON.stringify([persona.id,salidaEstado,salidaMotivo])
     if(salidaPendiente.current?.firma!==firma) salidaPendiente.current={firma,clave:clave()}

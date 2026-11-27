@@ -1,0 +1,23 @@
+/* Indicador de justificaciones pendientes, exclusivo del menú Asistencia. */
+.navegacion.navegacion-con-conteo {
+  position: relative;
+  padding-right: 36px;
+}
+.navegacion .erp-asistencia-conteo {
+  position: absolute;
+  top: 5px;
+  right: 7px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #d4002b;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}

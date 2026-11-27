@@ -414,6 +414,15 @@ public class AsistenciaService {
       "accion","Revisar sección y regularizar en ERP"));
     return salida;
   }
+  public record ConteoJustificaciones(int anio,long cantidad) {}
+  public List<ConteoJustificaciones> conteoJustificaciones() {
+    return db.query("""
+      SELECT extract(year from r.fecha)::int AS anio,count(*) AS cantidad
+      FROM ast_justificaciones j JOIN ast_registros r ON r.id=j.registro_id
+      WHERE j.estado='EN_REVISION' AND r.valido AND r.marca=j.marca_origen
+      GROUP BY 1 ORDER BY 1 DESC
+      """,(r,n)->new ConteoJustificaciones(r.getInt(1),r.getLong(2)));
+  }
   public List<Justificacion> justificaciones(Integer anio,boolean soloPendientes) {
     String sql="""
       SELECT j.id,j.registro_id,j.estudiante_id,p.nombres||' '||p.apellidos,j.marca_origen,r.fecha,
