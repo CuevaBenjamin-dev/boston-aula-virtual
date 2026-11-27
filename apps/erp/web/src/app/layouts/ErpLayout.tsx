@@ -79,7 +79,7 @@ export function ErpLayout({ sesion }: { sesion: Sesion }) {
         <h1>{actual?.nombre ?? 'ERP institucional'}<span className="punto">.</span></h1>
         <span className="fase">{sesion.rol === 'DIRECCION' ? 'DIRECCIÓN' : 'COORDINACIÓN'} · {new Date().getFullYear()}</span>
       </header>
-      <main id="contenido"><Outlet /></main>
+      <main id="contenido"><Outlet context={{ justificacionesPendientes: total }} /></main>
     </div>
   </div>
 }

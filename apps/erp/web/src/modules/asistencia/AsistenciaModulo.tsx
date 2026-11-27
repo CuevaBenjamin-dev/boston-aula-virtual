@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useOutletContext } from 'react-router-dom'
 import { erp } from '../../shared/api/erp'
 import type { Sesion } from '../../shared/api/sesion'
 import './asistencia.css'
@@ -32,6 +33,8 @@ function BuscarPersona({sesion,seleccionar}:{sesion:Sesion;seleccionar:(persona:
 }
 
 export function AsistenciaModulo({sesion}:{sesion:Sesion}){
+  const contexto = useOutletContext<{ justificacionesPendientes: number } | null>()
+  const hayJustificacionesPendientes = sesion.rol === 'COORDINACION' && (contexto?.justificacionesPendientes ?? 0) > 0
   const [tab,setTab]=useState<typeof tabs[number]>('Control diario'),[anio,setAnio]=useState(new Date().getFullYear()),[anios,setAnios]=useState<number[]>([])
   const [fecha,setFecha]=useState(fechaLima()),[secciones,setSecciones]=useState<Seccion[]>([]),[seccionesOferta,setSeccionesOferta]=useState<SeccionOferta[]>([]),[seccion,setSeccion]=useState('')
   const [jornada,setJornada]=useState<Jornada|null>(null),[marcas,setMarcas]=useState<Record<string,string>>({}),[motivo,setMotivo]=useState('')
@@ -84,7 +87,7 @@ export function AsistenciaModulo({sesion}:{sesion:Sesion}){
   return <section className="pagina ast"><div className="ast-intro"><p className="etiqueta">CONTROL INSTITUCIONAL</p><p>Asistencia por día y sección. El ERP conserva el expediente oficial.</p></div>
     <div className="ast-filtros"><label>Año escolar<select value={anio} onChange={e=>{setAnio(Number(e.target.value));setSeccion('')}}>{[...new Set([anio,...anios])].sort((a,b)=>b-a).map(a=><option key={a}>{a}</option>)}</select></label>
       {tab==='Control diario'&&<label>Fecha<input type="date" value={fecha} onChange={e=>{setFecha(e.target.value);setSeccion('')}} max={fechaLima()}/></label>}</div>
-    <nav className="ast-tabs" aria-label="Áreas de Asistencia">{tabs.map(t=><button key={t} className={tab===t?'activo':''} aria-current={tab===t?'page':undefined} onClick={()=>{setTab(t);setError('');setAviso('')}}>{t}</button>)}</nav>
+    <nav className="ast-tabs" aria-label="Áreas de Asistencia">{tabs.map(t=><button key={t} className={tab===t?'activo':''} aria-current={tab===t?'page':undefined} onClick={()=>{setTab(t);setError('');setAviso('')}} aria-label={t==='Justificaciones'&&hayJustificacionesPendientes?'Justificaciones, solicitudes pendientes':undefined}>{t}{t==='Justificaciones'&&hayJustificacionesPendientes&&<span className="ast-punto-pendiente" aria-hidden="true"/>}</button>)}</nav>
     {error&&<p className="ast-error" role="alert">{error}</p>}{aviso&&<p className="ast-ok" role="status">{aviso}</p>}
     {tab==='Control diario'&&<div className="ast-grid"><div className="ast-panel"><h3>Secciones lectivas</h3>{!secciones.length?<p>No hay secciones lectivas con calendario habilitado para esta fecha.</p>:secciones.map(s=><button className={'ast-seccion '+(seccion===s.seccionId?'activo':'')} key={s.seccionId} onClick={()=>setSeccion(s.seccionId)}><strong>{s.seccion}</strong><span>{s.marcados}/{s.total} marcas · {s.confirmada?'Confirmada':s.alertaSinMarcas?'Sin registro':s.cerrada?'Cerrada':'Pendiente'}</span></button>)}</div>
       <div className="ast-panel"><h3>{seccion?secciones.find(s=>s.seccionId===seccion)?.seccion:'Elige una sección'}</h3>{jornada&&<>{!jornada.lectivo?<p>Día no lectivo: el registro está bloqueado.</p>:<><p>{jornada.alumnos.length} estudiantes · {jornada.confirmada?'Confirmada':jornada.cerrada?'Cierre diario aplicado':'Edición disponible'}</p><div className="ast-lista">{jornada.alumnos.map(a=><div key={a.personaId} className="ast-alumno"><div><strong>{a.nombre}</strong><small>{textoMarca(a.visible)}{a.origen==='SISTEMA'?' · Sistema':''}</small></div><div className="ast-marcas" role="group" aria-label={`Asistencia de ${a.nombre}`}>{(['PRESENTE','TARDANZA','FALTA'] as const).map(v=><button key={v} disabled={a.justificada||ocupado} className={(marcas[a.personaId]??a.borrador??a.marca)===v?'activo':''} onClick={()=>setMarcas({...marcas,[a.personaId]:v})}>{v[0]}</button>)}</div></div>)}</div><div className="ast-acciones"><button disabled={ocupado} onClick={()=>setMarcas(Object.fromEntries(jornada.alumnos.filter(a=>!a.justificada).map(a=>[a.personaId,'PRESENTE'])))}>Marcar todos presentes</button>{fecha<fechaLima()&&<label>Motivo de regularización<input value={motivo} onChange={e=>setMotivo(e.target.value)}/></label>}<button disabled={ocupado||(!Object.keys(marcas).length&&jornada.alumnos.length===0)} onClick={()=>void guardar(false)}>Guardar y cerrar edición</button><button disabled={ocupado||jornada.alumnos.some(a=>!marcas[a.personaId]&&!a.borrador&&!a.marca)} onClick={()=>void guardar(true)}>Confirmar lista completa</button></div></>}</>}</div></div>}
